@@ -1,0 +1,39 @@
+services:
+  # Nacos 服务（使用 Derby 数据库的单机模式）
+  nacos:
+    image: nacos/nacos-server:latest
+    container_name: nacos
+    restart: unless-stopped
+    environment:
+      - MODE=standalone
+      - NACOS_AUTH_TOKEN=VGhpc0lzTXlTZWNyZXRLZXlGb3JOYWNvc0F1dGhTeXN0ZW0xMjMK # 需替换为实际密钥
+      - NACOS_AUTH_IDENTITY_KEY=VGhpc0lzTXlTZWNyZXRLZXlGb3JOYWNvc0F1dGhTeXN0ZW0xMjMK  # 需替换为实际身份键
+      - NACOS_AUTH_IDENTITY_VALUE=VGhpc0lzTXlTZWNyZXRLZXlGb3JOYWNvc0F1dGhTeXN0ZW0xMjMK  # 需替换为实际身份值
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.11  # 为 Nacos 分配固定IP
+
+  # Zipkin 服务
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    restart: unless-stopped
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.10  # Zipkin 固定IP
+  sentinel:
+    image: sentinel-dashboard:1.8.8
+    container_name: sentinel
+    restart: unless-stopped
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.12
+
+networks:
+  spring-cloud-networks:
+    name: spring-cloud-networks
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.25.0.0/24  # 子网定义，支持静态IP分配
