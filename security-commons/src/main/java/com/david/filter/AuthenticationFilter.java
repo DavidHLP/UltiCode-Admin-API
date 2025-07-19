@@ -7,7 +7,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -24,14 +27,22 @@ import java.util.Optional;
  * 只在传统 Servlet 环境下加载，避免在 WebFlux Gateway 中冲突
  */
 @Slf4j
-@Component
+@Configuration
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-public class GatewayAuthenticationFilter extends OncePerRequestFilter {
+public class AuthenticationFilter extends OncePerRequestFilter {
+
+    @Value("${spring.security.auth.whitelist}")
+    private String[] AUTH_WHITELIST;
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
+
+        if (Arrays.stream(AUTH_WHITELIST).filter(path -> request.getRequestURI().startsWith(path)).isParallel()) {
+            filterChain.doFilter(request, response);
+        }
 
         // 尝试从请求头构建 AuthUser 对象
         Optional<AuthUser> authUserOpt = UserContextUtil.getCurrentAuthUser(request);
@@ -52,7 +63,7 @@ public class GatewayAuthenticationFilter extends OncePerRequestFilter {
             log.debug("设置用户认证上下文: {} (ID: {}), 权限: {}",
                     authUser.getUsername(), authUser.getUserId(), authUser.getAuthorities());
         } else {
-            log.debug("请求中未找到用户信息，跳过认证设置");
+            throw new RuntimeException("用户信息未找到");
         }
 
         try {

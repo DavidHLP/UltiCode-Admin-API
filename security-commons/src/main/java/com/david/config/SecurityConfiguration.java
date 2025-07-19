@@ -1,7 +1,8 @@
 package com.david.config;
 
-import com.david.filter.GatewayAuthenticationFilter;
+import com.david.filter.AuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,13 +25,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true)
 @ConditionalOnMissingClass("org.springframework.web.reactive.config.WebFluxConfigurer")
 public class SecurityConfiguration {
-    private static final String[] AUTH_WHITELIST = {
-            "/api/auth/**",
-            "/preauthorize/**",  // 预授权端点
-            "/actuator/**"  // 添加监控端点
-    };
+    @Value("${spring.security.auth.whitelist}")
+    private String[] AUTH_WHITELIST;
 
-    private final GatewayAuthenticationFilter gatewayAuthenticationFilter;
+    private final AuthenticationFilter gatewayAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {

@@ -4,12 +4,19 @@ server:
 spring:
   application:
     name: gateway # 应用名称
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
   cloud:
     nacos:
       discovery:
         server-addr: 10.25.0.11:8848 #配置Nacos地址
         username: nacos
         password: '#Alone117'
+    sentinel:
+      transport:
+        dashboard: 10.25.0.12:8080
+        port: 8719
     gateway:
       discovery:
         locator:
@@ -21,12 +28,6 @@ spring:
           uri: lb://authentication
           predicates:
             - Path=/api/auth/**
-          filters:
-            - StripPrefix=0
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/preauthorize/test/**
           filters:
             - StripPrefix=0
       default-filters:

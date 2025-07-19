@@ -7,4 +7,5 @@ import org.apache.ibatis.annotations.*;
 @Mapper
 public interface TokenMapper extends BaseMapper<Token> {
     Token findValidToken(@Param("userId") Long userId, @Param("token") String token);
+    void deleteByToken(@Param("token") String token);
 }

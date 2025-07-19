@@ -8,5 +8,5 @@ public interface AuthService {
     void register(String username, String password , String email , String code);
     void sendVerificationCode(String email);
     AuthUser validateToken(String token);
-    AuthUser loadUserByUsername(String token);
+    void logout(String username ,String token);
 }

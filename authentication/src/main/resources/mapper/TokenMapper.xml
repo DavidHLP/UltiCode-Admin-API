@@ -9,4 +9,7 @@
         WHERE
             user_id = #{userId} AND token = #{token} AND expired = false AND revoked = false
     </select>
+    <delete id="deleteByToken">
+        DELETE FROM token WHERE token = #{token}
+    </delete>
 </mapper>

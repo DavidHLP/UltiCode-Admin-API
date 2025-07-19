@@ -2,6 +2,17 @@ server:
   port: 9091
 
 spring:
+  security:
+    auth:
+      whitelist:
+        - /api/auth/login
+        - /api/auth/register
+        - /api/auth/refresh
+        - /api/auth/validate
+        - /api/auth/send-code
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
   application:
     name: authentication # 应用名称
   cloud:
@@ -10,6 +21,10 @@ spring:
         server-addr: 10.25.0.11:8848 #配置Nacos地址
         username: nacos
         password: '#Alone117'
+    sentinel:
+      transport:
+        dashboard: 10.25.0.12:8080
+        port: 8719
     loadbalancer:
       nacos:
         enabled: true

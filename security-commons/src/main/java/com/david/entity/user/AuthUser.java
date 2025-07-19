@@ -151,7 +151,6 @@ public class AuthUser implements UserDetails {
 
     /**
      * 为了确保序列化正确，这里明确说明 authorities 字段应该是字符串列表
-     * 而不是 GrantedAuthority 对象列表
      */
     public void setAuthorities(List<String> authorities) {
         this.authorities = authorities;
