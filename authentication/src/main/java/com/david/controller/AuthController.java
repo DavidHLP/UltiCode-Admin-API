@@ -41,10 +41,10 @@ public class AuthController {
         return ResponseResult.success();
     }
 
-    @PostMapping("/validate")
-    public ResponseResult<AuthUser> validateToken(@RequestBody TokenValidateRequest request) {
-        log.debug("内部token验证请求: {}", request.getToken().substring(0, Math.min(request.getToken().length(), 20)));
-        AuthUser authUser = authService.validateToken(request.getToken());
+    @GetMapping("/validate/{token}")
+    public ResponseResult<AuthUser> validateToken(@PathVariable("token") String token) {
+        log.debug("内部token验证请求: {}", token);
+        AuthUser authUser = authService.validateToken(token);
         log.debug("Token验证成功，用户: {}", authUser.getUsername());
         return ResponseResult.success(authUser);
     }

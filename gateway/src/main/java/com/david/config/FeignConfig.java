@@ -18,7 +18,6 @@ public class FeignConfig {
 
     /**
      * 为WebFlux环境提供HttpMessageConverters Bean
-     * 解决OpenFeign在Gateway中使用@RequestBody时的编码问题
      */
     @Bean
     public HttpMessageConverters messageConverters() {
