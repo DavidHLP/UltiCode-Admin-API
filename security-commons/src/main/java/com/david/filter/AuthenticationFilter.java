@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -31,8 +32,16 @@ import java.util.Optional;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class AuthenticationFilter extends OncePerRequestFilter {
 
-    @Value("${spring.security.auth.whitelist}")
-    private String[] AUTH_WHITELIST;
+    private final String[] AUTH_WHITELIST = {
+            "/actuator/**",
+            "/favicon.ico",
+            "/error",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/validate",
+            "/api/auth/send-code"
+    };
 
     @Override
     protected void doFilterInternal(
@@ -40,8 +49,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        if (Arrays.stream(AUTH_WHITELIST).filter(path -> request.getRequestURI().startsWith(path)).isParallel()) {
+        if (Arrays.stream(AUTH_WHITELIST).anyMatch(path -> request.getRequestURI().startsWith(path))) {
             filterChain.doFilter(request, response);
+            return;
         }
 
         // 尝试从请求头构建 AuthUser 对象

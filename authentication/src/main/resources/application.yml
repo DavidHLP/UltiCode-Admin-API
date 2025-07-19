@@ -2,14 +2,6 @@ server:
   port: 9091
 
 spring:
-  security:
-    auth:
-      whitelist:
-        - /api/auth/login
-        - /api/auth/register
-        - /api/auth/refresh
-        - /api/auth/validate
-        - /api/auth/send-code
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8

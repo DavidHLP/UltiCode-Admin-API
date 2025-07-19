@@ -19,11 +19,14 @@ public class SecurityConfiguration {
      * 公开路径，无需认证
      */
     private static final String[] PUBLIC_PATHS = {
-            "/api/auth/login",
-            "/api/auth/register",
-            "/api/auth/refresh",
             "/actuator/**",
-            "/favicon.ico"
+            "/favicon.ico",
+            "/error",
+            "/api/auth/login/**",
+            "/api/auth/register/**",
+            "/api/auth/refresh/**",
+            "/api/auth/validate/**",
+            "/api/auth/send-code/**"
     };
 
     /**

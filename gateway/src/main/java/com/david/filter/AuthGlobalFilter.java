@@ -53,9 +53,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
      * 公开路径，无需权限验证
      */
     private static final List<String> PUBLIC_PATHS = List.of(
+            "/favicon.ico",
+            "/error",
             "/api/auth/login",
             "/api/auth/register",
             "/api/auth/refresh",
+            "/api/auth/validate",
+            "/api/auth/send-code",
             "/actuator/health",
             "/favicon.ico");
 

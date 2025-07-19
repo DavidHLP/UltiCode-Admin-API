@@ -25,8 +25,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true)
 @ConditionalOnMissingClass("org.springframework.web.reactive.config.WebFluxConfigurer")
 public class SecurityConfiguration {
-    @Value("${spring.security.auth.whitelist}")
-    private String[] AUTH_WHITELIST;
+    private final String[] AUTH_WHITELIST = {
+            "/actuator/**",
+            "/favicon.ico",
+            "/error",
+            "/api/auth/login/**",
+            "/api/auth/register/**",
+            "/api/auth/refresh/**",
+            "/api/auth/validate/**",
+            "/api/auth/send-code/**"
+    };
 
     private final AuthenticationFilter gatewayAuthenticationFilter;
 
