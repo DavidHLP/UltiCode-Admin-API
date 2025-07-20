@@ -30,10 +30,16 @@ spring:
             - Path=/api/auth/**
           filters:
             - StripPrefix=0
-        - id: user-service
+        - id: user-service-user
           uri: lb://user-service
           predicates:
             - Path=/user/api/**
+          filters:
+            - StripPrefix=0
+        - id: user-service-role
+          uri: lb://user-service
+          predicates:
+            - Path=/role/api/**
           filters:
             - StripPrefix=0
       default-filters:

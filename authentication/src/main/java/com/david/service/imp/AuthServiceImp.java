@@ -1,6 +1,5 @@
 package com.david.service.imp;
 
-import com.david.entity.permission.Permission;
 import com.david.entity.user.User;
 import com.david.entity.token.Token;
 import com.david.entity.token.TokenType;
@@ -18,18 +17,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Random;
-/**
- * 认证服务实现类
- *
- * @author david
- */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -88,7 +80,7 @@ public class AuthServiceImp implements AuthService {
         }
 
         User user = User.builder()
-                .Username(username)
+                .username(username)
                 .password(passwordEncoder.encode(password))
                 .email(email)
                 .status(1)
@@ -103,63 +95,36 @@ public class AuthServiceImp implements AuthService {
     @Override
     @Transactional
     public AuthUser validateToken(String jwt) {
-        // 提取JWT中的用户名
         final String username = jwtService.extractUsername(jwt);
         if (username == null || username.isEmpty()) {
             log.error("JWT token无效或缺少用户名");
             throw new UsernameNotFoundException("JWT token无效或缺少用户名");
         }
 
-        // 使用分布式锁确保同一时间只有一个线程处理该用户验证
         return redisLockUtil.executeWithLock(RedisLocks.VALIDATETOKEN+username, () -> {
-            // 从数据库加载用户信息
             AuthUser userDetails = userMapper.loadUserByUsername(username);
             if (userDetails == null) {
                 log.error("用户不存在: {}", username);
                 throw new UsernameNotFoundException("未找到用户: " + username);
             }
 
-            // 验证token有效性及用户状态
             if (!jwtService.isTokenValid(jwt, userDetails)) {
                 log.error("Token验证失败: {}", username);
                 throw new UsernameNotFoundException("Token无效或已过期: " + username);
             }
 
-            // 验证用户的token是否有效（检查数据库中的token）
             Token token = tokenMapper.findValidToken(userDetails.getUserId(), jwt);
             if (token == null) {
                 log.error("用户token无效或已被撤销: {}", username);
                 throw new UsernameNotFoundException("Token无效或已撤销: " + username);
             }
-
-            // 确保authorities字段是字符串列表，避免JSON序列化问题
-            userDetails.cleanAuthorities();
             
-            // 如果authorities为空，从角色和权限中构建字符串列表
-            if (userDetails.getAuthorities() == null || userDetails.getAuthorities().isEmpty()) {
-                List<String> authoritiesList = new ArrayList<>();
-                
-                // 添加角色权限
-                if (userDetails.getRole() != null && userDetails.getRole().getRoleName() != null) {
-                    authoritiesList.add("ROLE_" + userDetails.getRole().getRoleName());
-                }
-                
-                // 添加权限列表
-                if (userDetails.getRole() != null && userDetails.getRole().getPermissions() != null) {
-                    userDetails.getRole().getPermissions().stream()
-                            .filter(p -> p != null && p.getPermission() != null)
-                            .map(Permission::getPermission)
-                            .forEach(authoritiesList::add);
-                }
-                userDetails.setAuthorities(authoritiesList);
-            }
             return userDetails;
         });
     }
 
     @Override
     public void logout(String username ,String token) {
-        // 删除token
         redisLockUtil.executeWithWriteLock(RedisLocks.LOGOUT+username, () -> {
             tokenMapper.deleteByToken(token);
             return null;

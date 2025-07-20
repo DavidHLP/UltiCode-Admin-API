@@ -11,8 +11,6 @@ CREATE TABLE `user` (
   `last_login_ip` VARCHAR(50),
   `last_login` DATETIME,
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `role_id` BIGINT,
-  `role_name` VARCHAR(255)
 );
 
 -- Roles Table
@@ -25,16 +23,6 @@ CREATE TABLE `role` (
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Permissions Table
-CREATE TABLE `permission` (
-  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-  `permission` VARCHAR(255) NOT NULL UNIQUE,
-  `status` BOOLEAN,
-  `remark` VARCHAR(255),
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
 -- User-Role Junction Table
 CREATE TABLE `user_role` (
   `user_id` BIGINT,
@@ -42,15 +30,6 @@ CREATE TABLE `user_role` (
   PRIMARY KEY (`user_id`, `role_id`),
   FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`),
   FOREIGN KEY (`role_id`) REFERENCES `role`(`id`)
-);
-
--- Role-Permission Junction Table
-CREATE TABLE `role_permission` (
-  `role_id` BIGINT,
-  `permission_id` BIGINT,
-  PRIMARY KEY (`role_id`, `permission_id`),
-  FOREIGN KEY (`role_id`) REFERENCES `role`(`id`),
-  FOREIGN KEY (`permission_id`) REFERENCES `permission`(`id`)
 );
 
 -- Tokens Table
