@@ -29,6 +29,10 @@ services:
       spring-cloud-networks:
         ipv4_address: 10.25.0.12
 
+  openjdk-17-alpine:
+    image: openjdk:17-alpine
+    container_name: openjdk-17-alpine
+
 networks:
   spring-cloud-networks:
     name: spring-cloud-networks

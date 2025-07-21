@@ -1,14 +1,14 @@
 package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.entity.TestCase;
+import com.david.judge.TestCase;
 import com.david.mapper.TestCaseMapper;
 import com.david.service.ITestCaseService;
 import org.springframework.stereotype.Service;
 
 /**
  * <p>
- *  服务实现类
+ *  测试用例服务实现类
  * </p>
  *
  * @author david

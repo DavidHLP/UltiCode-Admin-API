@@ -14,6 +14,8 @@
         <module>basic-commons</module>
         <module>redis-commons</module>
         <module>security-commons</module>
+        <module>webflux-commons</module>
+        <module>judge-commons</module>
     </modules>
 
     <artifactId>SpringOJ-commons</artifactId>

@@ -1,0 +1,36 @@
+server:
+  port: 9096
+
+spring:
+  application:
+    name: sandbox-service # 应用名称
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 10.25.0.11:8848 #配置Nacos地址
+        username: nacos
+        password: '#Alone117'
+    sentinel:
+      transport:
+        dashboard: 10.25.0.12:8080
+        port: 8719
+      web-context-unify: false # 关闭上下文整合，启用链路模式
+
+# 日志配置
+logging:
+  level:
+    com.david: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.cloud: DEBUG
+    org.mybatis: DEBUG
+
+docker:
+  host: unix:///var/run/docker.sock  # Docker守护进程地址
+  max-connections: 100  # 最大连接数
+  connection:
+    timeout: 30  # 连接超时时间（秒）
+  response:
+    timeout: 45  # 响应超时时间（秒）

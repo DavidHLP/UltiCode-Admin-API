@@ -1,11 +1,11 @@
 package com.david.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.entity.TestCase;
+import com.david.judge.TestCase;
 
 /**
  * <p>
- *  服务类
+ *  测试用例服务类
  * </p>
  *
  * @author david

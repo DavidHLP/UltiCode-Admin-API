@@ -43,12 +43,19 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 配置枚举类型处理器，使用@EnumValue注解的值进行数据库映射
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
   mapper-locations: classpath:mapper/*.xml
+  # 全局配置
+  global-config:
+    db-config:
+      # 配置枚举类型处理器
+      table-underline: true
 
 # 日志配置
 logging:
   level:
-    com.david: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.cloud: DEBUG
-    org.mybatis: DEBUG
+    '[com.david]': DEBUG
+    '[org.springframework.security]': DEBUG
+    '[org.springframework.cloud]': DEBUG
+    '[org.mybatis]': DEBUG

@@ -122,14 +122,14 @@ public class UserContextUtil {
     public static Optional<AuthUser> getCurrentAuthUser(HttpServletRequest request) {
         Optional<Long> userId = getCurrentUserId(request);
         Optional<String> username = getCurrentUsername(request);
-        
+
         if (userId.isPresent() && username.isPresent()) {
             String roleName = getCurrentUserRole(request).orElse("USER");
             Role role = Role.builder()
                     .roleName(roleName)
                     .status(1)
                     .build();
-            
+
             AuthUser authUser = AuthUser.builder()
                     .userId(userId.get())
                     .username(username.get())
@@ -137,7 +137,7 @@ public class UserContextUtil {
                     .status(1)
                     .role(role)
                     .build();
-            
+
             return Optional.of(authUser);
         }
         return Optional.empty();
@@ -146,14 +146,14 @@ public class UserContextUtil {
     public static Optional<AuthUser> getCurrentAuthUser(ServerWebExchange exchange) {
         Optional<Long> userId = getCurrentUserId(exchange);
         Optional<String> username = getCurrentUsername(exchange);
-        
+
         if (userId.isPresent() && username.isPresent()) {
             String roleName = getCurrentUserRole(exchange).orElse("USER");
             Role role = Role.builder()
                     .roleName(roleName)
                     .status(1)
                     .build();
-            
+
             AuthUser authUser = AuthUser.builder()
                     .userId(userId.get())
                     .username(username.get())
@@ -161,7 +161,7 @@ public class UserContextUtil {
                     .status(1)
                     .role(role)
                     .build();
-            
+
             return Optional.of(authUser);
         }
         return Optional.empty();

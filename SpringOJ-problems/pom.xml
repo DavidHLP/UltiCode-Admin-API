@@ -20,6 +20,11 @@
         <!-- 项目模块依赖 -->
         <dependency>
             <groupId>com.david</groupId>
+            <artifactId>judge-commons</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.david</groupId>
             <artifactId>basic-commons</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
@@ -40,10 +45,10 @@
             <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA 持久化框架 -->
+        <!-- OpenFeign -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
         <!-- Druid 数据库连接池 -->

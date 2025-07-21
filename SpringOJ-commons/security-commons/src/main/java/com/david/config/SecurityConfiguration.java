@@ -23,7 +23,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity(prePostEnabled = true)
-@ConditionalOnMissingClass("org.springframework.web.reactive.config.WebFluxConfigurer")
 public class SecurityConfiguration {
     private final String[] AUTH_WHITELIST = {
             "/actuator/**",

@@ -1,7 +1,7 @@
 package com.david.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.david.entity.Problem;
+import com.david.judge.Problem;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

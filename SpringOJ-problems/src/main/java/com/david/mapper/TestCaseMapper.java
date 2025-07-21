@@ -1,12 +1,12 @@
 package com.david.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.david.entity.TestCase;
+import com.david.judge.TestCase;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
  * <p>
- *  Mapper 接口
+ *  测试用例Mapper 接口
  * </p>
  *
  * @author david

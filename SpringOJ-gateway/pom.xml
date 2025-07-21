@@ -23,12 +23,6 @@
             <artifactId>basic-commons</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
-        <!-- 安全相关公共组件 -->
-        <dependency>
-            <groupId>com.david</groupId>
-            <artifactId>security-commons</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
 
         <!-- Nacos 服务发现 -->
         <dependency>

@@ -21,7 +21,8 @@
         <module>SpringOJ-problems</module>
         <module>SpringOJ-commons</module>
 		<module>SpringOJ-judge</module>
-	</modules>
+        <module>SpringOJ-sandbox</module>
+    </modules>
 
 	<properties>
 		<java.version>17</java.version>

@@ -42,12 +42,24 @@ spring:
             - Path=/role/api/**
           filters:
             - StripPrefix=0
-        - id: problems-service
+        - id: problems-service-problems
           uri: lb://problems-service
           predicates:
               - Path=/problems/api/**
           filters:
             - StripPrefix=0
+        - id: problems-service-submissions
+          uri: lb://problems-service
+          predicates:
+            - Path=/submissions/api/**
+          filters:
+            - StripPrefix=0
+        - id: judge-service
+          uri: lb://judge-service
+          predicates:
+              - Path=/api/judge/**
+          filters:
+              - StripPrefix=0
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
         - AddResponseHeader=Access-Control-Allow-Origin,*

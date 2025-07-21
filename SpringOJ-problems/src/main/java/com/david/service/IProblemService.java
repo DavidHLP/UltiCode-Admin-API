@@ -1,7 +1,7 @@
 package com.david.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.entity.Problem;
+import com.david.judge.Problem;
 
 /**
  * <p>

@@ -1,7 +1,7 @@
 package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.entity.Problem;
+import com.david.judge.Problem;
 import com.david.mapper.ProblemMapper;
 import com.david.service.IProblemService;
 import org.springframework.stereotype.Service;

@@ -26,7 +26,6 @@ import java.util.Optional;
  */
 @Configuration
 @RequiredArgsConstructor
-@ConditionalOnMissingClass("org.springframework.web.reactive.config.WebFluxConfigurer")
 public class ApplicationConfig {
 
   /**
