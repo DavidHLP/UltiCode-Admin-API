@@ -15,7 +15,7 @@
 	<name>SpringOJ</name>
 	<description>SpringOJ</description>
 	<modules>
-		<module>Gateway</module>
+		<module>SpringOJ-gateway</module>
 		<module>SpringOJ-authentication</module>
 		<module>SpringOJ-user</module>
         <module>SpringOJ-problems</module>
