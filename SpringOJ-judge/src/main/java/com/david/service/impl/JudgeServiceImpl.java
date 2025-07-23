@@ -1,8 +1,6 @@
 package com.david.service.impl;
 
 import com.david.dto.JudgeResult;
-import com.david.dto.SandboxExecuteRequest;
-import com.david.dto.SubmitCodeRequest;
 import com.david.judge.Problem;
 import com.david.judge.Submission;
 import com.david.judge.TestCase;
@@ -10,16 +8,14 @@ import com.david.judge.enums.JudgeStatus;
 import com.david.interfaces.ProblemServiceFeignClient;
 import com.david.interfaces.SubmissionServiceFeignClient;
 import com.david.service.IJudgeService;
-import com.david.service.ISandboxService;
-import com.david.utils.AsyncContextUtil;
+import com.david.strategy.JudgeContext;
+import com.david.strategy.JudgeStrategy;
+import com.david.strategy.JudgeStrategyFactory;
 import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 判题服务实现类
@@ -31,7 +27,7 @@ public class JudgeServiceImpl implements IJudgeService {
 
     private final SubmissionServiceFeignClient submissionService;
     private final ProblemServiceFeignClient problemServiceFeignClient;
-    private final ISandboxService sandboxService;
+    private final JudgeStrategyFactory judgeStrategyFactory;
 
     @Override
     public void judge(Long submissionId) {
@@ -66,11 +62,16 @@ public class JudgeServiceImpl implements IJudgeService {
             }
             List<TestCase> testCases = testCasesResponse.getData();
 
-            // 构建沙箱执行请求
-            SandboxExecuteRequest request = buildSandboxRequest(submission, problem, testCases);
+            // 构建判题上下文
+            JudgeContext judgeContext = JudgeContext.builder()
+                    .submission(submission)
+                    .problem(problem)
+                    .testCases(testCases)
+                    .build();
 
-            // 发送到沙箱执行
-            JudgeResult result = sandboxService.executeInSandbox(request);
+            // 获取判题策略并执行
+            JudgeStrategy judgeStrategy = judgeStrategyFactory.getStrategy(submission.getLanguage());
+            JudgeResult result = judgeStrategy.execute(judgeContext);
 
             // 更新判题结果
             updateJudgeResult(submissionId, result);
@@ -79,58 +80,6 @@ public class JudgeServiceImpl implements IJudgeService {
             log.error("判题过程中发生异常: submissionId={}", submissionId, e);
             updateSubmissionError(submissionId, "系统错误: " + e.getMessage());
         }
-    }
-
-    @Override
-    public void judgeAsync(SubmitCodeRequest request, Long submissionId) {
-        judgeAsync(request, submissionId, null);
-    }
-
-    /**
-     * 异步判题方法（带权限上下文）
-     * @param request 提交代码请求
-     * @param submissionId 提交ID
-     * @param authContext 权限上下文
-     */
-    public void judgeAsync(SubmitCodeRequest request, Long submissionId, Map<String, String> authContext) {
-        try {
-            // 设置异步权限上下文
-            if (authContext != null) {
-                AsyncContextUtil.setAsyncAuthContext(authContext);
-                log.debug("设置异步判题权限上下文: submissionId={}, authContext={}", submissionId, authContext);
-            }
-            
-            // 执行判题逻辑
-            judge(submissionId);
-            
-        } finally {
-            // 清理异步权限上下文
-            AsyncContextUtil.clearAsyncAuthContext();
-            log.debug("清理异步判题权限上下文: submissionId={}", submissionId);
-        }
-    }
-
-    private SandboxExecuteRequest buildSandboxRequest(Submission submission, Problem problem,
-            List<TestCase> testCases) {
-        SandboxExecuteRequest request = new SandboxExecuteRequest();
-        request.setSourceCode(submission.getSourceCode());
-        request.setLanguage(submission.getLanguage());
-        request.setTimeLimit(problem.getTimeLimit());
-        request.setMemoryLimit(problem.getMemoryLimit());
-        request.setSubmissionId(submission.getId());
-
-        // 提取输入和期望输出
-        List<String> inputs = testCases.stream()
-                .map(TestCase::getInputFile)
-                .collect(Collectors.toList());
-        List<String> expectedOutputs = testCases.stream()
-                .map(TestCase::getOutputFile)
-                .collect(Collectors.toList());
-
-        request.setInputs(inputs);
-        request.setExpectedOutputs(expectedOutputs);
-
-        return request;
     }
 
     private void updateSubmissionError(Long submissionId, String errorMessage) {

@@ -1,4 +1,4 @@
-'''<template>
+<template>
   <div class="problem-management">
     <!-- 页面头部 -->
     <div class="page-header">
@@ -83,8 +83,15 @@
                       </div>
                       <el-table :data="props.row.testCases" size="small" stripe>
                         <el-table-column prop="id" label="ID" width="80" align="center" />
-                        <el-table-column prop="inputFile" label="输入" />
-                        <el-table-column prop="outputFile" label="输出" />
+                        <el-table-column prop="inputContent" label="输入预览" show-overflow-tooltip />
+                        <el-table-column prop="outputContent" label="输出预览" show-overflow-tooltip />
+                        <el-table-column prop="isSample" label="是否样例" width="100" align="center">
+                          <template #default="scope">
+                            <el-tag :type="scope.row.isSample ? 'success' : 'info'" size="small">
+                              {{ scope.row.isSample ? '是' : '否' }}
+                            </el-tag>
+                          </template>
+                        </el-table-column>
                         <el-table-column prop="score" label="分数" width="100" align="center" />
                         <el-table-column label="操作" width="150" align="center">
                           <template #default="scope">
@@ -377,17 +384,17 @@
         ref="testCaseFormRef"
         label-width="80px"
       >
-        <el-form-item label="输入" prop="inputFile">
+        <el-form-item label="输入" prop="inputContent">
           <el-input
-            v-model="currentTestCase.inputFile"
+            v-model="currentTestCase.inputContent"
             type="textarea"
             :rows="5"
             placeholder="请输入测试输入"
           />
         </el-form-item>
-        <el-form-item label="输出" prop="outputFile">
+        <el-form-item label="输出" prop="outputContent">
           <el-input
-            v-model="currentTestCase.outputFile"
+            v-model="currentTestCase.outputContent"
             type="textarea"
             :rows="5"
             placeholder="请输入期望输出"
@@ -395,6 +402,9 @@
         </el-form-item>
         <el-form-item label="分数" prop="score">
           <el-input-number v-model="currentTestCase.score" :min="0" />
+        </el-form-item>
+        <el-form-item label="是否样例" prop="isSample">
+          <el-switch v-model="currentTestCase.isSample" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -425,7 +435,7 @@ import {
   deleteProblem,
   getProblem,
 } from '@/api/problem'
-import { createTestCase, updateTestCase, deleteTestCase } from '@/api/testCase'
+import { createTestCase, updateTestCase, deleteTestCase, getTestCaseContent } from '@/api/testCase'
 import type { Problem } from '@/types/problem'
 import type { TestCase } from '@/types/testCase'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
@@ -462,8 +472,8 @@ const problemRules: FormRules = {
 }
 
 const testCaseRules: FormRules = {
-  inputFile: [{ required: true, message: '请输入测试输入', trigger: 'blur' }],
-  outputFile: [{ required: true, message: '请输入期望输出', trigger: 'blur' }],
+  inputContent: [{ required: true, message: '请输入测试输入', trigger: 'blur' }],
+  outputContent: [{ required: true, message: '请输入期望输出', trigger: 'blur' }],
   score: [{ required: true, message: '请输入分数', trigger: 'blur' }],
 }
 
@@ -611,11 +621,19 @@ const openAddTestCaseDialog = (problem: Problem) => {
   addEditTestCaseDialogVisible.value = true
 }
 
-const openEditTestCaseDialog = (testCase: TestCase) => {
+const openEditTestCaseDialog = async (testCase: TestCase) => {
   isEditTestCase.value = true
   testCaseDialogTitle.value = '编辑测试用例'
   currentTestCase.value = { ...testCase }
   addEditTestCaseDialogVisible.value = true
+
+  try {
+    const content = await getTestCaseContent(testCase.id)
+    currentTestCase.value.inputContent = content.inputContent
+    currentTestCase.value.outputContent = content.outputContent
+  } catch (error) {
+    ElMessage.error('获取测试用例内容失败')
+  }
 }
 
 const saveTestCase = async () => {
@@ -624,11 +642,17 @@ const saveTestCase = async () => {
     if (valid) {
       savingTestCase.value = true
       try {
+        const payload = {
+          ...currentTestCase.value,
+          inputContent: currentTestCase.value.inputContent || '',
+          outputContent: currentTestCase.value.outputContent || '',
+        }
+
         if (isEditTestCase.value) {
-          await updateTestCase(currentTestCase.value.id!, currentTestCase.value as TestCase)
+          await updateTestCase(currentTestCase.value.id!, payload as TestCase)
           ElMessage.success('测试用例更新成功。')
         } else {
-          await createTestCase(currentTestCase.value as TestCase)
+          await createTestCase(payload as TestCase)
           ElMessage.success('测试用例创建成功。')
         }
         addEditTestCaseDialogVisible.value = false

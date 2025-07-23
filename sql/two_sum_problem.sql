@@ -1,4 +1,7 @@
--- 插入"两数之和"题目数据
+-- 两数之和题目数据
+-- 基于 spring_oj.sql 结构创建的完整题目数据
+
+-- 插入两数之和题目
 INSERT INTO `problems` (
     `title`, 
     `description`, 
@@ -34,78 +37,117 @@ INSERT INTO `problems` (
 
 **示例 3：**
 输入：nums = [3,3], target = 6
-输出：[0,1]
-
-**约束条件：**
-- 2 <= nums.length <= 10^4
-- -10^9 <= nums[i] <= 10^9
-- -10^9 <= target <= 10^9
-- 只会存在一个有效答案',
-    
-    '第一行包含一个整数 n，表示数组的长度。
-第二行包含 n 个整数，表示数组 nums 的元素。
-第三行包含一个整数 target，表示目标值。',
-    
-    '输出两个整数，表示两个数的下标（从0开始），用空格分隔。如果有多个答案，输出任意一个即可。',
-    
-    '4
-2 7 11 15
-9',
-    
+输出：[0,1]',
+    '第一行包含两个整数 n 和 target，分别表示数组长度和目标值。
+第二行包含 n 个整数，表示数组 nums 的元素。',
+    '输出一行，包含两个整数，表示和为 target 的两个数的下标（下标从0开始），用空格分隔。如果下标 i < j，则先输出 i 再输出 j。',
+    '4 9
+2 7 11 15',
     '0 1',
-    
-    '可以使用哈希表来优化时间复杂度。遍历数组时，对于每个元素，检查 target - 当前元素 是否已经在哈希表中。',
-    
-    1000,  -- 时间限制1秒
-    128,   -- 内存限制128MB
-    'Easy', -- 简单难度
-    '["数组", "哈希表"]', -- 标签
-    0,     -- 初始通过数为0
-    0,     -- 初始提交数为0
-    1,     -- 创建者ID（假设为1）
-    1      -- 可见
+    '可以使用哈希表来优化时间复杂度到 O(n)。
+遍历数组时，对于每个元素 nums[i]，检查 target - nums[i] 是否在哈希表中。',
+    2000,
+    128,
+    'Easy',
+    '["数组", "哈希表", "双指针"]',
+    0,
+    0,
+    1,
+    1
 );
 
--- 获取刚插入的题目ID（假设为1，实际应该使用LAST_INSERT_ID()）
+-- 获取刚插入的题目ID（假设为1，实际使用时可能需要调整）
 SET @problem_id = LAST_INSERT_ID();
 
 -- 插入测试用例
--- 测试用例1：示例1
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '4\n2 7 11 15\n9', '0 1', 10, 1);
+-- 测试用例1：基本示例
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input1.txt', 'output1.txt', 10, 1);
 
--- 测试用例2：示例2
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '3\n3 2 4\n6', '1 2', 10, 1);
+-- 测试用例2：另一个基本示例
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input2.txt', 'output2.txt', 10, 1);
 
--- 测试用例3：示例3
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '2\n3 3\n6', '0 1', 10, 1);
+-- 测试用例3：相同元素
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input3.txt', 'output3.txt', 15, 0);
 
--- 测试用例4：边界情况 - 最小数组
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '2\n1 2\n3', '0 1', 10, 0);
+-- 测试用例4：大数组
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input4.txt', 'output4.txt', 15, 0);
 
--- 测试用例5：负数情况
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '4\n-1 -2 -3 -4\n-6', '2 3', 10, 0);
+-- 测试用例5：负数
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input5.txt', 'output5.txt', 15, 0);
 
--- 测试用例6：包含0的情况
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '3\n0 4 3\n0', '0 1', 10, 0);
+-- 测试用例6：边界情况
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input6.txt', 'output6.txt', 15, 0);
 
--- 测试用例7：较大数组
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '6\n1 3 5 7 9 11\n16', '3 4', 10, 0);
+-- 测试用例7：最小数组
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input7.txt', 'output7.txt', 10, 0);
 
--- 测试用例8：目标值为0
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '4\n-3 4 3 90\n0', '0 2', 10, 0);
+-- 测试用例8：零和负数混合
+INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES
+(@problem_id, 'input8.txt', 'output8.txt', 10, 0);
 
--- 测试用例9：相同元素
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '4\n5 5 5 5\n10', '0 1', 10, 0);
+/*
+测试用例文件内容说明：
 
--- 测试用例10：大数值
-INSERT INTO `test_cases` (`problem_id`, `input_file`, `output_file`, `score`, `is_sample`) VALUES 
-(@problem_id, '3\n1000000000 -1000000000 0\n0', '0 1', 10, 0);
+input1.txt:
+4 9
+2 7 11 15
+
+output1.txt:
+0 1
+
+input2.txt:
+3 6
+3 2 4
+
+output2.txt:
+1 2
+
+input3.txt:
+2 6
+3 3
+
+output3.txt:
+0 1
+
+input4.txt:
+6 10
+1 5 3 7 9 2
+
+output4.txt:
+1 3
+
+input5.txt:
+4 0
+-3 4 3 90
+
+output5.txt:
+0 2
+
+input6.txt:
+5 8
+2 5 5 11 1
+
+output6.txt:
+1 2
+
+input7.txt:
+2 3
+1 2
+
+output7.txt:
+0 1
+
+input8.txt:
+4 -1
+-1 0 1 2
+
+output8.txt:
+0 1
+*/

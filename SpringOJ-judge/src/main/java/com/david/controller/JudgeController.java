@@ -4,14 +4,10 @@ import com.david.dto.SubmitCodeRequest;
 import com.david.judge.Submission;
 import com.david.interfaces.SubmissionServiceFeignClient;
 import com.david.service.IJudgeService;
-import com.david.service.impl.JudgeServiceImpl;
-import com.david.utils.AsyncContextUtil;
 import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 /**
  * 判题控制器
@@ -42,17 +38,10 @@ public class JudgeController {
             }
             Long submissionId = submissionResponse.getData().getId();
 
-            // 捕获当前请求的权限信息
-            Map<String, String> authContext = AsyncContextUtil.captureAuthContext();
+            // 同步执行判题
+            judgeService.judge(submissionId);
 
-            // 异步执行判题（传递权限信息）
-            if (judgeService instanceof JudgeServiceImpl) {
-                ((JudgeServiceImpl) judgeService).judgeAsync(request, submissionId, authContext);
-            } else {
-                judgeService.judgeAsync(request, submissionId);
-            }
-
-            return ResponseResult.success("代码提交成功，正在判题中...", submissionId);
+            return ResponseResult.success("代码提交成功", submissionId);
         } catch (Exception e) {
             return ResponseResult.fail(500, "提交失败: " + e.getMessage());
         }

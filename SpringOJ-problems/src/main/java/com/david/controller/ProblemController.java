@@ -8,11 +8,14 @@ import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * <p>
- *  题目前端控制器
+ * 题目前端控制器
  * </p>
  *
  * @author david
@@ -35,7 +38,7 @@ public class ProblemController {
     public ResponseResult<Problem> getProblemById(@PathVariable Long id) {
         Problem problem = problemService.getById(id);
         if (problem != null) {
-                        List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, id).list();
+            List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, id).list();
             problem.setTestCases(testCases);
         }
         return ResponseResult.success("成功获取题目", problem);
@@ -79,33 +82,58 @@ public class ProblemController {
      * 创建测试用例
      */
     @PostMapping("/testcases")
-    public ResponseResult<Void> createTestCase(@RequestBody TestCase testCase) {
-                if (testCaseService.save(testCase)) {
-            return ResponseResult.success("测试用例创建成功");
-        }
-        return ResponseResult.fail(500, "测试用例创建失败");
+    public ResponseResult<TestCase> createTestCase(@RequestBody Map<String, Object> payload) throws IOException {
+        TestCase testCase = new TestCase();
+        testCase.setProblemId(Long.valueOf(payload.get("problemId").toString()));
+        
+        // Generate unique filenames for the test case
+        String fileIdentifier = UUID.randomUUID().toString();
+        testCase.setInputFile("case_" + fileIdentifier + "_input.txt");
+        testCase.setOutputFile("case_" + fileIdentifier + "_output.txt");
+
+        testCase.setScore(Integer.valueOf(payload.get("score").toString()));
+        String inputContent = payload.get("inputContent").toString();
+        String outputContent = payload.get("outputContent").toString();
+        
+        TestCase createdTestCase = testCaseService.createTestCaseWithFiles(testCase, inputContent, outputContent);
+        return ResponseResult.success("测试用例创建成功", createdTestCase);
     }
 
     /**
      * 更新测试用例
      */
     @PutMapping("/testcases/{id}")
-    public ResponseResult<Void> updateTestCase(@PathVariable Long id, @RequestBody TestCase testCase) {
-        testCase.setId(id);
-        if (testCaseService.updateById(testCase)) {
-            return ResponseResult.success("测试用例更新成功");
+    public ResponseResult<TestCase> updateTestCase(@PathVariable Long id, @RequestBody Map<String, Object> payload) throws IOException {
+        TestCase testCase = testCaseService.getById(id);
+        if (testCase == null) {
+            return ResponseResult.fail(404, "测试用例不存在");
         }
-        return ResponseResult.fail(500, "测试用例更新失败");
+        
+        // Only update score and content, keep existing filenames
+        testCase.setScore(Integer.valueOf(payload.get("score").toString()));
+        String inputContent = payload.get("inputContent").toString();
+        String outputContent = payload.get("outputContent").toString();
+        
+        TestCase updatedTestCase = testCaseService.updateTestCaseWithFiles(testCase, inputContent, outputContent);
+        return ResponseResult.success("测试用例更新成功", updatedTestCase);
     }
 
     /**
      * 删除测试用例
      */
     @DeleteMapping("/testcases/{id}")
-    public ResponseResult<Void> deleteTestCase(@PathVariable Long id) {
-        if (testCaseService.removeById(id)) {
+    public ResponseResult<Void> deleteTestCase(@PathVariable Long id) throws IOException {
+        if (testCaseService.deleteTestCaseWithFiles(id)) {
             return ResponseResult.success("测试用例删除成功");
         }
         return ResponseResult.fail(500, "测试用例删除失败");
+    }
+
+    /**
+     * 获取测试用例内容
+     */
+    @GetMapping("/testcases/{id}/content")
+    public ResponseResult<ITestCaseService.TestCaseContent> getTestCaseContent(@PathVariable Long id) throws IOException {
+        return ResponseResult.success("成功获取测试用例内容", testCaseService.getTestCaseContent(id));
     }
 }

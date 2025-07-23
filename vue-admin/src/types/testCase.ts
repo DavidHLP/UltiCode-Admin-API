@@ -6,4 +6,11 @@ export interface TestCase {
   score: number;
   isSample: boolean;
   createdAt: string;
+  inputContent?: string;
+  outputContent?: string;
+}
+
+export interface TestCaseContent {
+  inputContent: string;
+  outputContent: string;
 }

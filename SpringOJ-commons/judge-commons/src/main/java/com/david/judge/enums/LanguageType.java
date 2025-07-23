@@ -10,9 +10,7 @@ import lombok.Getter;
 public enum LanguageType {
     JAVA("Java", ".java", "java"),
     CPP("C++", ".cpp", "cpp"),
-    C("C", ".c", "c"),
-    PYTHON2("Python 2", ".py", "python2"),
-    PYTHON3("Python 3", ".py", "python3"),
+    PYTHON("Python", ".py", "python"),
     JAVASCRIPT("JavaScript", ".js", "javascript"),
     GOLANG("Go", ".go", "go"),
     RUST("Rust", ".rs", "rust");

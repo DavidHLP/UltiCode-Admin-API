@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * <p>
- *  提交记录前端控制器
+ * 提交记录前端控制器
  * </p>
  *
  * @author david
