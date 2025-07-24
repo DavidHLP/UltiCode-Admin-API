@@ -12,7 +12,8 @@ export interface Problem {
   timeLimit: number;
   memoryLimit: number;
   difficulty: 'Easy' | 'Medium' | 'Hard';
-  tags: string;
+  category: string;
+  tags: string[];
   solvedCount: number;
   submissionCount: number;
   createdBy: number;
@@ -20,4 +21,9 @@ export interface Problem {
   createdAt: string;
   updatedAt: string;
   testCases?: TestCase[];
+}
+
+export interface Category {
+  category: string;
+  description: string;
 }

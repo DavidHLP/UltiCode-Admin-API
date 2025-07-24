@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { Problem } from '@/types/problem'
+import type { Problem, Category } from '@/types/problem'
 
 export function fetchProblems(): Promise<Problem[]> {
   return request({
@@ -35,5 +35,12 @@ export function deleteProblem(id: number): Promise<void> {
   return request({
     url: `/problems/api/${id}`,
     method: 'delete',
+  })
+}
+
+export function fetchCategories(): Promise<Category[]> {
+  return request({
+    url: '/problems/api/categories',
+    method: 'get',
   })
 }

@@ -46,6 +46,20 @@
             <el-option label="中等" value="Medium" />
             <el-option label="困难" value="Hard" />
           </el-select>
+          <el-select
+            v-model="selectedCategory"
+            placeholder="筛选类别"
+            class="category-filter"
+            clearable
+            @change="handleCategoryFilter"
+          >
+            <el-option
+              v-for="category in categories"
+              :key="category.category"
+              :label="category.description"
+              :value="category.category"
+            />
+          </el-select>
           <el-button :icon="Refresh" @click="refreshData" class="refresh-btn"> 刷新 </el-button>
         </div>
       </el-card>
@@ -167,11 +181,19 @@
             </template>
           </el-table-column>
 
+          <el-table-column prop="category" label="类别" width="120" align="center">
+            <template #default="scope">
+              <el-tag type="info" size="small">
+                {{ getCategoryDescription(scope.row.category) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
           <el-table-column label="标签" min-width="150">
             <template #default="scope">
               <div class="tags-cell">
                 <el-tag
-                  v-for="tag in parseTags(scope.row.tags)"
+                  v-for="tag in scope.row.tags"
                   :key="tag"
                   size="small"
                   class="problem-tag"
@@ -277,6 +299,20 @@
                 </el-form-item>
               </el-col>
             </el-row>
+            <el-form-item label="类别" prop="category">
+              <el-select
+                v-model="currentProblem.category"
+                placeholder="请选择题目类别"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="category in categories"
+                  :key="category.category"
+                  :label="category.description"
+                  :value="category.category"
+                />
+              </el-select>
+            </el-form-item>
             <el-form-item label="标签" prop="tags">
               <el-select
                 v-model="currentProblemTags"
@@ -434,9 +470,10 @@ import {
   updateProblem,
   deleteProblem,
   getProblem,
+  fetchCategories,
 } from '@/api/problem'
 import { createTestCase, updateTestCase, deleteTestCase, getTestCaseContent } from '@/api/testCase'
-import type { Problem } from '@/types/problem'
+import type { Problem, Category } from '@/types/problem'
 import type { TestCase } from '@/types/testCase'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Edit, Delete, Search, Refresh, Memo } from '@element-plus/icons-vue'
@@ -446,6 +483,8 @@ const loading = ref(false)
 const saving = ref(false)
 const searchQuery = ref('')
 const selectedDifficulty = ref<string | undefined>()
+const selectedCategory = ref<string | undefined>()
+const categories = ref<Category[]>([])
 
 const dialogVisible = ref(false)
 const isEdit = ref(false)
@@ -477,10 +516,7 @@ const testCaseRules: FormRules = {
   score: [{ required: true, message: '请输入分数', trigger: 'blur' }],
 }
 
-const parseTags = (tagsStr: string | null | undefined): string[] => {
-  if (!tagsStr) return []
-  return tagsStr.split(/[,，]/).filter((tag) => tag.trim() !== '')
-}
+
 
 const filteredProblems = computed(() => {
   let result = problems.value
@@ -490,12 +526,16 @@ const filteredProblems = computed(() => {
     result = result.filter(
       (problem) =>
         problem.title.toLowerCase().includes(query) ||
-        (problem.tags && problem.tags.toLowerCase().includes(query)),
+        (problem.tags && problem.tags.some((tag) => tag.toLowerCase().includes(query)))
     )
   }
 
   if (selectedDifficulty.value) {
     result = result.filter((problem) => problem.difficulty === selectedDifficulty.value)
+  }
+
+  if (selectedCategory.value) {
+    result = result.filter((problem) => problem.category === selectedCategory.value)
   }
 
   return result
@@ -514,9 +554,16 @@ const getDifficultyTagType = (difficulty: string) => {
   }
 }
 
+const getCategoryDescription = (category: string) => {
+  const foundCategory = categories.value.find((cat) => cat.category === category)
+  return foundCategory ? foundCategory.description : category
+}
+
 const handleSearch = () => {}
 
 const handleDifficultyFilter = () => {}
+
+const handleCategoryFilter = () => {}
 
 const refreshData = async () => {
   loading.value = true
@@ -542,10 +589,25 @@ const getProblems = async () => {
   }
 }
 
+const getCategories = async () => {
+  try {
+    categories.value = await fetchCategories()
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    ElMessage.error('获取题目类别失败')
+  }
+}
+
 const openAddProblemDialog = () => {
   isEdit.value = false
   dialogTitle.value = '添加题目'
-  currentProblem.value = { isVisible: true, timeLimit: 1000, memoryLimit: 128, difficulty: 'Easy' }
+  currentProblem.value = {
+    isVisible: true,
+    timeLimit: 1000,
+    memoryLimit: 128,
+    difficulty: 'Easy',
+    category: 'All Problems',
+  }
   currentProblemTags.value = []
   activeDialogTab.value = 'basic'
   dialogVisible.value = true
@@ -555,7 +617,7 @@ const openEditProblemDialog = (problem: Problem) => {
   isEdit.value = true
   dialogTitle.value = '编辑题目'
   currentProblem.value = { ...problem }
-  currentProblemTags.value = parseTags(problem.tags)
+  currentProblemTags.value = problem.tags ? [...problem.tags] : []
   activeDialogTab.value = 'basic'
   dialogVisible.value = true
 }
@@ -566,7 +628,7 @@ const saveProblem = async () => {
     if (valid) {
       saving.value = true
       try {
-        const problemToSave = { ...currentProblem.value, tags: currentProblemTags.value.join(',') }
+        const problemToSave = { ...currentProblem.value, tags: currentProblemTags.value }
 
         if (isEdit.value) {
           await updateProblem(problemToSave.id!, problemToSave as Problem)
@@ -688,6 +750,7 @@ const handleDeleteTestCase = async (problem: Problem, testCaseId: number) => {
 
 onMounted(() => {
   getProblems()
+  getCategories()
 })
 </script>
 

@@ -1,7 +1,9 @@
 package com.david.controller;
 
+import com.david.dto.CategoryDto;
 import com.david.judge.Problem;
 import com.david.judge.TestCase;
+import com.david.judge.enums.CategoryType;
 import com.david.service.IProblemService;
 import com.david.service.ITestCaseService;
 import com.david.utils.ResponseResult;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -85,7 +88,7 @@ public class ProblemController {
     public ResponseResult<TestCase> createTestCase(@RequestBody Map<String, Object> payload) throws IOException {
         TestCase testCase = new TestCase();
         testCase.setProblemId(Long.valueOf(payload.get("problemId").toString()));
-        
+
         // Generate unique filenames for the test case
         String fileIdentifier = UUID.randomUUID().toString();
         testCase.setInputFile("case_" + fileIdentifier + "_input.txt");
@@ -94,7 +97,7 @@ public class ProblemController {
         testCase.setScore(Integer.valueOf(payload.get("score").toString()));
         String inputContent = payload.get("inputContent").toString();
         String outputContent = payload.get("outputContent").toString();
-        
+
         TestCase createdTestCase = testCaseService.createTestCaseWithFiles(testCase, inputContent, outputContent);
         return ResponseResult.success("测试用例创建成功", createdTestCase);
     }
@@ -108,12 +111,12 @@ public class ProblemController {
         if (testCase == null) {
             return ResponseResult.fail(404, "测试用例不存在");
         }
-        
+
         // Only update score and content, keep existing filenames
         testCase.setScore(Integer.valueOf(payload.get("score").toString()));
         String inputContent = payload.get("inputContent").toString();
         String outputContent = payload.get("outputContent").toString();
-        
+
         TestCase updatedTestCase = testCaseService.updateTestCaseWithFiles(testCase, inputContent, outputContent);
         return ResponseResult.success("测试用例更新成功", updatedTestCase);
     }
@@ -135,5 +138,17 @@ public class ProblemController {
     @GetMapping("/testcases/{id}/content")
     public ResponseResult<ITestCaseService.TestCaseContent> getTestCaseContent(@PathVariable Long id) throws IOException {
         return ResponseResult.success("成功获取测试用例内容", testCaseService.getTestCaseContent(id));
+    }
+
+    /**
+     * 获取所有题目类别
+     */
+    @GetMapping("/categories")
+    public ResponseResult<List<CategoryDto>> getAllCategories() {
+        List<CategoryDto> categories = new ArrayList<>();
+        for (CategoryType type : CategoryType.values()) {
+            categories.add(CategoryDto.builder().category(type.getCategory()).description(type.getDescription()).build());
+        }
+        return ResponseResult.success("成功获取所有题目类别", categories);
     }
 }

@@ -33,6 +33,7 @@ CREATE TABLE `problems` (
   `time_limit` int DEFAULT '1000' COMMENT '时间限制，单位为毫秒，默认为1000ms',
   `memory_limit` int DEFAULT '128' COMMENT '内存限制，单位为MB，默认为128MB',
   `difficulty` enum('Easy','Medium','Hard') COLLATE utf8mb4_general_ci DEFAULT 'Easy' COMMENT '题目难度，枚举类型，默认为''Easy''',
+  `category` enum('Algorithms','Database','Shell','Multi-threading','JavaScript','Pandas') DEFAULT 'Algorithms' COMMENT '题目所属的大分类标签',
   `tags` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '题目标签，建议使用JSON格式的字符串存储，例如：''["数组", "动态规划"]''',
   `solved_count` int DEFAULT '0' COMMENT '成功解答的次数，默认为0',
   `submission_count` int DEFAULT '0' COMMENT '总提交次数，默认为0',

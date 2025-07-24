@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.david.judge.enums.CategoryType;
 import com.david.judge.enums.ProblemDifficulty;
 import lombok.Data;
 
@@ -15,7 +17,7 @@ import java.util.List;
  * 题目实体类
  */
 @Data
-@TableName("problems")
+@TableName(value = "problems", autoResultMap = true)
 public class Problem implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -77,9 +79,15 @@ public class Problem implements Serializable {
     private ProblemDifficulty difficulty;
 
     /**
-     * 题目标签，建议使用JSON格式的字符串存储
+     * 题目类别，枚举类型，默认为'Algorithms'
      */
-    private String tags;
+    private CategoryType category;
+
+    /**
+     * 题目标签，以JSON数组格式存储
+     */
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> tags;
 
     /**
      * 成功解答的次数，默认为0

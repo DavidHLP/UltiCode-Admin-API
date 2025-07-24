@@ -1,59 +1,48 @@
 <template>
-  <div class="right-sidebar">
-    <!-- 日历组件 -->
-    <div class="calendar-widget">
-      <div class="widget-title">学习日历</div>
-      <el-calendar v-model="calendarValue" class="custom-calendar">
-        <template #date-cell="{ data }">
-          <div class="calendar-day" :class="getCalendarDayClass(data.day)">
-            {{ data.day.split('-').pop() }}
+  <el-affix :offset="70">
+    <div class="right-sidebar">
+      <!-- 日历组件 -->
+      <div class="calendar-widget">
+        <div class="widget-title">学习日历</div>
+        <div class="date-header">
+          <div class="current-date">
+            {{ formatSelectedDate() }}
           </div>
-        </template>
-      </el-calendar>
-    </div>
+          <el-icon class="refresh-icon" @click="resetToToday"><Refresh /></el-icon>
+        </div>
+        <el-config-provider :locale="zhCn">
+          <el-calendar v-model="calendarValue" class="custom-calendar">
+            <template #date-cell="{ data }">
+              <div class="calendar-day" :class="getCalendarDayClass(data.day)">
+                {{ data.day.split('-').pop() }}
+              </div>
+            </template>
+          </el-calendar>
+        </el-config-provider>
+      </div>
 
-    <!-- 学习统计 -->
-    <div class="stats-widget">
-      <div class="widget-title">学习统计</div>
-      <div class="stats-content">
-        <div class="stat-item">
-          <div class="stat-label">本周完成</div>
-          <div class="stat-value">{{ weeklyCompleted }}</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">本月完成</div>
-          <div class="stat-value">{{ monthlyCompleted }}</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-label">总计完成</div>
-          <div class="stat-value">{{ totalCompleted }}</div>
+      <!-- 推荐题目 -->
+      <div class="recommend-widget">
+        <div class="widget-title">推荐题目</div>
+        <div class="recommend-list">
+          <div v-for="item in recommendedQuestions" :key="item.id" class="recommend-item"
+            @click="goToQuestion(item.id)">
+            <div class="recommend-title">{{ item.title }}</div>
+            <el-tag :type="getDifficultyType(item.difficulty)" size="small">
+              {{ item.difficulty }}
+            </el-tag>
+          </div>
         </div>
       </div>
     </div>
-
-    <!-- 推荐题目 -->
-    <div class="recommend-widget">
-      <div class="widget-title">推荐题目</div>
-      <div class="recommend-list">
-        <div
-          v-for="item in recommendedQuestions"
-          :key="item.id"
-          class="recommend-item"
-          @click="goToQuestion(item.id)"
-        >
-          <div class="recommend-title">{{ item.title }}</div>
-          <el-tag :type="getDifficultyType(item.difficulty)" size="small">
-            {{ item.difficulty }}
-          </el-tag>
-        </div>
-      </div>
-    </div>
-  </div>
+  </el-affix>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import { Refresh } from '@element-plus/icons-vue'
 
 // 定义接口
 interface RecommendedQuestion {
@@ -111,6 +100,46 @@ const getCalendarDayClass = (day: string) => {
 const goToQuestion = (questionId: number) => {
   router.push(`/question/${questionId}`)
 }
+
+const selectDate = (type: 'prev-month' | 'today' | 'next-month') => {
+  const date = new Date(calendarValue.value)
+
+  if (type === 'prev-month') {
+    date.setMonth(date.getMonth() - 1)
+  } else if (type === 'next-month') {
+    date.setMonth(date.getMonth() + 1)
+  } else {
+    date.setTime(Date.now())
+  }
+
+  calendarValue.value = date
+}
+
+const formatCurrentDate = () => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth() + 1
+  const day = now.getDate()
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+  const weekDay = weekDays[now.getDay()]
+
+  return `${year}年${month}月${day}日 星期${weekDay}`
+}
+
+const formatSelectedDate = () => {
+  const selectedDate = calendarValue.value
+  const year = selectedDate.getFullYear()
+  const month = selectedDate.getMonth() + 1
+  const day = selectedDate.getDate()
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+  const weekDay = weekDays[selectedDate.getDay()]
+
+  return `${year}年${month}月${day}日 星期${weekDay}`
+}
+
+const resetToToday = () => {
+  calendarValue.value = new Date()
+}
 </script>
 
 <style scoped>
@@ -120,6 +149,41 @@ const goToQuestion = (questionId: number) => {
   gap: 20px;
 }
 
+/* 日历头部样式 */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 0 12px 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.calendar-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* 按钮组样式 */
+:deep(.el-button-group) {
+  display: flex;
+  gap: 2px;
+}
+
+:deep(.el-button-group .el-button) {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+:deep(.el-button-group .el-button:hover) {
+  color: #409eff;
+  border-color: #409eff;
+  background-color: #f0f7ff;
+}
+
 /* 小部件通用样式 */
 .calendar-widget,
 .stats-widget,
@@ -127,15 +191,15 @@ const goToQuestion = (questionId: number) => {
   background: #fff;
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   border: 1px solid #f0f0f0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
 }
 
 .calendar-widget:hover,
 .stats-widget:hover,
 .recommend-widget:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
 }
 
@@ -145,7 +209,7 @@ const goToQuestion = (questionId: number) => {
   color: #1f2937;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px dashed #f0f0f0;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -153,28 +217,85 @@ const goToQuestion = (questionId: number) => {
 
 .widget-title::before {
   content: '';
-  display: inline-block;
   width: 3px;
   height: 16px;
   background: linear-gradient(135deg, #409eff, #67c23a);
   border-radius: 2px;
 }
 
-/* 日历小部件 */
+/* 日期头部容器 */
+.date-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* 当前日期样式 */
+.current-date {
+  font-size: 14px;
+  color: #409eff;
+  font-weight: 600;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #f0f7ff, #e6f7ff);
+  border-radius: 8px;
+  border: 1px solid #b3d8ff;
+  flex: 1;
+  text-align: center;
+  margin-right: 12px;
+}
+
+/* 刷新图标样式 */
+.refresh-icon {
+  font-size: 16px;
+  color: #409eff;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  background: #f0f7ff;
+  border: 1px solid #b3d8ff;
+  flex-shrink: 0;
+}
+
+.refresh-icon:hover {
+  color: #fff;
+  background: #409eff;
+  border-color: #409eff;
+  transform: rotate(180deg);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
+}
+
+.refresh-icon:active {
+  transform: rotate(180deg) scale(0.95);
+}
+
+/* 日历样式 */
 .custom-calendar {
   width: 100%;
 }
 
-.custom-calendar :deep(.el-calendar__header) {
-  padding: 8px 0;
-  border-bottom: 1px solid #e4e7ed;
+:deep(.el-calendar__header) {
+  display: none;
 }
 
-.custom-calendar :deep(.el-calendar__body) {
-  padding: 8px 0;
+:deep(.el-calendar__body) {
+  padding: 0;
 }
 
-.custom-calendar :deep(.el-calendar-table .el-calendar-day) {
+:deep(.el-calendar-table) {
+  width: 100%;
+}
+
+:deep(.el-calendar-table thead th) {
+  padding: 8px 4px;
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 12px;
+  text-align: center;
+}
+
+:deep(.el-calendar-table .el-calendar-day) {
   height: 32px;
   padding: 0;
 }
@@ -187,78 +308,56 @@ const goToQuestion = (questionId: number) => {
   justify-content: center;
   font-size: 12px;
   border-radius: 6px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .calendar-day:hover {
   background: #f0f7ff;
-  transform: scale(1.1);
+  color: #409eff;
 }
 
 .calendar-day.today {
-  background: linear-gradient(135deg, #409eff, #67c23a);
+  background: #409eff;
   color: #fff;
-  font-weight: 700;
-  box-shadow: 0 3px 12px rgba(64, 158, 255, 0.4);
-  transform: scale(1.05);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 
 .calendar-day.active-day {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
+  background: #67c23a;
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.3);
 }
 
 .calendar-day.partial-day {
-  background: linear-gradient(135deg, #e6f7ff, #f0f7ff);
+  background: #e6f7ff;
   color: #409eff;
-  font-weight: 600;
-  border: 1px solid #b3d8ff;
+  font-weight: 500;
 }
 
 /* 统计小部件 */
 .stats-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .stat-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
+  padding: 12px 16px;
   background: #fafbfc;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid #f0f0f0;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 3px;
-  height: 100%;
-  background: linear-gradient(135deg, #409eff, #67c23a);
-  opacity: 0;
-  transition: opacity 0.3s;
+  transition: all 0.2s ease;
 }
 
 .stat-item:hover {
   background: #f0f7ff;
-  border-color: #d4edda;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
-}
-
-.stat-item:hover::before {
-  opacity: 1;
+  border-color: #409eff;
+  transform: translateY(-1px);
 }
 
 .stat-label {
@@ -268,56 +367,34 @@ const goToQuestion = (questionId: number) => {
 }
 
 .stat-value {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  color: #1f2937;
-  background: linear-gradient(135deg, #409eff, #67c23a);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #409eff;
 }
 
 /* 推荐题目小部件 */
 .recommend-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .recommend-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 18px;
+  padding: 12px 16px;
   background: #fafbfc;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid #f0f0f0;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.recommend-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 100%;
-  background: linear-gradient(135deg, #409eff, #67c23a);
-  transition: width 0.3s;
+  transition: all 0.2s ease;
 }
 
 .recommend-item:hover {
   background: #f0f7ff;
-  border-color: #d4edda;
-  transform: translateX(6px);
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
-}
-
-.recommend-item:hover::before {
-  width: 3px;
+  border-color: #409eff;
+  transform: translateX(4px);
 }
 
 .recommend-title {
@@ -326,28 +403,31 @@ const goToQuestion = (questionId: number) => {
   font-weight: 500;
   flex: 1;
   margin-right: 12px;
-  line-height: 1.5;
-  transition: color 0.3s;
 }
 
 .recommend-item:hover .recommend-title {
-  color: #374151;
-  font-weight: 600;
+  color: #409eff;
 }
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .right-sidebar {
-    width: 100%;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
   }
 }
 
 @media (max-width: 768px) {
   .right-sidebar {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .calendar-widget,
+  .stats-widget,
+  .recommend-widget {
+    padding: 16px;
   }
 }
 </style>

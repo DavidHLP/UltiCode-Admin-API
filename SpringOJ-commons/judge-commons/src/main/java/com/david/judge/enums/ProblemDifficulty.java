@@ -1,6 +1,7 @@
 package com.david.judge.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -13,6 +14,7 @@ public enum ProblemDifficulty {
     HARD("Hard", "困难", 3);
 
     @EnumValue
+    @JsonValue
     private final String level;
     private final String description;
     private final int value;

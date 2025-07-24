@@ -54,6 +54,12 @@ spring:
             - Path=/submissions/api/**
           filters:
             - StripPrefix=0
+        - id: problems-service-questions
+          uri: lb://problems-service
+          predicates:
+            - Path=/question-bank/api/**
+          filters:
+            - StripPrefix=0
         - id: judge-service
           uri: lb://judge-service
           predicates:

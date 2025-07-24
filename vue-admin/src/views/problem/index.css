@@ -85,6 +85,12 @@
   flex-shrink: 0; /* 防止压缩 */
 }
 
+.category-filter {
+  min-width: 80px;
+  max-width: 100px;
+  flex-shrink: 0; /* 防止压缩 */
+}
+
 .refresh-btn {
   flex-shrink: 0; /* 防止压缩 */
   white-space: nowrap; /* 防止文字换行 */
