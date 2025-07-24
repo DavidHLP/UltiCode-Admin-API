@@ -20,6 +20,10 @@ export default defineConfig({
       '/api/auth': {
         target: 'http://localhost:9090',
         changeOrigin: true,
+      },
+      '/question-bank/api': {
+        target: 'http://localhost:9090',
+        changeOrigin: true,
       }
     }
   }

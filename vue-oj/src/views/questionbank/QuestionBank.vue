@@ -1,4 +1,4 @@
-<template>
+'''<template>
   <div class="mx-auto max-w-[1200px] min-w-[820px] px-6 py-6">
     <!-- 主要内容区域 -->
     <div class="grid gap-6 grid-cols-3 lg:grid-cols-4">
@@ -6,7 +6,6 @@
       <div class="col-span-2 lg:col-span-3">
         <LeftSidebar
           ref="leftSidebarRef"
-          @page-change="handlePageChange"
           @questions-loaded="handleQuestionsLoaded"
         />
       </div>
@@ -22,79 +21,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-
-// 导入子组件
+import { ref } from 'vue'
 import LeftSidebar from './components/LeftSidebar.vue'
 import RightSidebar from './components/RightSidebar.vue'
 
-// 组件引用
-const leftSidebarRef = ref<InstanceType<typeof LeftSidebar>>()
+const completedQuestions = ref(0)
 
-// 计算属性 - 从 LeftSidebar 组件中获取完成数量
-const completedQuestions = ref(2) // 示例数据，实际应该从 LeftSidebar 传递
-
-// 无限滚动相关状态
-const loading = ref(false)
-const hasMore = ref(true)
-const isLoadingMore = ref(false)
-
-// 事件处理方法
-const handlePageChange = (page: number, size: number) => {
-  console.log('分页改变:', page, size)
-  // 这里可以添加分页逻辑或者发送到后端
-}
-
-// 处理题目加载完成事件
 const handleQuestionsLoaded = (count: number) => {
-  console.log('已加载题目数量:', count)
-  completedQuestions.value = count // 更新完成数量
+  // This is just an example, you might want to get the *total* completed count
+  // from an API call instead of just the loaded count.
+  completedQuestions.value = count
 }
-
-// 页面滚动监听器
-const handleScroll = () => {
-  if (isLoadingMore.value || !hasMore.value) return
-  
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop
-  const windowHeight = window.innerHeight
-  const documentHeight = document.documentElement.scrollHeight
-  
-  // 当滚动到距离底部100px时触发加载
-  if (scrollTop + windowHeight >= documentHeight - 100) {
-    loadMore()
-  }
-}
-
-// 无限滚动加载更多
-const loadMore = () => {
-  console.log('触发页面级无限滚动加载')
-  if (isLoadingMore.value || !hasMore.value) return
-  
-  isLoadingMore.value = true
-  
-  if (leftSidebarRef.value) {
-    // 调用 LeftSidebar 组件的加载更多方法
-    leftSidebarRef.value.loadMoreQuestions()
-  }
-  
-  // 模拟加载完成（实际应该在数据加载完成后设置）
-  setTimeout(() => {
-    isLoadingMore.value = false
-  }, 500)
-}
-
-// 生命周期
-onMounted(() => {
-  console.log('题库页面已加载')
-  // 添加页面滚动监听器
-  window.addEventListener('scroll', handleScroll, { passive: true })
-  // 这里可以添加数据初始化逻辑，比如从API获取题目数据
-})
-
-// 组件卸载时移除滚动监听器
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
 </script>
 
 <style scoped>
@@ -298,4 +235,4 @@ onUnmounted(() => {
     line-height: 1.75rem;
   }
 }
-</style>
+</style>''

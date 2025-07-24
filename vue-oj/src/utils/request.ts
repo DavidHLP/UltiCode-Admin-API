@@ -2,7 +2,6 @@ import axios, { type AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import type { Response } from '@/types/commons'
-
 // 创建一个 axios 实例
 const service = axios.create({
   baseURL: '/', // API 的基础 URL
@@ -29,7 +28,6 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse<Response<any>>) => {
     const res = response.data
-
     if (res.code !== 200) {
       ElMessage({
         message: res.message || 'Error',

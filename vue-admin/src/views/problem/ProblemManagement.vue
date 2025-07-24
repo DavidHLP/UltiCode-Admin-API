@@ -171,7 +171,7 @@
             <template #default="scope">
               <div class="tags-cell">
                 <el-tag
-                  v-for="tag in parseTags(scope.row.tags)"
+                  v-for="tag in scope.row.tags"
                   :key="tag"
                   size="small"
                   class="problem-tag"
@@ -477,10 +477,7 @@ const testCaseRules: FormRules = {
   score: [{ required: true, message: '请输入分数', trigger: 'blur' }],
 }
 
-const parseTags = (tagsStr: string | null | undefined): string[] => {
-  if (!tagsStr) return []
-  return tagsStr.split(/[,，]/).filter((tag) => tag.trim() !== '')
-}
+
 
 const filteredProblems = computed(() => {
   let result = problems.value
@@ -490,7 +487,7 @@ const filteredProblems = computed(() => {
     result = result.filter(
       (problem) =>
         problem.title.toLowerCase().includes(query) ||
-        (problem.tags && problem.tags.toLowerCase().includes(query)),
+        (problem.tags && problem.tags.some((tag) => tag.toLowerCase().includes(query)))
     )
   }
 
@@ -555,7 +552,7 @@ const openEditProblemDialog = (problem: Problem) => {
   isEdit.value = true
   dialogTitle.value = '编辑题目'
   currentProblem.value = { ...problem }
-  currentProblemTags.value = parseTags(problem.tags)
+  currentProblemTags.value = problem.tags ? [...problem.tags] : []
   activeDialogTab.value = 'basic'
   dialogVisible.value = true
 }
@@ -566,7 +563,7 @@ const saveProblem = async () => {
     if (valid) {
       saving.value = true
       try {
-        const problemToSave = { ...currentProblem.value, tags: currentProblemTags.value.join(',') }
+        const problemToSave = { ...currentProblem.value, tags: currentProblemTags.value }
 
         if (isEdit.value) {
           await updateProblem(problemToSave.id!, problemToSave as Problem)
