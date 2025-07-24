@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/layout/Layout.vue'
-import UserManagement from '../views/user/UserManagement.vue'
-import RoleManagement from '../views/role/RoleManagement.vue'
-import ProblemManagement from '../views/problem/ProblemManagement.vue'
-import Login from '../views/login/Login.vue'
+import UserManagement from '@/views/user/UserManagement.vue'
+import RoleManagement from '@/views/role/RoleManagement.vue'
+import ProblemManagement from '@/views/problem/ProblemManagement.vue'
+import Login from '@/views/login/Login.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
