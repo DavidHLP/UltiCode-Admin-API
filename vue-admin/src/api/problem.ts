@@ -44,3 +44,10 @@ export function fetchCategories(): Promise<Category[]> {
     method: 'get',
   })
 }
+
+export function getTestCasesByProblemId(problemId: number): Promise<TestCase[]> {
+  return request({
+    url: `/problems/api/testcases/problem/${problemId}`,
+    method: 'get',
+  })
+}

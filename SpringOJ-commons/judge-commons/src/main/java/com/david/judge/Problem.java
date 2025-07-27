@@ -7,7 +7,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.david.judge.enums.CategoryType;
 import com.david.judge.enums.ProblemDifficulty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,6 +20,9 @@ import java.util.List;
  * 题目实体类
  */
 @Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 @TableName(value = "problems", autoResultMap = true)
 public class Problem implements Serializable {
 
@@ -37,31 +43,6 @@ public class Problem implements Serializable {
      * 题目正文描述，不能为空
      */
     private String description;
-
-    /**
-     * 输入格式说明
-     */
-    private String inputFormat;
-
-    /**
-     * 输出格式说明
-     */
-    private String outputFormat;
-
-    /**
-     * 样例输入
-     */
-    private String sampleInput;
-
-    /**
-     * 样例输出
-     */
-    private String sampleOutput;
-
-    /**
-     * 题目提示
-     */
-    private String hint;
 
     /**
      * 时间限制，单位为毫秒，默认为1000ms
@@ -118,10 +99,4 @@ public class Problem implements Serializable {
      * 记录更新时间
      */
     private LocalDateTime updatedAt;
-
-    /**
-     * 关联的测试用例列表 (非数据库字段)
-     */
-    @TableField(exist = false)
-    private List<TestCase> testCases;
 }

@@ -1,0 +1,38 @@
+:root {
+  /* 主题色 */
+  --primary-gradient: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  --primary-color: #667eea;
+  --secondary-color: #764ba2;
+
+  /* 文字颜色 */
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-light: #999999;
+  --text-white: #ffffff;
+
+  /* 背景颜色 */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f7fa;
+  --bg-tertiary: #f0f2f5;
+
+  /* 边框颜色 */
+  --border-color: #e4e7ed;
+  --border-light: #f0f0f0;
+
+  /* 阴影 */
+  --shadow-light: 0 1px 4px rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-heavy: 0 4px 16px rgba(0, 0, 0, 0.15);
+
+  /* 圆角 */
+  --border-radius-small: 4px;
+  --border-radius-medium: 8px;
+  --border-radius-large: 12px;
+
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}

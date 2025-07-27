@@ -26,7 +26,7 @@ public class DockerExecuteServiceImpl implements IDockerExecuteService {
         // 目前只实现了Java的沙箱，后续可扩展其他语言
         SandboxTemplate sandboxTemplate;
         switch (request.getLanguage()) {
-            case JAVA:
+            case java:
                 sandboxTemplate = javaDockerAcmSandbox;
                 break;
             // TODO: 后续添加其余语言沙箱

@@ -27,9 +27,7 @@ spring:
 
 
 # 判题机配置
-judge:
-  testcase:
-    base-path: /tmp/oj-testcases  # 测试用例文件存储基础路径
+
   sandbox:
     service-url: http://localhost:9096  # 沙箱服务地址
 

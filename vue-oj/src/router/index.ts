@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/login/LoginView.vue'
 import QuestionBank from '@/views/questionbank/QuestionBank.vue'
 import { MainLayout } from '@/layout'
-import QuizPage from '@/views/quizpage/QuizPage.vue'
+import ProblemView from '@/views/problem/ProblemView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,9 +14,9 @@ const router = createRouter({
       component: LoginView,
     },
     {
-      path: '/quizpage/',
-      name: 'quizpage',
-      component: QuizPage,
+      path: '/problem/:id',
+      name: 'problem',
+      component: ProblemView,
     },
     {
       path: '/',

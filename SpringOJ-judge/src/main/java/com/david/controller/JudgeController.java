@@ -4,6 +4,7 @@ import com.david.dto.SubmitCodeRequest;
 import com.david.judge.Submission;
 import com.david.interfaces.SubmissionServiceFeignClient;
 import com.david.service.IJudgeService;
+import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -13,9 +14,9 @@ import org.springframework.web.bind.annotation.*;
  * 判题控制器
  */
 @RestController
-@RequestMapping("/api/judge")
+@RequestMapping("/judge/api")
 @RequiredArgsConstructor
-public class JudgeController {
+public class JudgeController extends BaseController {
 
     private final SubmissionServiceFeignClient submissionService;
     private final IJudgeService judgeService;
@@ -29,7 +30,7 @@ public class JudgeController {
             // 创建提交记录
             Submission submission = new Submission();
             submission.setProblemId(request.getProblemId());
-            submission.setUserId(request.getUserId());
+            submission.setUserId(getCurrentUserId());
             submission.setSourceCode(request.getSourceCode());
             submission.setLanguage(request.getLanguage());
             ResponseResult<Submission> submissionResponse = submissionService.createSubmission(submission);

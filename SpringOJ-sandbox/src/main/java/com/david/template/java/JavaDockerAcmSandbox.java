@@ -224,14 +224,14 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 
     private String getDockerImage(LanguageType language) {
         return switch (language) {
-            case JAVA -> "openjdk:17-alpine";
+            case java -> "openjdk:17-alpine";
             default -> "ubuntu:20.04"; // Fallback for other languages not yet implemented
         };
     }
 
     private String[] getCompileCommand(String sourceFile, LanguageType language) {
         return switch (language) {
-            case JAVA -> new String[]{"sh", "-c", "mkdir -p /tmp/classes && javac -d /tmp/classes /app/" + sourceFile};
+            case java -> new String[]{"sh", "-c", "mkdir -p /tmp/classes && javac -d /tmp/classes /app/" + sourceFile};
             default -> new String[]{}; // 解释型语言或默认情况
         };
     }
@@ -380,7 +380,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 
     private String[] getExecuteCommand(LanguageType language) {
         return switch (language) {
-            case JAVA -> new String[]{"java", String.format("-Xmx%dm", 128), "-cp", "/tmp/classes", "Main"}; // 使用新的编译输出目录
+            case java -> new String[]{"java", String.format("-Xmx%dm", 128), "-cp", "/tmp/classes", "Main"}; // 使用新的编译输出目录
             default -> new String[]{}; // Should not happen if all languages are handled
         };
     }

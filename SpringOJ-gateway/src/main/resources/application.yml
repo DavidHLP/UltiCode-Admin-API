@@ -63,7 +63,7 @@ spring:
         - id: judge-service
           uri: lb://judge-service
           predicates:
-              - Path=/api/judge/**
+              - Path=/judge/api/**
           filters:
               - StripPrefix=0
       default-filters:

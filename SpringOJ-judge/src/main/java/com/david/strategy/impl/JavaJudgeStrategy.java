@@ -1,7 +1,6 @@
 package com.david.strategy.impl;
 
 import com.david.service.ISandboxService;
-import com.david.service.ITestCaseFileService;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class JavaJudgeStrategy extends DefaultJudgeStrategy {
-    public JavaJudgeStrategy(ISandboxService sandboxService , ITestCaseFileService testCaseFileService) {
-        super(sandboxService,testCaseFileService);
+    public JavaJudgeStrategy(ISandboxService sandboxService) {
+        super(sandboxService);
     }
 }

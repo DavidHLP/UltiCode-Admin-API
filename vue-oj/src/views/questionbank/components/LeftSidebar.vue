@@ -13,7 +13,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { ElMessage, ElSelect, ElOption, ElInput } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import QuestionTable from './QuestionTable.vue'
 import BigTagesFilter from './BigTagesFilter.vue'
 import { getQuestionBank } from '@/api/questionbank'
@@ -101,11 +101,11 @@ onMounted(() => {
 
 watch(questionBankQuery.value, (newVal, oldVal) => {
   if (newVal.category !== oldVal.category ||
-      newVal.difficulty !== oldVal.difficulty ||
-      newVal.status !== oldVal.status ||
-      newVal.tags !== oldVal.tags ||
-      newVal.title !== oldVal.title ||
-      newVal.sortBy !== oldVal.sortBy) {
+    newVal.difficulty !== oldVal.difficulty ||
+    newVal.status !== oldVal.status ||
+    newVal.tags !== oldVal.tags ||
+    newVal.title !== oldVal.title ||
+    newVal.sortBy !== oldVal.sortBy) {
     fetchQuestions(false);
   }
 }, { deep: true });

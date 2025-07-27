@@ -4,8 +4,12 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -13,9 +17,12 @@ import java.time.LocalDateTime;
  * 测试用例实体类
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @TableName("test_cases")
 public class TestCase implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -30,14 +37,14 @@ public class TestCase implements Serializable {
     private Long problemId;
 
     /**
-     * 输入文件的路径或内容
+     * 输入内容
      */
-    private String inputFile;
+    private String input;
 
     /**
-     * 期望的输出文件的路径或标识
+     * 期望输出内容
      */
-    private String outputFile;
+    private String output;
 
     /**
      * 该测试点的分值，默认为10

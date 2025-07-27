@@ -5,43 +5,39 @@
       <div class="sidebar-header">
         <div class="logo-section">
           <div class="logo-icon">
-            <el-icon size="24"><Platform /></el-icon>
+            <el-icon size="24">
+              <Platform />
+            </el-icon>
           </div>
           <transition name="fade">
             <div v-show="!isCollapsed" class="logo-text">
-              <h3 class="app-title">SpringOJ</h3>
-              <h3 class="app-title">管理平台</h3>
+              <h3 class="app-title">CodeForge</h3>
+              <h3 class="app-title">后台管理</h3>
             </div>
           </transition>
         </div>
-        <el-button
-          :icon="isCollapsed ? Expand : Fold"
-          @click="toggleSidebar"
-          class="collapse-btn"
-          text
-        />
+        <el-button :icon="isCollapsed ? Expand : Fold" @click="toggleSidebar" class="collapse-btn" text />
       </div>
 
       <el-scrollbar class="sidebar-menu-container">
-        <el-menu
-          :router="true"
-          :default-active="$route.path"
-          :collapse="isCollapsed"
-          class="sidebar-menu"
-          background-color="transparent"
-          text-color="#ffffff"
-          active-text-color="#ffffff"
-        >
+        <el-menu :router="true" :default-active="$route.path" :collapse="isCollapsed" class="sidebar-menu"
+          background-color="transparent" text-color="#ffffff" active-text-color="#ffffff">
           <el-menu-item index="/users" class="menu-item">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             <span>用户管理</span>
           </el-menu-item>
           <el-menu-item index="/roles" class="menu-item">
-            <el-icon><Lock /></el-icon>
+            <el-icon>
+              <Lock />
+            </el-icon>
             <span>角色管理</span>
           </el-menu-item>
           <el-menu-item index="/problems" class="menu-item">
-            <el-icon><Memo /></el-icon>
+            <el-icon>
+              <Memo />
+            </el-icon>
             <span>题目管理</span>
           </el-menu-item>
         </el-menu>
@@ -64,24 +60,28 @@
             <el-dropdown trigger="click" class="user-dropdown">
               <div class="user-avatar-section">
                 <el-avatar :icon="UserFilled" class="user-avatar" />
-                <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
+                <el-icon class="dropdown-icon">
+                  <ArrowDown />
+                </el-icon>
               </div>
               <template #dropdown>
                 <el-dropdown-menu class="user-menu">
                   <el-dropdown-item class="user-menu-item">
-                    <el-icon><User /></el-icon>
+                    <el-icon>
+                      <User />
+                    </el-icon>
                     <span>个人信息</span>
                   </el-dropdown-item>
                   <el-dropdown-item class="user-menu-item">
-                    <el-icon><Setting /></el-icon>
+                    <el-icon>
+                      <Setting />
+                    </el-icon>
                     <span>系统设置</span>
                   </el-dropdown-item>
-                  <el-dropdown-item
-                    divided
-                    class="user-menu-item logout-item"
-                    @click="handleLogout"
-                  >
-                    <el-icon><SwitchButton /></el-icon>
+                  <el-dropdown-item divided class="user-menu-item logout-item" @click="handleLogout">
+                    <el-icon>
+                      <SwitchButton />
+                    </el-icon>
                     <span>退出登录</span>
                   </el-dropdown-item>
                 </el-dropdown-menu>

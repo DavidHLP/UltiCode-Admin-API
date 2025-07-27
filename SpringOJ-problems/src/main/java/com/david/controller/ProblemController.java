@@ -1,6 +1,9 @@
 package com.david.controller;
 
 import com.david.dto.CategoryDto;
+import com.david.dto.ProblemDto;
+import com.david.dto.TestCaseDto;
+import com.david.judge.CodeTemplate;
 import com.david.judge.Problem;
 import com.david.judge.TestCase;
 import com.david.judge.enums.CategoryType;
@@ -8,13 +11,12 @@ import com.david.service.IProblemService;
 import com.david.service.ITestCaseService;
 import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * <p>
@@ -38,14 +40,30 @@ public class ProblemController {
     }
 
     @GetMapping("/{id}")
-    public ResponseResult<Problem> getProblemById(@PathVariable Long id) {
+    public ResponseResult<ProblemDto> getProblemById(@PathVariable Long id) {
         Problem problem = problemService.getById(id);
-        if (problem != null) {
-            List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, id).list();
-            problem.setTestCases(testCases);
+        if (problem == null) {
+            return ResponseResult.fail(404, "题目不存在");
         }
-        return ResponseResult.success("成功获取题目", problem);
+        ProblemDto problemDto = new ProblemDto();
+        BeanUtils.copyProperties(problem, problemDto);
+        List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, id).list();
+        if (testCases.isEmpty()){
+            return ResponseResult.fail(404, "测试用例不存在");
+        }
+        List<TestCaseDto> testCaseDto = new ArrayList<>();
+        for (TestCase testCase : testCases) {
+            TestCaseDto dto = new TestCaseDto();
+            BeanUtils.copyProperties(testCase, dto);
+            testCaseDto.add(dto);
+        }
+        problemDto.setTestCases(testCaseDto);
+        problemDto.setInitialCode(Map.of(
+                "java", CodeTemplate.JAVA_CODE_TEMPLATE
+        ));
+        return ResponseResult.success("成功获取题目", problemDto);
     }
+
 
     @PostMapping
     public ResponseResult<Void> createProblem(@RequestBody Problem problem) {
@@ -55,9 +73,8 @@ public class ProblemController {
         return ResponseResult.fail(500, "题目创建失败");
     }
 
-    @PutMapping("/{id}")
-    public ResponseResult<Void> updateProblem(@PathVariable Long id, @RequestBody Problem problem) {
-        problem.setId(id);
+    @PutMapping
+    public ResponseResult<Void> updateProblem(@RequestBody Problem problem) {
         if (problemService.updateById(problem)) {
             return ResponseResult.success("题目更新成功");
         }
@@ -76,69 +93,51 @@ public class ProblemController {
      * 根据题目ID获取所有测试用例
      */
     @GetMapping("/testcases/problem/{problemId}")
-    public ResponseResult<List<TestCase>> getTestCasesByProblemId(@PathVariable Long problemId) {
+    public ResponseResult<List<TestCaseDto>> getTestCasesByProblemId(@PathVariable Long problemId) {
         List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, problemId).list();
-        return ResponseResult.success("成功获取测试用例", testCases);
+        List<TestCaseDto> testCaseDto = testCases.stream()
+                .map(testCase -> {
+                    TestCaseDto dto = new TestCaseDto();
+                    BeanUtils.copyProperties(testCase, dto);
+                    return dto;
+                })
+                .toList();
+        return ResponseResult.success("成功获取测试用例", testCaseDto);
     }
 
     /**
      * 创建测试用例
      */
     @PostMapping("/testcases")
-    public ResponseResult<TestCase> createTestCase(@RequestBody Map<String, Object> payload) throws IOException {
-        TestCase testCase = new TestCase();
-        testCase.setProblemId(Long.valueOf(payload.get("problemId").toString()));
-
-        // Generate unique filenames for the test case
-        String fileIdentifier = UUID.randomUUID().toString();
-        testCase.setInputFile("case_" + fileIdentifier + "_input.txt");
-        testCase.setOutputFile("case_" + fileIdentifier + "_output.txt");
-
-        testCase.setScore(Integer.valueOf(payload.get("score").toString()));
-        String inputContent = payload.get("inputContent").toString();
-        String outputContent = payload.get("outputContent").toString();
-
-        TestCase createdTestCase = testCaseService.createTestCaseWithFiles(testCase, inputContent, outputContent);
-        return ResponseResult.success("测试用例创建成功", createdTestCase);
+    public ResponseResult<TestCaseDto> createTestCase(@RequestBody TestCaseDto testCase) {
+        if (testCaseService.save(testCase)) {
+            return ResponseResult.success("测试用例创建成功", testCase);
+        }
+        return ResponseResult.fail(500, "测试用例创建失败");
     }
 
     /**
      * 更新测试用例
      */
-    @PutMapping("/testcases/{id}")
-    public ResponseResult<TestCase> updateTestCase(@PathVariable Long id, @RequestBody Map<String, Object> payload) throws IOException {
-        TestCase testCase = testCaseService.getById(id);
-        if (testCase == null) {
-            return ResponseResult.fail(404, "测试用例不存在");
+    @PutMapping("/testcases")
+    public ResponseResult<TestCaseDto> updateTestCase(@RequestBody TestCaseDto testCase) {
+        if (testCaseService.updateById(testCase)) {
+            return ResponseResult.success("测试用例更新成功", testCase);
         }
-
-        // Only update score and content, keep existing filenames
-        testCase.setScore(Integer.valueOf(payload.get("score").toString()));
-        String inputContent = payload.get("inputContent").toString();
-        String outputContent = payload.get("outputContent").toString();
-
-        TestCase updatedTestCase = testCaseService.updateTestCaseWithFiles(testCase, inputContent, outputContent);
-        return ResponseResult.success("测试用例更新成功", updatedTestCase);
+        return ResponseResult.fail(500, "测试用例更新失败");
     }
 
     /**
      * 删除测试用例
      */
     @DeleteMapping("/testcases/{id}")
-    public ResponseResult<Void> deleteTestCase(@PathVariable Long id) throws IOException {
-        if (testCaseService.deleteTestCaseWithFiles(id)) {
+    public ResponseResult<Void> deleteTestCase(@PathVariable Long id) {
+        if (testCaseService.removeById(id)) {
             return ResponseResult.success("测试用例删除成功");
         }
         return ResponseResult.fail(500, "测试用例删除失败");
     }
 
-    /**
-     * 获取测试用例内容
-     */
-    @GetMapping("/testcases/{id}/content")
-    public ResponseResult<ITestCaseService.TestCaseContent> getTestCaseContent(@PathVariable Long id) throws IOException {
-        return ResponseResult.success("成功获取测试用例内容", testCaseService.getTestCaseContent(id));
-    }
 
     /**
      * 获取所有题目类别

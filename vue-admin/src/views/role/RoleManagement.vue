@@ -1,197 +1,90 @@
 <template>
-  <div class="role-management">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="title-section">
-          <h2 class="page-title">
-            <el-icon class="title-icon"><Lock /></el-icon>
-            角色管理
-          </h2>
-        </div>
-        <div class="header-actions">
-          <el-button
-            type="primary"
-            @click="openAddDialog"
-            :icon="Plus"
-            class="add-btn"
-            size="large"
-          >
-            添加角色
-          </el-button>
-        </div>
-      </div>
-    </div>
+  <ManageComponent title="角色管理" :title-icon="Lock" add-button-text="添加角色" search-placeholder="搜索角色名称或备注..."
+    empty-text="暂无角色数据" :table-data="filteredRoles" :loading="loading" @add="handleAdd" @search="handleSearch"
+    @refresh="handleRefresh" @dialog-confirm="handleDialogConfirm" @dialog-cancel="handleDialogCancel"
+    ref="manageComponentRef">
+    <!-- 筛选器插槽 -->
+    <template #filters>
+      <el-select v-model="selectedStatus" placeholder="筛选状态" class="status-filter" clearable
+        @change="handleStatusFilter">
+        <el-option label="激活" :value="1" />
+        <el-option label="禁用" :value="0" />
+      </el-select>
+    </template>
 
-    <!-- 搜索和筛选区域 -->
-    <div class="search-section">
-      <el-card class="search-card" shadow="never">
-        <div class="search-form">
-          <el-input
-            v-model="searchQuery"
-            placeholder="搜索角色名称或备注..."
-            :prefix-icon="Search"
-            class="search-input"
-            clearable
-            @input="handleSearch"
-          />
-          <el-select
-            v-model="selectedStatus"
-            placeholder="筛选状态"
-            class="status-filter"
-            clearable
-            @change="handleStatusFilter"
-          >
-            <el-option label="激活" :value="1" />
-            <el-option label="禁用" :value="0" />
-          </el-select>
-          <el-button :icon="Refresh" @click="refreshData" class="refresh-btn"> 刷新 </el-button>
-        </div>
-      </el-card>
-    </div>
+    <!-- 表格列插槽 -->
+    <template #table-columns>
+      <el-table-column prop="id" label="ID" width="80" align="center">
+        <template #default="scope">
+          <el-tag type="info" size="small" class="id-tag"> #{{ scope.row.id }} </el-tag>
+        </template>
+      </el-table-column>
 
-    <!-- 角色表格 -->
-    <div class="table-section">
-      <el-card class="table-card" shadow="never">
-        <el-table
-          :data="filteredRoles"
-          class="modern-table"
-          stripe
-          :header-cell-style="{ background: '#f8f9fa', color: '#606266', fontWeight: '600' }"
-          v-loading="loading"
-        >
-          <el-table-column prop="id" label="ID" width="80" align="center">
-            <template #default="scope">
-              <el-tag type="info" size="small" class="id-tag"> #{{ scope.row.id }} </el-tag>
-            </template>
-          </el-table-column>
+      <el-table-column prop="roleName" label="角色名称" min-width="150">
+        <template #default="scope">
+          <div class="role-info">
+            <el-icon class="role-icon" :class="getRoleIconClass(scope.row.roleName)">
+              <component :is="getRoleIcon(scope.row.roleName)" />
+            </el-icon>
+            <span class="role-name">{{ scope.row.roleName }}</span>
+          </div>
+        </template>
+      </el-table-column>
 
-          <el-table-column prop="roleName" label="角色名称" min-width="150">
-            <template #default="scope">
-              <div class="role-info">
-                <el-icon class="role-icon" :class="getRoleIconClass(scope.row.roleName)">
-                  <component :is="getRoleIcon(scope.row.roleName)" />
-                </el-icon>
-                <span class="role-name">{{ scope.row.roleName }}</span>
-              </div>
-            </template>
-          </el-table-column>
+      <el-table-column prop="remark" label="备注" min-width="200">
+        <template #default="scope">
+          <div class="remark-cell">
+            <el-icon class="remark-icon">
+              <Document />
+            </el-icon>
+            <span>{{ scope.row.remark || '暂无备注' }}</span>
+          </div>
+        </template>
+      </el-table-column>
 
-          <el-table-column prop="remark" label="备注" min-width="200">
-            <template #default="scope">
-              <div class="remark-cell">
-                <el-icon class="remark-icon"><Document /></el-icon>
-                <span>{{ scope.row.remark || '暂无备注' }}</span>
-              </div>
-            </template>
-          </el-table-column>
+      <el-table-column prop="status" label="状态" width="100" align="center">
+        <template #default="scope">
+          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small" class="status-tag">
+            {{ scope.row.status === 1 ? '激活' : '禁用' }}
+          </el-tag>
+        </template>
+      </el-table-column>
 
-          <el-table-column prop="status" label="状态" width="100" align="center">
-            <template #default="scope">
-              <el-tag
-                :type="scope.row.status === 1 ? 'success' : 'danger'"
-                size="small"
-                class="status-tag"
-              >
-                {{ scope.row.status === 1 ? '激活' : '禁用' }}
-              </el-tag>
-            </template>
-          </el-table-column>
+      <el-table-column label="操作" width="200" align="center">
+        <template #default="scope">
+          <div class="action-buttons">
+            <el-button @click="openEditDialog(scope.row)" :icon="Edit" size="small" type="primary" plain
+              class="action-btn">
+              编辑
+            </el-button>
+            <el-button @click="handleDelete(scope.row.id)" :icon="Delete" size="small" type="danger" plain
+              class="action-btn">
+              删除
+            </el-button>
+          </div>
+        </template>
+      </el-table-column>
+    </template>
 
-          <el-table-column label="操作" width="200" align="center">
-            <template #default="scope">
-              <div class="action-buttons">
-                <el-button
-                  @click="openEditDialog(scope.row)"
-                  :icon="Edit"
-                  size="small"
-                  type="primary"
-                  plain
-                  class="action-btn"
-                >
-                  编辑
-                </el-button>
-                <el-button
-                  @click="handleDelete(scope.row.id)"
-                  :icon="Delete"
-                  size="small"
-                  type="danger"
-                  plain
-                  class="action-btn"
-                >
-                  删除
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <!-- 空状态 -->
-        <div v-if="filteredRoles.length === 0 && !loading" class="empty-state">
-          <el-empty description="暂无角色数据" />
-        </div>
-      </el-card>
-    </div>
-
-    <!-- 现代化角色对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      width="600px"
-      class="role-dialog"
-      :close-on-click-modal="false"
-    >
-      <el-form
-        :model="currentRole"
-        :rules="roleRules"
-        ref="roleFormRef"
-        label-width="80px"
-        class="role-form"
-      >
+    <!-- 对话框表单插槽 -->
+    <template #dialog-form>
+      <el-form :model="currentRole" :rules="roleRules" ref="roleFormRef" label-width="80px" class="management-form">
         <el-form-item label="角色名称" prop="roleName">
-          <el-input
-            v-model="currentRole.roleName"
-            placeholder="请输入角色名称"
-            :prefix-icon="Lock"
-            clearable
-          />
+          <el-input v-model="currentRole.roleName" placeholder="请输入角色名称" :prefix-icon="Lock" clearable />
         </el-form-item>
 
         <el-form-item label="备注" prop="remark">
-          <el-input
-            v-model="currentRole.remark"
-            type="textarea"
-            placeholder="请输入角色备注信息"
-            :rows="3"
-            maxlength="200"
-            show-word-limit
-          />
+          <el-input v-model="currentRole.remark" type="textarea" placeholder="请输入角色备注信息" :rows="3" maxlength="200"
+            show-word-limit />
         </el-form-item>
 
         <el-form-item label="状态" prop="status">
-          <el-switch
-            v-model="currentRole.status"
-            :active-value="1"
-            :inactive-value="0"
-            active-text="激活"
-            inactive-text="禁用"
-            :active-icon="Check"
-            :inactive-icon="Close"
-            class="status-switch"
-          />
+          <el-switch v-model="currentRole.status" :active-value="1" :inactive-value="0" active-text="激活"
+            inactive-text="禁用" :active-icon="Check" :inactive-icon="Close" class="status-switch" />
         </el-form-item>
       </el-form>
-
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="dialogVisible = false" class="cancel-btn"> 取消 </el-button>
-          <el-button type="primary" @click="saveRole" :loading="saving" class="save-btn">
-            {{ isEdit ? '更新' : '创建' }}
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
-  </div>
+    </template>
+  </ManageComponent>
 </template>
 
 <script setup lang="ts">
@@ -200,12 +93,9 @@ import { fetchRoles, createRole, updateRole, deleteRole } from '@/api/role.ts'
 import type { Role } from '@/types/role.ts'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
-  Plus,
   Edit,
   Delete,
   Lock,
-  Search,
-  Refresh,
   Document,
   Check,
   Close,
@@ -214,22 +104,20 @@ import {
   Star,
   Tools,
 } from '@element-plus/icons-vue'
+import ManageComponent from '@/components/management/ManageComponent.vue'
 
 // 响应式数据
 const roles = ref<Role[]>([])
 const loading = ref(false)
-const saving = ref(false)
 
 // 搜索和筛选
 const searchQuery = ref('')
 const selectedStatus = ref<number | undefined>()
 
 // 对话框相关
-const dialogVisible = ref(false)
-const isEdit = ref(false)
-const dialogTitle = ref('')
 const currentRole = ref<Partial<Role>>({})
 const roleFormRef = ref<FormInstance>()
+const manageComponentRef = ref<InstanceType<typeof ManageComponent>>()
 
 // 表单验证规则
 const roleRules: FormRules = {
@@ -264,7 +152,7 @@ const filteredRoles = computed(() => {
 
 // 工具方法
 const getRoleIcon = (roleName: string) => {
-  const roleIconMap: Record<string, any> = {
+  const roleIconMap: Record<string, unknown> = {
     ADMIN: Star,
     USER: User,
     MODERATOR: Tools,
@@ -284,24 +172,50 @@ const getRoleIconClass = (roleName: string) => {
 }
 
 // 搜索和筛选方法
-const handleSearch = () => {
-  // 搜索逻辑已在计算属性中处理
-}
-
 const handleStatusFilter = () => {
   // 筛选逻辑已在计算属性中处理
 }
 
-const refreshData = async () => {
+// ManageComponent 事件处理
+const handleAdd = () => {
+  manageComponentRef.value?.openDialog('添加角色', { status: 1 }, false)
+  currentRole.value = { status: 1 }
+}
+
+const handleSearch = (query: string) => {
+  searchQuery.value = query
+}
+
+const handleRefresh = async () => {
   loading.value = true
   try {
     await getRoles()
     ElMessage.success('数据刷新成功！')
-  } catch (error) {
+  } catch {
     ElMessage.error('数据刷新失败')
   } finally {
     loading.value = false
   }
+}
+
+const handleDialogConfirm = async () => {
+  try {
+    if (manageComponentRef.value?.isEdit) {
+      await updateRole(currentRole.value.id!, currentRole.value as Role)
+      ElMessage.success('角色更新成功')
+    } else {
+      await createRole(currentRole.value as Role)
+      ElMessage.success('角色创建成功')
+    }
+    manageComponentRef.value?.closeDialog()
+    getRoles()
+  } catch {
+    ElMessage.error('保存角色失败')
+  }
+}
+
+const handleDialogCancel = () => {
+  // 对话框取消逻辑已在 ManageComponent 中处理
 }
 
 // 数据获取方法
@@ -309,50 +223,24 @@ const getRoles = async () => {
   try {
     roles.value = await fetchRoles()
   } catch (error) {
-    console.error('Error fetching roles:', error)
-    ElMessage.error('Failed to fetch roles.')
+    console.error('获取角色列表时出错:', error)
+    ElMessage.error('获取角色列表失败')
   }
-}
-
-const openAddDialog = () => {
-  isEdit.value = false
-  dialogTitle.value = '添加角色'
-  currentRole.value = { status: 1 }
-  dialogVisible.value = true
 }
 
 const openEditDialog = (role: Role) => {
-  isEdit.value = true
-  dialogTitle.value = '编辑角色'
+  manageComponentRef.value?.openDialog('编辑角色', role as unknown as Record<string, unknown>, true)
   currentRole.value = { ...role }
-  dialogVisible.value = true
-}
-
-const saveRole = async () => {
-  try {
-    if (isEdit.value) {
-      await updateRole(currentRole.value.id!, currentRole.value as Role)
-      ElMessage.success('Role updated successfully.')
-    } else {
-      await createRole(currentRole.value as Role)
-      ElMessage.success('Role created successfully.')
-    }
-    dialogVisible.value = false
-    getRoles()
-  } catch (error) {
-    console.error('Error saving role:', error)
-    ElMessage.error('Failed to save role.')
-  }
 }
 
 const handleDelete = async (roleId: number) => {
   try {
     await deleteRole(roleId)
     getRoles()
-    ElMessage.success('Role deleted successfully.')
+    ElMessage.success('角色删除成功')
   } catch (error) {
-    console.error('Error deleting role:', error)
-    ElMessage.error('Failed to delete role.')
+    console.error('删除角色时出错:', error)
+    ElMessage.error('删除角色失败')
   }
 }
 
@@ -361,6 +249,104 @@ onMounted(() => {
 })
 </script>
 
-<style>
-@import './index.css';
+<style scoped lang="css">
+.status-filter {
+  width: 120px;
+}
+
+.id-tag {
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.role-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.role-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.admin-icon {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+}
+
+.user-icon {
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+}
+
+.moderator-icon {
+  background: linear-gradient(135deg, #feca57 0%, #ff9ff3 100%);
+}
+
+.guest-icon {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+.default-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.role-name {
+  font-weight: 500;
+  color: #303133;
+}
+
+.remark-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #606266;
+}
+
+.remark-icon {
+  color: #909399;
+  flex-shrink: 0;
+}
+
+.status-tag {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.action-btn {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.status-switch {
+  --el-switch-on-color: #67c23a;
+  --el-switch-off-color: #f56c6c;
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .action-btn {
+    width: 100%;
+  }
+}
 </style>

@@ -1,55 +1,21 @@
 <template>
   <div class="code-card">
-    <div class="card-header">
-      <div class="header-left">
-        <div class="header-item">
-          <el-icon>
-            <CodIcon />
-          </el-icon>
-          <span>代码</span>
-        </div>
-      </div>
-      <div class="header-center">
-        <el-select v-model="selectedLanguage" size="small" class="lang-select">
-          <el-option v-for="lang in availableLanguages" :key="lang"
-            :label="lang.charAt(0).toUpperCase() + lang.slice(1)" :value="lang" />
-        </el-select>
-      </div>
-      <div class="header-right">
-        <el-icon>
-          <Setting />
-        </el-icon>
-        <el-icon>
-          <CollectionTag />
-        </el-icon>
-        <el-icon @click="resetCode">
-          <Refresh />
-        </el-icon>
-        <el-icon>
-          <FullScreen />
-        </el-icon>
-      </div>
-    </div>
+    <HeaderCard v-model:model-value="selectedLanguage" :available-languages="availableLanguages"
+      @reset-code="resetCode" />
     <div ref="monacoEditorRef" class="editor-container"></div>
     <div class="card-footer">
-      <span>{{ statusText }}</span>
+      <el-button type="primary" @click="submitCode">提交</el-button>
       <span>行 {{ cursorPosition.line }}, 列 {{ cursorPosition.column }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, shallowRef } from 'vue';
+import { ref, onMounted, watch, shallowRef, computed } from 'vue';
 import * as monaco from 'monaco-editor';
-import {
-  Setting,
-  CollectionTag,
-  Refresh,
-  FullScreen,
-} from '@element-plus/icons-vue';
+import HeaderCard from './CodeCard/HeaderCard.vue';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
-import CodIcon from '@/assets/icon/CodIcon.vue';
 
 self.MonacoEnvironment = {
   getWorker(label: string) {
@@ -64,11 +30,15 @@ const props = defineProps<{
   initialCode: { [language: string]: string };
 }>();
 
+const emit = defineEmits<{
+  (e: 'code-change', code: string, language: string): void;
+  (e: 'submit', language: string, code: string): void;
+}>();
+
 const monacoEditorRef = ref<HTMLDivElement | null>(null);
 const editor = shallowRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-const availableLanguages = ref(Object.keys(props.initialCode));
+const availableLanguages = computed(() => Object.keys(props.initialCode));
 const selectedLanguage = ref(availableLanguages.value[0] || 'java');
-const statusText = ref('已存储');
 const cursorPosition = ref({ line: 1, column: 1 });
 
 onMounted(() => {
@@ -114,6 +84,14 @@ const getCode = () => {
   return editor.value?.getValue();
 };
 
+const submitCode = () => {
+  const code = getCode();
+  if (code) {
+    emit('code-change', code, selectedLanguage.value);
+    emit('submit', selectedLanguage.value, code);
+  }
+};
+
 defineExpose({ getCode, resetCode });
 </script>
 
@@ -124,48 +102,6 @@ defineExpose({ getCode, resetCode });
   height: 100%;
   overflow: hidden;
   background-color: #fff;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 16px;
-  height: 48px;
-  flex-shrink: 0;
-  color: #595959;
-}
-
-.header-left,
-.header-center,
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.header-center {
-  flex-grow: 1;
-  padding-left: 24px;
-}
-
-.header-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.lang-select {
-  width: 100px;
-}
-
-:deep(.lang-select .el-input__wrapper) {
-  box-shadow: none !important;
-  background-color: transparent;
-}
-
-.header-right .el-icon {
-  cursor: pointer;
 }
 
 .editor-container {

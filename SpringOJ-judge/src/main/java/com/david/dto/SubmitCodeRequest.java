@@ -21,8 +21,4 @@ public class SubmitCodeRequest {
     /** 源代码 */
     @NotBlank(message = "源代码不能为空")
     private String sourceCode;
-
-    /** 用户ID */
-    @NotNull(message = "用户ID不能为空")
-    private Long userId;
 }

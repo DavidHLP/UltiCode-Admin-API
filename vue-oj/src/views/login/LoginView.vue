@@ -3,7 +3,6 @@
     <div class="login-card">
       <div class="login-logo">
         <h1>CodeForge</h1>
-        <p>在线编程评测系统</p>
       </div>
 
       <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" class="login-form" @keyup.enter="handleLogin">

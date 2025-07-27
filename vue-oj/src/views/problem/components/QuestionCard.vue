@@ -4,10 +4,10 @@
       <el-tab-pane label="题目描述" name="description">
         <div class="problem-content">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h1>{{ quiz.title }}</h1>
-            <el-tag :type="difficultyType" size="small" effect="light">{{ quiz.difficulty }}</el-tag>
+            <h1>{{ problem.title }}</h1>
+            <el-tag :type="difficultyType" size="small" effect="light">{{ problem.difficulty }}</el-tag>
           </div>
-          <md-preview :modelValue="quiz.description" theme="light" />
+          <md-preview :modelValue="problem.description" theme="light" />
         </div>
       </el-tab-pane>
       <el-tab-pane label="题解" name="solution">
@@ -24,21 +24,21 @@
 import { ref, computed } from 'vue';
 import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
-import type { Quiz } from './mock';
+import type { Problem } from '@/types/problem';
 
 const props = defineProps<{
-  quiz: Quiz;
+  problem: Problem;
 }>();
 
 const activeTab = ref('description');
 
 const difficultyType = computed(() => {
-  switch (props.quiz.difficulty) {
-    case '简单':
+  switch (props.problem.difficulty) {
+    case 'Easy':
       return 'success';
-    case '中等':
+    case 'Medium':
       return 'warning';
-    case '困难':
+    case 'Hard':
       return 'danger';
     default:
       return 'info';

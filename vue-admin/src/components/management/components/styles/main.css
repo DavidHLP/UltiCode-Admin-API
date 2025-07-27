@@ -1,0 +1,90 @@
+@import './theme.css';
+
+.management-container {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Header样式 */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--primary-gradient);
+  border-radius: var(--border-radius-medium);
+  color: var(--text-white);
+  box-shadow: var(--shadow-light);
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header-icon {
+  margin-right: var(--spacing-sm);
+  font-size: 1.8rem;
+}
+
+/* 搜索区域样式 */
+.search-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-light);
+}
+
+.search-input {
+  flex: 1;
+  max-width: 500px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* 表格容器样式 */
+.table-container {
+  padding: var(--spacing-md);
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-light);
+}
+
+.empty-state {
+  padding: var(--spacing-xl) 0;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-medium);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 对话框内容样式 */
+.dialog-content {
+  padding: var(--spacing-md);
+}
+
+.dialog-footer {
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}

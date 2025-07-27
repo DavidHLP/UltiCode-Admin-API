@@ -4,7 +4,7 @@ export interface User {
   userId: number
   username: string
   email: string
-  password?: string // password is optional
+  password?: string
   avatar: string | null
   introduction: string
   address: string
@@ -13,5 +13,5 @@ export interface User {
   lastLogin: string | null
   createTime: string
   roles?: Role[]
+  [key: string]: string | number | Role[] | null | undefined
 }
-

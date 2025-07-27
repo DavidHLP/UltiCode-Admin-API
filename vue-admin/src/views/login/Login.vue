@@ -16,8 +16,7 @@
             <div class="logo-icon">
               <el-icon size="32"><Platform /></el-icon>
             </div>
-            <h1 class="title">SpringOJ</h1>
-            <p class="subtitle">在线判题系统管理平台</p>
+            <h1 class="title">CodeForge</h1>
           </div>
         </div>
 
