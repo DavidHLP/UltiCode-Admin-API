@@ -1,31 +1,32 @@
 import request from '@/utils/request'
 import type { Problem, Category } from '@/types/problem'
+import type { TestCase } from '@/types/testCase'
 
 export function fetchProblems(): Promise<Problem[]> {
   return request({
-    url: '/problems/api',
+    url: '/problems/api/management',
     method: 'get',
   })
 }
 
 export function getProblem(id: number): Promise<Problem> {
   return request({
-    url: `/problems/api/${id}`,
+    url: `/problems/api/management/${id}`,
     method: 'get',
   })
 }
 
 export function createProblem(data: Problem): Promise<void> {
   return request({
-    url: '/problems/api',
+    url: '/problems/api/management',
     method: 'post',
     data,
   })
 }
 
-export function updateProblem(id: number, data: Problem): Promise<void> {
+export function updateProblem(data: Problem): Promise<void> {
   return request({
-    url: `/problems/api/${id}`,
+    url: `/problems/api/management`,
     method: 'put',
     data,
   })
@@ -33,21 +34,21 @@ export function updateProblem(id: number, data: Problem): Promise<void> {
 
 export function deleteProblem(id: number): Promise<void> {
   return request({
-    url: `/problems/api/${id}`,
+    url: `/problems/api/management/${id}`,
     method: 'delete',
   })
 }
 
 export function fetchCategories(): Promise<Category[]> {
   return request({
-    url: '/problems/api/categories',
+    url: '/problems/api/management/categories',
     method: 'get',
   })
 }
 
 export function getTestCasesByProblemId(problemId: number): Promise<TestCase[]> {
   return request({
-    url: `/problems/api/testcases/problem/${problemId}`,
+    url: `/problems/api/management/testcases/problem/${problemId}`,
     method: 'get',
   })
 }

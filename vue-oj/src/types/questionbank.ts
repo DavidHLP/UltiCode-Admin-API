@@ -11,7 +11,7 @@ export interface Question {
 export interface QuestionBankQuery {
   page: number
   size: number
-  category?: '' | 'Algorithms' | 'Database' | 'Shell' | 'Multi-threading' | 'JavaScript' | 'Pandas'
+  category?: '' | 'ALGORITHMS' | 'DATABASE' | 'SHELL' | 'MULTI-THREADING' | 'JAVASCRIPT' | 'PANDAS'
   difficulty?: 'Easy' | 'Medium' | 'Hard' | ''
   status?: 'completed' | 'attempted' | 'not-attempted' | ''
   tags?: string[]

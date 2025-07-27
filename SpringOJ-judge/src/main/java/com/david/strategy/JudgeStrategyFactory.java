@@ -17,7 +17,7 @@ public class JudgeStrategyFactory {
 
     public JudgeStrategy getStrategy(LanguageType language) {
         return switch (language) {
-            case java -> javaJudgeStrategy;
+            case JAVA -> javaJudgeStrategy;
             default -> defaultJudgeStrategy;
         };
     }

@@ -2,7 +2,8 @@
   <div>
     <!-- 题目表格 -->
     <div v-infinite-scroll="loadMore" :infinite-scroll-disabled="loading || !hasMore">
-      <el-table :data="questions" v-loading="loading" stripe style="width: 100%" class="simple-table" :show-header="false" @row-click="handleRowClick">
+      <el-table :data="questions" v-loading="loading" stripe style="width: 100%" class="simple-table"
+        :show-header="false" @row-click="handleRowClick">
         <!-- 状态列 -->
         <el-table-column prop="status" label="状态" width="70" align="center">
           <template #default="{ row }">
@@ -59,12 +60,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Question } from '@/types/questionbank'
 
-// 定义属性
-const props = defineProps<{
+defineProps<{
   questions: Question[]
   loading: boolean
   hasMore: boolean
@@ -77,11 +76,6 @@ const emit = defineEmits<{
 
 // 路由实例
 const router = useRouter()
-
-// 计算属性
-const completedCount = computed(() =>
-  props.questions.filter(q => q.status === 'completed').length
-)
 
 // 方法
 const getDifficultyType = (difficulty: string) => {
@@ -165,8 +159,8 @@ const handleRowClick = (row: Question) => {
 
 .status-completed {
   font-size: 15px;
-  color:  #52c41a;
-  background-color:#ffffff;
+  color: #52c41a;
+  background-color: #ffffff;
 }
 
 .status-attempted {

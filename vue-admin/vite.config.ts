@@ -6,14 +6,10 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(
-    ),
-  ],
+  plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   server: {
@@ -30,14 +26,14 @@ export default defineConfig({
         target: 'http://localhost:9090',
         changeOrigin: true,
       },
-      '/problems/api': {
+      '/problems/api/management': {
         target: 'http://localhost:9090',
         changeOrigin: true,
       },
       '/testcases/api': {
         target: 'http://localhost:9090',
         changeOrigin: true,
-      }
-    }
-  }
+      },
+    },
+  },
 })

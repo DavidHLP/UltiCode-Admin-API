@@ -6,9 +6,6 @@
       </el-icon>
       <span>{{ title }}</span>
     </div>
-    <el-button v-if="showAddButton" type="primary" :icon="addButtonIcon" @click="$emit('add')">
-      {{ addButtonText }}
-    </el-button>
   </div>
 </template>
 
@@ -24,10 +21,6 @@ interface Props {
 }
 
 defineProps<Props>()
-
-defineEmits<{
-  (e: 'add'): void
-}>()
 </script>
 
 <style>

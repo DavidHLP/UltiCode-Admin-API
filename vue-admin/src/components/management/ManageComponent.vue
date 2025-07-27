@@ -1,8 +1,7 @@
 <template>
   <div class="management-container">
     <!-- 页面头部 -->
-    <HeaderComponent :title="title" :icon="titleIcon" :add-button-text="addButtonText" :add-button-icon="Plus"
-      @add="handleAdd" />
+    <HeaderComponent :title="title" :icon="titleIcon" />
 
     <!-- 搜索和筛选区域 -->
     <SearchComponent v-model="searchQuery" :placeholder="searchPlaceholder" @search="handleSearch"
@@ -33,7 +32,6 @@
 
 <script setup lang="ts">
 import { ref, defineProps, defineEmits, defineExpose, type Component } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
 import HeaderComponent from './components/HeaderComponent.vue'
 import SearchComponent from './components/SearchComponent.vue'
 import TableComponent from './components/TableComponent.vue'
@@ -44,7 +42,6 @@ import './components/styles/main.css'
 interface Props {
   title: string
   titleIcon: Component
-  addButtonText: string
   searchPlaceholder: string
   emptyText: string
   tableData: Record<string, unknown>[]
@@ -59,7 +56,6 @@ withDefaults(defineProps<Props>(), {
 
 // 定义 Emits
 const emit = defineEmits<{
-  add: []
   search: [query: string]
   refresh: []
   'dialog-confirm': []
@@ -74,10 +70,6 @@ const isEdit = ref(false)
 const currentItem = ref<Record<string, unknown>>({})
 
 // 方法
-const handleAdd = () => {
-  emit('add')
-}
-
 const handleSearch = () => {
   emit('search', searchQuery.value)
 }

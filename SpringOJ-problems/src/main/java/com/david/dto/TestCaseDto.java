@@ -1,10 +1,11 @@
 package com.david.dto;
-import com.david.judge.TestCase;
 import lombok.*;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class TestCaseDto extends TestCase {
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class TestCaseDto{
     private String input;
     private String output;
 }

@@ -1,9 +1,7 @@
 package com.david.controller;
 
 import com.david.dto.CategoryDto;
-import com.david.dto.ProblemDto;
 import com.david.dto.TestCaseDto;
-import com.david.judge.CodeTemplate;
 import com.david.judge.Problem;
 import com.david.judge.TestCase;
 import com.david.judge.enums.CategoryType;
@@ -11,26 +9,15 @@ import com.david.service.IProblemService;
 import com.david.service.ITestCaseService;
 import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-/**
- * <p>
- * 题目前端控制器
- * </p>
- *
- * @author david
- * @since 2025-07-21
- */
 @RestController
-@RequestMapping("/problems/api")
 @RequiredArgsConstructor
-public class ProblemController {
-
+@RequestMapping("/problems/api/management")
+public class ProblemManagementController {
     private final IProblemService problemService;
     private final ITestCaseService testCaseService;
 
@@ -40,28 +27,12 @@ public class ProblemController {
     }
 
     @GetMapping("/{id}")
-    public ResponseResult<ProblemDto> getProblemById(@PathVariable Long id) {
+    public ResponseResult<Problem> getProblemById(@PathVariable Long id) {
         Problem problem = problemService.getById(id);
         if (problem == null) {
             return ResponseResult.fail(404, "题目不存在");
         }
-        ProblemDto problemDto = new ProblemDto();
-        BeanUtils.copyProperties(problem, problemDto);
-        List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, id).list();
-        if (testCases.isEmpty()){
-            return ResponseResult.fail(404, "测试用例不存在");
-        }
-        List<TestCaseDto> testCaseDto = new ArrayList<>();
-        for (TestCase testCase : testCases) {
-            TestCaseDto dto = new TestCaseDto();
-            BeanUtils.copyProperties(testCase, dto);
-            testCaseDto.add(dto);
-        }
-        problemDto.setTestCases(testCaseDto);
-        problemDto.setInitialCode(Map.of(
-                "java", CodeTemplate.JAVA_CODE_TEMPLATE
-        ));
-        return ResponseResult.success("成功获取题目", problemDto);
+        return ResponseResult.success("成功获取题目", problem);
     }
 
 
@@ -93,23 +64,16 @@ public class ProblemController {
      * 根据题目ID获取所有测试用例
      */
     @GetMapping("/testcases/problem/{problemId}")
-    public ResponseResult<List<TestCaseDto>> getTestCasesByProblemId(@PathVariable Long problemId) {
+    public ResponseResult<List<TestCase>> getTestCasesByProblemId(@PathVariable Long problemId) {
         List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, problemId).list();
-        List<TestCaseDto> testCaseDto = testCases.stream()
-                .map(testCase -> {
-                    TestCaseDto dto = new TestCaseDto();
-                    BeanUtils.copyProperties(testCase, dto);
-                    return dto;
-                })
-                .toList();
-        return ResponseResult.success("成功获取测试用例", testCaseDto);
+        return ResponseResult.success("成功获取测试用例", testCases);
     }
 
     /**
      * 创建测试用例
      */
     @PostMapping("/testcases")
-    public ResponseResult<TestCaseDto> createTestCase(@RequestBody TestCaseDto testCase) {
+    public ResponseResult<TestCase> createTestCase(@RequestBody TestCase testCase) {
         if (testCaseService.save(testCase)) {
             return ResponseResult.success("测试用例创建成功", testCase);
         }
@@ -120,7 +84,7 @@ public class ProblemController {
      * 更新测试用例
      */
     @PutMapping("/testcases")
-    public ResponseResult<TestCaseDto> updateTestCase(@RequestBody TestCaseDto testCase) {
+    public ResponseResult<TestCase> updateTestCase(@RequestBody TestCase testCase) {
         if (testCaseService.updateById(testCase)) {
             return ResponseResult.success("测试用例更新成功", testCase);
         }

@@ -8,7 +8,7 @@ import lombok.Getter;
  */
 @Getter
 public enum LanguageType {
-    java("Java", ".java", "java"),
+    JAVA("Java", ".java", "java"),
     CPP("C++", ".cpp", "cpp"),
     PYTHON("Python", ".py", "python"),
     JAVASCRIPT("JavaScript", ".js", "javascript"),

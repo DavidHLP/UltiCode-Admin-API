@@ -7,7 +7,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -55,7 +54,7 @@ public class TestCase implements Serializable {
      * 是否为样例测试用例，默认为FALSE
      */
     @TableField("is_sample")
-    private Boolean sample;
+    private Boolean isSample;
 
     /**
      * 记录创建时间

@@ -11,7 +11,7 @@
             <span>测试用例</span>
           </div>
         </template>
-        <TestCaseCard :test-cases="sampleTestCases" @add-test-case="addTestCase" />
+        <TestCaseCard :test-cases="props.testCases" @add-test-case="addTestCase" />
       </el-tab-pane>
 
       <!-- 测试结果标签页 -->
@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { DocumentChecked, DataAnalysis } from '@element-plus/icons-vue';
 import type { TestCase, Submission } from '../../../types/problem';
 import TestCaseCard from './DebugCard/TestCaseCard.vue';
@@ -52,13 +52,8 @@ const emit = defineEmits<{
 
 const mainTab = ref('test-cases');
 
-const sampleTestCases = computed(() => {
-  console.log('sampleTestCases', props.testCases);
-  return props.testCases.filter(testCase => testCase.sample);
-});
-
 // 初始化第一个测试用例
-watch(sampleTestCases, (newCases) => {
+watch(() => props.testCases, (newCases) => {
   if (newCases.length > 0) {
     // 可以在这里添加初始化逻辑
   }

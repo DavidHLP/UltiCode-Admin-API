@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/login/LoginView.vue'
-import QuestionBank from '@/views/questionbank/QuestionBank.vue'
+import QuestionBank from '@/views/problembank/QuestionBank.vue'
 import { MainLayout } from '@/layout'
 import ProblemView from '@/views/problem/ProblemView.vue'
 
@@ -26,8 +26,8 @@ const router = createRouter({
       },
       children: [
         {
-          path: 'questionbank',
-          name: 'questionbank',
+          path: '/',
+          name: 'problembank',
           component: QuestionBank,
         },
       ],

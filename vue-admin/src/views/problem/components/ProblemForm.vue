@@ -128,7 +128,8 @@ const saveProblem = async () => {
       try {
         const problemToSave = { ...currentProblem.value, tags: currentProblemTags.value }
         if (props.isEdit) {
-          await updateProblem(problemToSave.id!, problemToSave as Problem)
+          problemToSave.id = props.problem.id!
+          await updateProblem(problemToSave as Problem)
           ElMessage.success('题目更新成功。')
         } else {
           await createProblem(problemToSave as Problem)

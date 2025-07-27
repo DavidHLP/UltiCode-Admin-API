@@ -8,7 +8,9 @@
           <div class="current-date">
             {{ formatSelectedDate() }}
           </div>
-          <el-icon class="refresh-icon" @click="resetToToday"><Refresh /></el-icon>
+          <el-icon class="refresh-icon" @click="resetToToday">
+            <Refresh />
+          </el-icon>
         </div>
         <el-config-provider :locale="zhCn">
           <el-calendar v-model="calendarValue" class="custom-calendar">
@@ -39,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { Refresh } from '@element-plus/icons-vue'
@@ -51,18 +53,11 @@ interface RecommendedQuestion {
   difficulty: string
 }
 
-// 定义属性
-const props = defineProps<{
-  completedCount: number
-}>()
-
 // 路由
 const router = useRouter()
 
 // 响应式数据
 const calendarValue = ref(new Date())
-const weeklyCompleted = ref(5)
-const monthlyCompleted = ref(23)
 
 // 推荐题目数据
 const recommendedQuestions = ref<RecommendedQuestion[]>([
@@ -72,9 +67,6 @@ const recommendedQuestions = ref<RecommendedQuestion[]>([
   { id: 14, title: '合并两个有序链表', difficulty: '简单' },
   { id: 15, title: '有效的括号', difficulty: '简单' }
 ])
-
-// 计算属性
-const totalCompleted = computed(() => props.completedCount)
 
 // 方法
 const getDifficultyType = (difficulty: string) => {
@@ -99,31 +91,6 @@ const getCalendarDayClass = (day: string) => {
 
 const goToQuestion = (questionId: number) => {
   router.push(`/question/${questionId}`)
-}
-
-const selectDate = (type: 'prev-month' | 'today' | 'next-month') => {
-  const date = new Date(calendarValue.value)
-
-  if (type === 'prev-month') {
-    date.setMonth(date.getMonth() - 1)
-  } else if (type === 'next-month') {
-    date.setMonth(date.getMonth() + 1)
-  } else {
-    date.setTime(Date.now())
-  }
-
-  calendarValue.value = date
-}
-
-const formatCurrentDate = () => {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const day = now.getDate()
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-  const weekDay = weekDays[now.getDay()]
-
-  return `${year}年${month}月${day}日 星期${weekDay}`
 }
 
 const formatSelectedDate = () => {

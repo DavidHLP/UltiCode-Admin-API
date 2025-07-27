@@ -16,6 +16,8 @@
           <el-option v-for="category in categories" :key="category.category" :label="category.description"
             :value="category.category" />
         </el-select>
+        <el-button type="primary" @click="openAddProblemDialog" :icon="Plus" size="default"
+          class="add-problem-btn">添加题目</el-button>
       </template>
 
       <!-- 表格列定义 -->
@@ -49,8 +51,8 @@
                       <el-table-column prop="score" label="分数" width="100" align="center" />
                       <el-table-column label="操作" width="150" align="center">
                         <template #default="scope">
-                          <el-button @click="openEditTestCaseDialog(scope.row)" :icon="Edit" size="small" type="primary"
-                            plain />
+                          <el-button @click="openEditTestCaseDialog(props.row, scope.row)" :icon="Edit" size="small"
+                            type="primary" plain />
                           <el-button @click="handleDeleteTestCase(props.row, scope.row.id)" :icon="Delete" size="small"
                             type="danger" plain />
                         </template>
@@ -281,7 +283,7 @@ const openAddProblemDialog = () => {
     timeLimit: 1000,
     memoryLimit: 128,
     difficulty: 'Easy',
-    category: 'All Problems',
+    category: '',
   }
   dialogVisible.value = true
 }
@@ -314,8 +316,9 @@ const openAddTestCaseDialog = (problem: Problem) => {
   addEditTestCaseDialogVisible.value = true
 }
 
-const openEditTestCaseDialog = (testCase: TestCase) => {
+const openEditTestCaseDialog = (problem: Problem, testCase: TestCase) => {
   isEditTestCase.value = true
+  activeProblemForTestCases.value = problem
   currentTestCase.value = { ...testCase }
   addEditTestCaseDialogVisible.value = true
 }
@@ -354,6 +357,10 @@ onMounted(() => {
 .difficulty-filter,
 .category-filter {
   width: 120px;
+}
+
+.add-problem-btn {
+  margin-left: 10px;
 }
 
 .id-tag {

@@ -8,9 +8,9 @@ import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.david.judge.enums.CategoryType;
 import com.david.judge.enums.ProblemDifficulty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -20,7 +20,7 @@ import java.util.List;
  * 题目实体类
  */
 @Data
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @TableName(value = "problems", autoResultMap = true)

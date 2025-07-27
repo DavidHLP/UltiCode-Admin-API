@@ -3,7 +3,7 @@ import type { Problem, Submission } from '@/types/problem'
 
 export const getProblemById = (id: number): Promise<Problem> => {
   return request({
-    url: `/problems/api/${id}`,
+    url: `/problems/api/view/${id}`,
     method: 'get',
   })
 }

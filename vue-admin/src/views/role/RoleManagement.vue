@@ -10,6 +10,7 @@
         <el-option label="激活" :value="1" />
         <el-option label="禁用" :value="0" />
       </el-select>
+      <el-button type="primary" @click="handleAdd" :icon="Plus" size="default" class="add-role-btn">添加角色</el-button>
     </template>
 
     <!-- 表格列插槽 -->
@@ -103,6 +104,7 @@ import {
   Setting,
   Star,
   Tools,
+  Plus,
 } from '@element-plus/icons-vue'
 import ManageComponent from '@/components/management/ManageComponent.vue'
 
@@ -252,6 +254,10 @@ onMounted(() => {
 <style scoped lang="css">
 .status-filter {
   width: 120px;
+}
+
+.add-role-btn {
+  margin-left: 10px;
 }
 
 .id-tag {

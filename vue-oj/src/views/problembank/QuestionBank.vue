@@ -4,10 +4,7 @@
     <div class="grid gap-6 grid-cols-3 lg:grid-cols-4">
       <!-- 左侧主内容 -->
       <div class="col-span-2 lg:col-span-3">
-        <LeftSidebar
-          ref="leftSidebarRef"
-          @questions-loaded="handleQuestionsLoaded"
-        />
+        <LeftSidebar ref="leftSidebarRef" @questions-loaded="handleQuestionsLoaded" />
       </div>
 
       <!-- 右侧边栏 -->

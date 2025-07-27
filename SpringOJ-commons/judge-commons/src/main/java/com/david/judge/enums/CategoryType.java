@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 @Getter
 public enum CategoryType {
-    ALGORITHMS("Algorithms", "算法"),
-    DATABASE("Database", "数据库"),
-    SHELL("Shell", "Shell"),
-    MULTI_THREADING("Multi-threading", "多线程"),
-    JAVASCRIPT("JavaScript", "JavaScript"),
-    PANDAS("Pandas", "Pandas");
+    ALGORITHMS("ALGORITHMS", "算法"),
+    DATABASE("DATABASE", "数据库"),
+    SHELL("SHELL", "Shell"),
+    MULTI_THREADING("MULTI_THREADING", "多线程"),
+    JAVASCRIPT("JAVASCRIPT", "JavaScript"),
+    PANDAS("PANDAS", "Pandas");
 
     @EnumValue
     @JsonValue

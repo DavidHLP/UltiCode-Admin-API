@@ -2,11 +2,13 @@
   <ManageComponent ref="manageComponentRef" title="用户管理" :title-icon="User" add-button-text="添加用户"
     search-placeholder="搜索用户名或邮箱..." empty-text="暂无用户数据" :table-data="filteredUsers" :loading="loading" :saving="saving"
     @add="openAddUserDialog" @search="handleSearch" @refresh="refreshData" @dialog-confirm="saveUser">
-    <!-- 自定义筛选器：角色筛选 -->
+    <!-- 自定义筛选器：角色筛选, 添加用户按钮 -->
     <template #filters>
       <el-select v-model="selectedRole" placeholder="筛选角色" class="role-filter" clearable @change="handleRoleFilter">
         <el-option v-for="role in allRoles" :key="role.id" :label="role.roleName" :value="role.id" />
       </el-select>
+      <el-button type="primary" @click="openAddUserDialog" :icon="Plus" size="default"
+        class="add-user-btn">添加用户</el-button>
     </template>
 
     <!-- 表格列定义 -->
@@ -144,9 +146,10 @@
           <el-input v-model="currentUser.email" placeholder="请输入邮箱地址" :prefix-icon="Message" clearable />
         </el-form-item>
 
-        <el-form-item v-if="!isEdit" label="密码" prop="password">
+        <el-form-item label="密码" prop="password">
           <el-input v-model="currentUser.password" type="password" placeholder="请输入密码" :prefix-icon="Lock" show-password
             clearable />
+          <div v-if="isEdit" class="password-tip">留空则不修改密码</div>
         </el-form-item>
 
         <el-form-item label="角色" prop="roles">
@@ -169,6 +172,7 @@ import type { User as UserData } from '@/types/user.ts'
 import type { Role } from '@/types/role.ts'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
+  Plus,
   User,
   Edit,
   Delete,
@@ -203,6 +207,7 @@ const currentUserRoleIds = ref<number[]>([])
 const userFormRef = ref<FormInstance>()
 
 // 表单验证规则
+// 注意：在 saveUser 方法中会根据 isEdit 状态动态调整 password 的 required 属性
 const userRules: FormRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -213,7 +218,6 @@ const userRules: FormRules = {
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
   ],
 }
@@ -318,9 +322,9 @@ const getRoles = async () => {
 }
 
 const openAddUserDialog = () => {
-  currentUser.value = {}
+  currentUser.value = { status: 1 } // 默认激活状态
   currentUserRoleIds.value = []
-  manageComponentRef.value?.openDialog('添加新用户', {}, false)
+  manageComponentRef.value?.openDialog('添加新用户', { status: 1 }, false)
 }
 
 const openEditUserDialog = (user: UserData) => {
@@ -331,6 +335,27 @@ const openEditUserDialog = (user: UserData) => {
 
 const saveUser = async () => {
   if (!userFormRef.value) return
+
+  // 动态设置密码字段的验证规则
+  const isEdit = manageComponentRef.value?.isEdit
+  if (!isEdit) {
+    // 添加用户时密码必填
+    userRules.password = [
+      { required: true, message: '请输入密码', trigger: 'blur' },
+      { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
+    ]
+  } else {
+    // 编辑用户时密码非必填
+    userRules.password = [
+      { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
+    ]
+
+    // 如果密码为空，则从提交数据中移除密码字段
+    if (!currentUser.value.password || currentUser.value.password.trim() === '') {
+      delete currentUser.value.password
+    }
+  }
+
   await userFormRef.value.validate(async (valid) => {
     if (valid) {
       saving.value = true
@@ -339,7 +364,7 @@ const saveUser = async () => {
           currentUserRoleIds.value.includes(role.id),
         )
 
-        if (manageComponentRef.value?.isEdit) {
+        if (isEdit) {
           await updateUser(currentUser.value.userId!, currentUser.value as UserData)
           ElMessage.success('用户更新成功。')
         } else {
@@ -378,6 +403,10 @@ onMounted(() => {
 <style scoped>
 .role-filter {
   width: 150px;
+}
+
+.add-user-btn {
+  margin-left: 10px;
 }
 
 .id-tag {
@@ -507,6 +536,12 @@ onMounted(() => {
   display: flex;
   gap: 8px;
   justify-content: center;
+}
+
+.password-tip {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px;
 }
 
 .action-btn {

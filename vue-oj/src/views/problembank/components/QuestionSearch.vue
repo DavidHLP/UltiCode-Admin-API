@@ -9,31 +9,47 @@
           </el-icon>
         </template>
       </el-input>
-      <el-button :icon="Sort" circle class="icon-button" @click="toggleSort" />
-      <el-button :icon="Filter" circle class="icon-button" @click="toggleFilter" />
+      <el-popover ref="sortPopoverRef" placement="bottom-end" :width="220" trigger="click" popper-class="sort-popover">
+        <template #reference>
+          <el-button :icon="Sort" circle class="icon-button" />
+        </template>
+        <SortComponent ref="sortComponentRef" @sort-change="handleSortChange" />
+      </el-popover>
+      <!-- TODO 后续实现筛选器 -->
+      <!-- <el-button :icon="Filter" circle class="icon-button" @click="toggleFilter" /> -->
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Search, Sort, Filter } from '@element-plus/icons-vue';
+import { Search, Sort } from '@element-plus/icons-vue';
+// TODO 后续实现筛选器后使用Icon
+// import { Filter } from '@/assets/icon/Filter.vue';
+import SortComponent from './SearchComponent/SortComponent.vue';
+import type { PopoverInstance } from 'element-plus';
 
 const emit = defineEmits<{
   (e: 'search', query: string): void;
+  (e: 'sort', option: string): void;
 }>();
 
 const searchQuery = ref('');
+const sortPopoverRef = ref<PopoverInstance | null>(null);
+const sortComponentRef = ref<InstanceType<typeof SortComponent> | null>(null);
 
 const handleSearch = () => {
   emit('search', searchQuery.value);
 };
 
-const toggleSort = () => {
+const handleSortChange = (option: string) => {
+  emit('sort', option);
+  // 点击外部时Popover会自动关闭
 };
 
-const toggleFilter = () => {
-};
+// TODO 后续实现筛选器
+// const toggleFilter = () => {
+// };
 </script>
 
 <style scoped>
@@ -80,5 +96,13 @@ const toggleFilter = () => {
 .icon-button.el-button:hover {
   color: #409eff;
   background-color: #ecf5ff;
+}
+</style>
+
+<style>
+.sort-popover {
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
 }
 </style>

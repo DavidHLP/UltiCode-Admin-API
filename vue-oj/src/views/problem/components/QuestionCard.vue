@@ -5,7 +5,8 @@
         <div class="problem-content">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
             <h1>{{ problem.title }}</h1>
-            <el-tag :type="difficultyType" size="small" effect="light">{{ problem.difficulty }}</el-tag>
+            <el-tag :type="difficultyType" size="small" effect="light">{{ TransformDifficulty(problem.difficulty)
+              }}</el-tag>
           </div>
           <md-preview :modelValue="problem.description" theme="light" />
         </div>
@@ -44,6 +45,19 @@ const difficultyType = computed(() => {
       return 'info';
   }
 });
+
+const TransformDifficulty = (difficulty: string) => {
+  switch (difficulty) {
+    case 'Easy':
+      return '简单';
+    case 'Medium':
+      return '中等';
+    case 'Hard':
+      return '困难';
+    default:
+      return '未知';
+  }
+};
 </script>
 
 <style scoped>
