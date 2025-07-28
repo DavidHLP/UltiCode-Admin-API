@@ -38,7 +38,7 @@ const emit = defineEmits<{
 const monacoEditorRef = ref<HTMLDivElement | null>(null);
 const editor = shallowRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 const availableLanguages = computed(() => Object.keys(props.initialCode));
-const selectedLanguage = ref(availableLanguages.value[0] || 'java');
+const selectedLanguage = ref(availableLanguages.value[0] || 'JAVA');
 const cursorPosition = ref({ line: 1, column: 1 });
 
 onMounted(() => {

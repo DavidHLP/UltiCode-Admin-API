@@ -37,11 +37,19 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Component
 public class JavaDockerAcmSandbox extends SandboxTemplate {
-    private static final String MEM_SCRIPT_HOST_PATH = "/tmp/oj-sandbox/script/mem.sh";
     private static final String MEM_SCRIPT_CONTAINER_PATH = "/script/mem.sh";
+    private final String memScriptHostPath;
 
     public JavaDockerAcmSandbox(DockerClient dockerClient) {
         super(dockerClient);
+        // 动态获取 resources/script/mem.sh 的绝对路径
+        try {
+            String resourcePath = this.getClass().getClassLoader().getResource("script/mem.sh").getPath();
+            this.memScriptHostPath = resourcePath;
+            log.info("内存监控脚本路径: {}", this.memScriptHostPath);
+        } catch (Exception e) {
+            throw new RuntimeException("无法找到内存监控脚本: script/mem.sh", e);
+        }
     }
 
     @Override
@@ -56,7 +64,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
     protected String writeSourceCode(String tempDir, String sourceCode, LanguageType language) throws IOException {
         String fileName = "Main" + language.getSuffix();
         String filePath = tempDir + File.separator + fileName;
-        
+
         try (FileWriter writer = new FileWriter(filePath)) {
             writer.write(sourceCode);
         }
@@ -67,7 +75,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
     @Override
     protected String createContainer(String tempDir, SandboxExecuteRequest request) {
         String imageName = getDockerImage(request.getLanguage());
-        
+
         HostConfig hostConfig = HostConfig.newHostConfig()
                 .withNetworkMode("none") // 禁止网络访问
                 .withPidsLimit(64L) // 限制进程数
@@ -75,10 +83,10 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
                 .withMemory(request.getMemoryLimit() * 1024 * 1024L) // 内存限制 (MB to bytes)
                 .withMemorySwap(0L) // 交换区0MB
                 .withCpuCount(1L); // CPU限制为单核
-        
+
         // 绑定代码目录和内存监控脚本
         hostConfig.setBinds(new Bind(tempDir, new Volume("/app")),
-                new Bind(MEM_SCRIPT_HOST_PATH, new Volume(MEM_SCRIPT_CONTAINER_PATH)));
+                new Bind(memScriptHostPath, new Volume(MEM_SCRIPT_CONTAINER_PATH)));
 
         CreateContainerResponse container = dockerClient.createContainerCmd(imageName)
                 .withHostConfig(hostConfig)
@@ -95,7 +103,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
     protected void startContainer(String containerId) {
         dockerClient.startContainerCmd(containerId).exec();
         log.info("启动Docker容器: {}", containerId);
-        
+
         // 确保/app目录有正确的权限
         try {
             ExecCreateCmdResponse chmodCmd = dockerClient.execCreateCmd(containerId)
@@ -116,7 +124,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
             if (compileCmd.length == 0) {
                 return createSuccessResult();
             }
-            
+
             ExecCreateCmdResponse execCreateCmd = dockerClient.execCreateCmd(containerId)
                     .withCmd(compileCmd)
                     .withAttachStdout(true)
@@ -164,22 +172,22 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
         result.setScore(0);
         result.setTimeUsed(0);
         result.setMemoryUsed(0);
-        
+
         List<JudgeResult.TestCaseResult> testCaseResults = new ArrayList<>();
-        
+
         for (int i = 0; i < request.getInputs().size(); i++) {
             String input = request.getInputs().get(i);
             String expectedOutput = request.getExpectedOutputs().get(i);
-            
+
             JudgeResult.TestCaseResult testResult = runSingleTestCase(
                     containerId, input, expectedOutput, request, i + 1);
-            
+
             testCaseResults.add(testResult);
-            
+
             // 累计时间和内存
             result.setTimeUsed(result.getTimeUsed() + testResult.getTimeUsed());
             result.setMemoryUsed(Math.max(result.getMemoryUsed(), testResult.getMemoryUsed()));
-            
+
             // 如果有测试点失败，更新总状态
             if (testResult.getStatus() != JudgeStatus.ACCEPTED) {
                 result.setStatus(testResult.getStatus());
@@ -187,7 +195,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
                 result.setScore(result.getScore() + testResult.getScore());
             }
         }
-        
+
         result.setTestCaseResults(testCaseResults);
         return result;
     }
@@ -231,19 +239,20 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 
     private String[] getCompileCommand(String sourceFile, LanguageType language) {
         return switch (language) {
-            case JAVA -> new String[]{"sh", "-c", "mkdir -p /tmp/classes && javac -d /tmp/classes /app/" + sourceFile};
-            default -> new String[]{}; // 解释型语言或默认情况
+            case JAVA ->
+                new String[] { "sh", "-c", "mkdir -p /tmp/classes && javac -d /tmp/classes /app/" + sourceFile };
+            default -> new String[] {}; // 解释型语言或默认情况
         };
     }
 
-    private JudgeResult.TestCaseResult runSingleTestCase(String containerId, String input, 
+    private JudgeResult.TestCaseResult runSingleTestCase(String containerId, String input,
             String expectedOutput, SandboxExecuteRequest request, int testCaseId) {
-        
+
         JudgeResult.TestCaseResult result = new JudgeResult.TestCaseResult();
         result.setTestCaseId((long) testCaseId);
         result.setStatus(JudgeStatus.ACCEPTED);
         result.setScore(0); // Default score
-        
+
         try {
             // 1. 启动内存监控
             AtomicLong maxMemoryUsage = new AtomicLong(0L);
@@ -305,23 +314,22 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
             }
 
             // Start the execution and capture output
-            ResultCallback.Adapter<Frame> callback =
-                    dockerClient.execStartCmd(execCreateCmd.getId())
-                            .withStdIn(runInput)
-                            .exec(new ResultCallback.Adapter<Frame>() {
-                                @Override
-                                public void onNext(Frame frame) {
-                                    try {
-                                        if (frame.getStreamType() == StreamType.STDOUT) {
-                                            output.write(frame.getPayload());
-                                        } else if (frame.getStreamType() == StreamType.STDERR) {
-                                            error.write(frame.getPayload());
-                                        }
-                                    } catch (IOException e) {
-                                        log.error("捕获程序输出异常", e);
-                                    }
+            ResultCallback.Adapter<Frame> callback = dockerClient.execStartCmd(execCreateCmd.getId())
+                    .withStdIn(runInput)
+                    .exec(new ResultCallback.Adapter<Frame>() {
+                        @Override
+                        public void onNext(Frame frame) {
+                            try {
+                                if (frame.getStreamType() == StreamType.STDOUT) {
+                                    output.write(frame.getPayload());
+                                } else if (frame.getStreamType() == StreamType.STDERR) {
+                                    error.write(frame.getPayload());
                                 }
-                            });
+                            } catch (IOException e) {
+                                log.error("捕获程序输出异常", e);
+                            }
+                        }
+                    });
 
             // Wait for completion with timeout
             boolean completed = callback.awaitCompletion(request.getTimeLimit(), TimeUnit.MILLISECONDS);
@@ -370,18 +378,18 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 
         } catch (Exception e) {
             log.error("测试用例执行失败: testCase={}", testCaseId, e);
-            result.setStatus(JudgeStatus.SYSTEM_ERROR); 
+            result.setStatus(JudgeStatus.SYSTEM_ERROR);
             result.setScore(0);
             result.setErrorMessage("系统错误: " + e.getMessage());
         }
-        
+
         return result;
     }
 
     private String[] getExecuteCommand(LanguageType language) {
         return switch (language) {
-            case JAVA -> new String[]{"java", String.format("-Xmx%dm", 128), "-cp", "/tmp/classes", "Main"}; // 使用新的编译输出目录
-            default -> new String[]{}; // Should not happen if all languages are handled
+            case JAVA -> new String[] { "java", String.format("-Xmx%dm", 128), "-cp", "/tmp/classes", "Main" }; // 使用新的编译输出目录
+            default -> new String[] {}; // Should not happen if all languages are handled
         };
     }
 }

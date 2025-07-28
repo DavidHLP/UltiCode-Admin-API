@@ -1,14 +1,21 @@
 package com.david.dto;
 
 import com.david.judge.enums.LanguageType;
-import lombok.Data;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 提交代码请求DTO
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class SubmitCodeRequest {
     /** 题目ID */
     @NotNull(message = "题目ID不能为空")

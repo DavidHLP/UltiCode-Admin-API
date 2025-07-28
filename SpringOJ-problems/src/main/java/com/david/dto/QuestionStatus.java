@@ -14,26 +14,18 @@ public enum QuestionStatus {
         this.value = value;
     }
 
-    @JsonValue
-    public String getValue() {
-        return value;
-    }
-
     @JsonCreator
     public static QuestionStatus fromValue(String value) {
-        if (value == null) {
-            return null;
-        }
         for (QuestionStatus status : values()) {
             if (status.value.equalsIgnoreCase(value)) {
                 return status;
             }
         }
-        for (QuestionStatus status : values()) {
-            if (status.name().equalsIgnoreCase(value)) {
-                return status;
-            }
-        }
-        return null;
+        throw new IllegalArgumentException("未知 status: " + value);
+    }
+
+    @JsonValue
+    public String getValue() {
+        return value;
     }
 }

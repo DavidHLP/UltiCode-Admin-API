@@ -23,6 +23,7 @@ public abstract class SandboxTemplate {
 
     /**
      * 模板方法：执行代码判题的完整流程
+     * 
      * @param request 沙箱执行请求
      * @return 判题结果
      */
@@ -65,6 +66,7 @@ public abstract class SandboxTemplate {
 
     /**
      * 抽象方法：环境准备与隔离
+     * 
      * @param request 沙箱执行请求
      * @return 临时工作目录路径
      * @throws IOException IO异常
@@ -73,16 +75,19 @@ public abstract class SandboxTemplate {
 
     /**
      * 抽象方法：写入源代码文件
-     * @param tempDir 临时工作目录
+     * 
+     * @param tempDir    临时工作目录
      * @param sourceCode 源代码
-     * @param language 编程语言
+     * @param language   编程语言
      * @return 源代码文件名
      * @throws IOException IO异常
      */
-    protected abstract String writeSourceCode(String tempDir, String sourceCode, com.david.judge.enums.LanguageType language) throws IOException;
+    protected abstract String writeSourceCode(String tempDir, String sourceCode,
+            com.david.judge.enums.LanguageType language) throws IOException;
 
     /**
      * 抽象方法：创建Docker容器
+     * 
      * @param tempDir 临时工作目录
      * @param request 沙箱执行请求
      * @return 容器ID
@@ -91,32 +96,37 @@ public abstract class SandboxTemplate {
 
     /**
      * 抽象方法：启动Docker容器
+     * 
      * @param containerId 容器ID
      */
     protected abstract void startContainer(String containerId);
 
     /**
      * 抽象方法：编译代码
+     * 
      * @param containerId 容器ID
-     * @param sourceFile 源代码文件名
-     * @param language 编程语言
+     * @param sourceFile  源代码文件名
+     * @param language    编程语言
      * @return 编译结果
      */
-    protected abstract JudgeResult compileCode(String containerId, String sourceFile, com.david.judge.enums.LanguageType language);
+    protected abstract JudgeResult compileCode(String containerId, String sourceFile,
+            com.david.judge.enums.LanguageType language);
 
     /**
      * 抽象方法：执行测试用例
+     * 
      * @param containerId 容器ID
-     * @param request 沙箱执行请求
-     * @param tempDir 临时工作目录
+     * @param request     沙箱执行请求
+     * @param tempDir     临时工作目录
      * @return 测试用例执行结果
      */
     protected abstract JudgeResult executeTestCases(String containerId, SandboxExecuteRequest request, String tempDir);
 
     /**
      * 抽象方法：结果封装与清理
-     * @param containerId 容器ID
-     * @param tempDir 临时工作目录
+     * 
+     * @param containerId     容器ID
+     * @param tempDir         临时工作目录
      * @param testCasesResult 测试用例执行结果
      * @return 最终判题结果
      */
@@ -124,19 +134,22 @@ public abstract class SandboxTemplate {
 
     /**
      * 抽象方法：清理Docker容器
+     * 
      * @param containerId 容器ID
      */
     protected abstract void cleanupContainer(String containerId);
 
     /**
      * 抽象方法：清理临时目录
+     * 
      * @param tempDir 临时目录路径
      */
     protected abstract void cleanupTempDirectory(String tempDir);
 
     /**
      * 辅助方法：创建错误结果
-     * @param status 判题状态
+     * 
+     * @param status       判题状态
      * @param errorMessage 错误信息
      * @return 判题结果
      */
@@ -152,6 +165,7 @@ public abstract class SandboxTemplate {
 
     /**
      * 辅助方法：创建成功结果
+     * 
      * @return 判题结果
      */
     protected JudgeResult createSuccessResult() {

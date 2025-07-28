@@ -1,6 +1,8 @@
 package com.david.judge.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 
 /**
@@ -20,12 +22,18 @@ public enum LanguageType {
     private final String suffix;
     private final String code;
 
+    @JsonValue
+    public String getCode() {
+        return this.code;
+    }
+
     LanguageType(String name, String suffix, String code) {
         this.name = name;
         this.suffix = suffix;
         this.code = code;
     }
 
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static LanguageType fromString(String code) {
         for (LanguageType type : LanguageType.values()) {
             if (type.code.equalsIgnoreCase(code) || type.name().equalsIgnoreCase(code)) {

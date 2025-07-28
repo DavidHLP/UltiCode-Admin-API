@@ -4,7 +4,7 @@ package com.david.judge;
  */
 public class CodeTemplate {
    public static String JAVA_CODE_TEMPLATE =
-           """
+            """
             import java.util.*;
             import java.io.*;
             public class Main {
@@ -13,5 +13,5 @@ public class CodeTemplate {
                     // 你的代码逻辑从这里开始
                 }
             }
-           """;
+            """;
 }

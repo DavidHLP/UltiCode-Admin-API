@@ -1,13 +1,15 @@
-package com.david.strategy;
+package com.david.dto;
 
-import com.david.dto.JudgeResult;
+import java.util.List;
+
 import com.david.judge.Problem;
 import com.david.judge.Submission;
 import com.david.judge.TestCase;
+
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.List;
+import lombok.NoArgsConstructor;
 
 /**
  * @author david
@@ -15,6 +17,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class JudgeContext {
     private JudgeResult judgeResult;
     private Submission submission;

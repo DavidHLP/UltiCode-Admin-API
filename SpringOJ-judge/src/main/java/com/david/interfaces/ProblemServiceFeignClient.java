@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 题目服务Feign客户端
  */
-@FeignClient(name = "problems-service", path = "/problems/api")
+@FeignClient(name = "problems-service", path = "/problems/api/management")
 public interface ProblemServiceFeignClient {
 
     /**

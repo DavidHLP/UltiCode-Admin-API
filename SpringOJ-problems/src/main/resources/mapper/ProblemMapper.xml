@@ -5,7 +5,6 @@
     <resultMap id="QuestionBankItemDtoMap" type="com.david.dto.QuestionBankItemDto">
         <id property="id" column="id"/>
         <result property="title" column="title"/>
-        <result property="category" column="category" javaType="com.david.judge.enums.CategoryType"/>
         <result property="difficulty" column="difficulty" javaType="com.david.judge.enums.ProblemDifficulty"/>
         <result property="tags" column="tags" javaType="java.util.List" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
         <result property="submissionCount" column="submissionCount"/>

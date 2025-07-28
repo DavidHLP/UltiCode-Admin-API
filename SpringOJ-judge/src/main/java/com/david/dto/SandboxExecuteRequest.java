@@ -1,13 +1,21 @@
 package com.david.dto;
 
-import com.david.judge.enums.LanguageType;
-import lombok.Data;
 import java.util.List;
+
+import com.david.judge.enums.LanguageType;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 沙箱执行请求DTO
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class SandboxExecuteRequest {
     /** 源代码 */
     private String sourceCode;
