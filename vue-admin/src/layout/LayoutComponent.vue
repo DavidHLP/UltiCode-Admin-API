@@ -16,29 +16,47 @@
             </div>
           </transition>
         </div>
-        <el-button :icon="isCollapsed ? Expand : Fold" @click="toggleSidebar" class="collapse-btn" text />
+        <el-button
+          :icon="isCollapsed ? Expand : Fold"
+          class="collapse-btn"
+          text
+          @click="toggleSidebar"
+        />
       </div>
 
       <el-scrollbar class="sidebar-menu-container">
-        <el-menu :router="true" :default-active="$route.path" :collapse="isCollapsed" class="sidebar-menu"
-          background-color="transparent" text-color="#ffffff" active-text-color="#ffffff">
-          <el-menu-item index="/users" class="menu-item">
+        <el-menu
+          :collapse="isCollapsed"
+          :default-active="$route.path"
+          :router="true"
+          active-text-color="#ffffff"
+          background-color="transparent"
+          class="sidebar-menu"
+          text-color="#ffffff"
+        >
+          <el-menu-item class="menu-item" index="/users">
             <el-icon>
               <User />
             </el-icon>
             <span>用户管理</span>
           </el-menu-item>
-          <el-menu-item index="/roles" class="menu-item">
+          <el-menu-item class="menu-item" index="/roles">
             <el-icon>
               <Lock />
             </el-icon>
             <span>角色管理</span>
           </el-menu-item>
-          <el-menu-item index="/problems" class="menu-item">
+          <el-menu-item class="menu-item" index="/problems">
             <el-icon>
               <Memo />
             </el-icon>
             <span>题目管理</span>
+          </el-menu-item>
+          <el-menu-item class="menu-item" index="/solutions">
+            <el-icon>
+              <Memo />
+            </el-icon>
+            <span>题解管理</span>
           </el-menu-item>
         </el-menu>
       </el-scrollbar>
@@ -48,7 +66,7 @@
       <!-- 现代化头部导航 -->
       <el-header class="layout-header">
         <div class="header-left">
-          <el-breadcrumb separator="/" class="breadcrumb">
+          <el-breadcrumb class="breadcrumb" separator="/">
             <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item v-if="currentPageName">{{ currentPageName }}</el-breadcrumb-item>
           </el-breadcrumb>
@@ -57,7 +75,7 @@
         <div class="header-right">
           <div class="user-info">
             <span class="welcome-text">欢迎回来</span>
-            <el-dropdown trigger="click" class="user-dropdown">
+            <el-dropdown class="user-dropdown" trigger="click">
               <div class="user-avatar-section">
                 <el-avatar :icon="UserFilled" class="user-avatar" />
                 <el-icon class="dropdown-icon">
@@ -78,7 +96,11 @@
                     </el-icon>
                     <span>系统设置</span>
                   </el-dropdown-item>
-                  <el-dropdown-item divided class="user-menu-item logout-item" @click="handleLogout">
+                  <el-dropdown-item
+                    class="user-menu-item logout-item"
+                    divided
+                    @click="handleLogout"
+                  >
                     <el-icon>
                       <SwitchButton />
                     </el-icon>
@@ -95,7 +117,7 @@
       <el-main class="main-content">
         <div class="content-wrapper">
           <router-view v-slot="{ Component }">
-            <transition name="fade-slide" mode="out-in">
+            <transition mode="out-in" name="fade-slide">
               <component :is="Component" />
             </transition>
           </router-view>
@@ -105,23 +127,23 @@
   </el-container>
 </template>
 
-<script setup lang="ts">
-import { ref, computed } from 'vue'
+<script lang="ts" setup>
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { logout } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 import {
-  User,
-  Lock,
-  UserFilled,
-  Platform,
+  ArrowDown,
   Expand,
   Fold,
-  ArrowDown,
+  Lock,
+  Memo,
+  Platform,
   Setting,
   SwitchButton,
-  Memo,
+  User,
+  UserFilled,
 } from '@element-plus/icons-vue'
 
 const route = useRoute()

@@ -39,7 +39,7 @@ import ResultCaseCard from './DebugCard/ResultCaseCard.vue';
 
 interface Props {
   testCases: TestCase[];
-  submissionResult?: Submission;
+  submissionResult?: Submission | null;
 }
 
 const props = defineProps<Props>();
@@ -85,6 +85,7 @@ watch(() => props.submissionResult, (newVal) => {
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .main-tabs {
@@ -102,6 +103,7 @@ watch(() => props.submissionResult, (newVal) => {
 
 :deep(.el-tabs__header) {
   margin: 0;
+  background: #fafafa;
   border-bottom: 1px solid #e8e8e8;
 }
 
@@ -110,8 +112,6 @@ watch(() => props.submissionResult, (newVal) => {
 }
 
 :deep(.el-tabs__item) {
-  color: #666;
-  font-size: 14px;
   padding: 0 16px;
   height: 40px;
   line-height: 40px;
@@ -122,13 +122,8 @@ watch(() => props.submissionResult, (newVal) => {
   font-weight: 500;
 }
 
-:deep(.el-tabs__active-bar) {
-  background-color: #1890ff;
-}
-
 :deep(.el-tabs__content) {
   flex: 1;
-  padding: 0;
   overflow-y: auto;
 }
 </style>

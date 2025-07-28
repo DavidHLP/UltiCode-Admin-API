@@ -66,6 +66,12 @@ spring:
               - Path=/judge/api/**
           filters:
               - StripPrefix=0
+        - id: problems-service-solution
+          uri: lb://problems-service
+          predicates:
+            - Path=/solutions/api/**
+          filters:
+            - StripPrefix=0
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
         - AddResponseHeader=Access-Control-Allow-Origin,*

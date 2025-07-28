@@ -1,13 +1,20 @@
 export interface LoginRequest {
-  username?: string
-  password?: string
+  username: string
+  password: string
 }
 
 export interface Token {
-  id: number
-  userId: number
   token: string
-  tokenType: string
-  expired: boolean
-  revoked: boolean
+}
+
+export interface LoginResponse {
+  success: boolean
+  message: string
+}
+
+export interface User {
+  id: number
+  username: string
+  email?: string
+  roles?: string[]
 }

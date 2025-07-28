@@ -36,7 +36,7 @@ import { computed } from 'vue';
 import type { Submission } from '../../../../types/problem';
 
 interface Props {
-  submissionResult?: Submission;
+  submissionResult?: Submission | null;
 }
 
 const props = defineProps<Props>();

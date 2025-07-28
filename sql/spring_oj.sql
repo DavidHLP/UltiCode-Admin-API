@@ -11,7 +11,7 @@
  Target Server Version : 80036 (8.0.36)
  File Encoding         : 65001
 
- Date: 21/07/2025 14:58:21
+ Date: 28/07/2025 20:52:14
 */
 
 SET NAMES utf8mb4;
@@ -28,7 +28,6 @@ CREATE TABLE `problems` (
   `time_limit` int DEFAULT '1000' COMMENT '时间限制，单位为毫秒，默认为1000ms',
   `memory_limit` int DEFAULT '128' COMMENT '内存限制，单位为MB，默认为128MB',
   `difficulty` enum('Easy','Medium','Hard') COLLATE utf8mb4_general_ci DEFAULT 'Easy' COMMENT '题目难度，枚举类型，默认为''Easy''',
-  `category` enum('Algorithms','Database','Shell','Multi-threading','JavaScript','Pandas') DEFAULT 'Algorithms' COMMENT '题目所属的大分类标签',
   `tags` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '题目标签，建议使用JSON格式的字符串存储，例如：''["数组", "动态规划"]''',
   `solved_count` int DEFAULT '0' COMMENT '成功解答的次数，默认为0',
   `submission_count` int DEFAULT '0' COMMENT '总提交次数，默认为0',
@@ -36,10 +35,11 @@ CREATE TABLE `problems` (
   `is_visible` tinyint(1) DEFAULT '1' COMMENT '题目是否对普通用户可见，默认为TRUE',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间，默认为当前时间戳',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间，当记录被更新时自动更新为当前时间戳',
+  `category` enum('ALGORITHMS','DATABASE','SHELL','MULTI_THREADING','JAVASCRIPT','PANDAS') COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '题目所属的大分类标签',
   PRIMARY KEY (`id`),
   KEY `created_by` (`created_by`),
   CONSTRAINT `problems_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `user` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=277 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for role
@@ -54,7 +54,30 @@ CREATE TABLE `role` (
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `role_name` (`role_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- ----------------------------
+-- Table structure for solutions
+-- ----------------------------
+DROP TABLE IF EXISTS `solutions`;
+CREATE TABLE `solutions` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '题解ID，主键，自动增长',
+  `problem_id` bigint NOT NULL COMMENT '对应的题目ID，关联到problems表',
+  `user_id` bigint NOT NULL COMMENT '题解作者的用户ID，关联到user表',
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '题解标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '题解内容，使用Markdown格式存储',
+  `language` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '题解中代码示例所用的编程语言',
+  `upvotes` int DEFAULT '0' COMMENT '点赞数',
+  `downvotes` int DEFAULT '0' COMMENT '点踩数',
+  `status` enum('Pending','Approved','Rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Pending' COMMENT '题解状态，默认为''Pending''，用于审核',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
+  PRIMARY KEY (`id`),
+  KEY `problem_id` (`problem_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `solutions_ibfk_1` FOREIGN KEY (`problem_id`) REFERENCES `problems` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `solutions_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='题目题解表';
 
 -- ----------------------------
 -- Table structure for submissions
@@ -78,7 +101,7 @@ CREATE TABLE `submissions` (
   KEY `problem_id` (`problem_id`),
   CONSTRAINT `submissions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
   CONSTRAINT `submissions_ibfk_2` FOREIGN KEY (`problem_id`) REFERENCES `problems` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for test_cases
@@ -87,15 +110,15 @@ DROP TABLE IF EXISTS `test_cases`;
 CREATE TABLE `test_cases` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '测试用例ID，主键，自动增长',
   `problem_id` bigint NOT NULL COMMENT '关联的题目ID，外键，关联到problems表',
-  `input` text COLLATE utf8mb4_general_ci NOT NULL COMMENT '输入',
-  `output` text COLLATE utf8mb4_general_ci NOT NULL COMMENT '期望的输出',
+  `input` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '输入',
+  `output` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '期望的输出',
   `score` int DEFAULT '10' COMMENT '该测试点的分值，默认为10',
   `is_sample` tinyint(1) DEFAULT '0' COMMENT '是否为样例测试用例，默认为FALSE',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间，默认为当前时间戳',
   PRIMARY KEY (`id`),
   KEY `problem_id` (`problem_id`),
   CONSTRAINT `test_cases_ibfk_1` FOREIGN KEY (`problem_id`) REFERENCES `problems` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for token
@@ -111,7 +134,7 @@ CREATE TABLE `token` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `token_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1946895459710959619 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1949672146643267587 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for user
@@ -132,7 +155,7 @@ CREATE TABLE `user` (
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for user_role

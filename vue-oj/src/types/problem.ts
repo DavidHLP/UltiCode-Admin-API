@@ -1,12 +1,9 @@
 export interface Problem {
   id: number
   title: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
   description: string
-  tags: string[]
-  initialCode: {
-    [language: string]: string
-  }
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  initialCode: { [language: string]: string }
   testCases: TestCase[]
 }
 
@@ -30,4 +27,21 @@ export interface Submission {
   memoryUsed: number
   compileInfo: string
   errorMessage: string
+  createdAt: string
+}
+
+export interface Solution {
+  id: number
+  problemId: number
+  userId: number
+  title: string
+  content: string
+  language: string
+  upvotes: number
+  downvotes: number
+  status: 'Pending' | 'Approved' | 'Rejected'
+  createdAt: string
+  updatedAt: string
+  authorUsername: string
+  authorAvatar: string
 }

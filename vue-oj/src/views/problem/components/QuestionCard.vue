@@ -1,63 +1,73 @@
 <template>
   <div class="question-card">
     <el-tabs v-model="activeTab" class="question-tabs">
-      <el-tab-pane label="题目描述" name="description">
-        <div class="problem-content">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <h1>{{ problem.title }}</h1>
-            <el-tag :type="difficultyType" size="small" effect="light">{{ TransformDifficulty(problem.difficulty)
-              }}</el-tag>
+      <el-tab-pane name="description">
+        <template #label>
+          <div class="tab-label">
+            <el-icon>
+              <Document />
+            </el-icon>
+            <span>题目描述</span>
           </div>
-          <md-preview :modelValue="problem.description" theme="light" />
-        </div>
+        </template>
+        <DescriptionCard :problem="problem" />
       </el-tab-pane>
-      <el-tab-pane label="题解" name="solution">
-        <div class="p-4">暂无题解</div>
+      <el-tab-pane name="solution">
+        <template #label>
+          <div class="tab-label">
+            <el-icon>
+              <Promotion />
+            </el-icon>
+            <span>题解</span>
+          </div>
+        </template>
+        <SolutionCard :solutions="solutions" />
       </el-tab-pane>
-      <el-tab-pane label="提交记录" name="submissions">
-        <div class="p-4">暂无提交记录</div>
+      <el-tab-pane name="submissions">
+        <template #label>
+          <div class="tab-label">
+            <el-icon>
+              <List />
+            </el-icon>
+            <span>提交记录</span>
+          </div>
+        </template>
+        <SubmissionCard :problem-id="problem.id" />
       </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { MdPreview } from 'md-editor-v3';
-import 'md-editor-v3/lib/preview.css';
+import { ref, onMounted } from 'vue';
+import { Document, Promotion, List } from '@element-plus/icons-vue';
 import type { Problem } from '@/types/problem';
+import SolutionCard from './QuestionCard/SolutionCard.vue';
+import DescriptionCard from './QuestionCard/DescriptionCard.vue';
+import SubmissionCard from './QuestionCard/SubmissionCard.vue';
+import { getSolutionsByProblemId } from '@/api/problem';
+import type { Solution } from '@/types/problem';
 
 const props = defineProps<{
   problem: Problem;
 }>();
 
 const activeTab = ref('description');
+const solutions = ref<Solution[]>([]);
 
-const difficultyType = computed(() => {
-  switch (props.problem.difficulty) {
-    case 'Easy':
-      return 'success';
-    case 'Medium':
-      return 'warning';
-    case 'Hard':
-      return 'danger';
-    default:
-      return 'info';
-  }
-});
-
-const TransformDifficulty = (difficulty: string) => {
-  switch (difficulty) {
-    case 'Easy':
-      return '简单';
-    case 'Medium':
-      return '中等';
-    case 'Hard':
-      return '困难';
-    default:
-      return '未知';
+const fetchSolutions = async () => {
+  try {
+    solutions.value = await getSolutionsByProblemId(props.problem.id);
+  } catch (error) {
+    console.error('Failed to fetch solutions:', error);
   }
 };
+
+onMounted(() => {
+  if (props.problem) {
+    fetchSolutions();
+  }
+});
 </script>
 
 <style scoped>
@@ -65,46 +75,47 @@ const TransformDifficulty = (difficulty: string) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  background-color: #fff;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .question-tabs {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
 }
 
 :deep(.el-tabs__header) {
-  padding: 0 20px;
   margin: 0;
-  flex-shrink: 0;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+:deep(.el-tabs__nav-wrap) {
+  padding: 0 16px;
+}
+
+:deep(.el-tabs__item) {
+  padding: 0 16px;
+  height: 40px;
+  line-height: 40px;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #1890ff;
+  font-weight: 500;
 }
 
 :deep(.el-tabs__content) {
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
-  padding: 0 20px;
-}
-
-.problem-content h1 {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 16px 0;
-}
-
-.md-preview {
-  line-height: 1.8;
-}
-
-:deep(.md-editor-preview-wrapper h3) {
-  font-size: 16px;
-  margin-top: 20px;
-  margin-bottom: 12px;
-}
-
-:deep(.md-editor-preview-wrapper pre > code) {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-  font-size: 14px;
 }
 </style>

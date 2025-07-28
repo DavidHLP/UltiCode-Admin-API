@@ -43,6 +43,10 @@ export default defineConfig({
         target: 'http://localhost:9090',
         changeOrigin: true,
       },
+      '/solutions/api/view': {
+        target: 'http://localhost:9090',
+        changeOrigin: true,
+      },
     },
   },
 })

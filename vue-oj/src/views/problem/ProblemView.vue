@@ -100,7 +100,7 @@ onMounted(() => {
 .quiz-page {
   display: flex;
   height: calc(100vh - 50px);
-  background-color: #f7f8fa;
+  background-color: #ffffff;
 }
 
 .left-panel,
@@ -128,9 +128,8 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-/* Style for the splitter */
 :deep(.splitpanes__splitter) {
-  background-color: #f7f8fa !important;
+  background-color: #f0f0f0 !important;
   border: none !important;
   box-sizing: border-box;
 }
@@ -146,12 +145,10 @@ onMounted(() => {
 .code-section {
   flex: 1;
   min-height: 0;
-  /* Important for flexbox shrinking */
 }
 
 .debug-section {
   flex-shrink: 0;
-  /* Let's give it a default height, maybe it can be resizable later */
   height: 300px;
 }
 </style>

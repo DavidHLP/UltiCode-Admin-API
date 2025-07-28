@@ -1,7 +1,39 @@
 <template>
   <div class="code-card">
-    <HeaderCard v-model:model-value="selectedLanguage" :available-languages="availableLanguages"
-      @reset-code="resetCode" />
+    <div class="code-header">
+      <el-tabs v-model="selectedLanguage" class="language-tabs">
+        <el-tab-pane v-for="lang in availableLanguages" :key="lang" :name="lang">
+          <template #label>
+            <div class="tab-label">
+              <el-icon>
+                <Document />
+              </el-icon>
+              <span>{{ lang.charAt(0).toUpperCase() + lang.slice(1) }}</span>
+            </div>
+          </template>
+        </el-tab-pane>
+      </el-tabs>
+      <div class="editor-actions">
+        <el-button size="small" @click="resetCode">
+          <template #icon><el-icon>
+              <Refresh />
+            </el-icon></template>
+          重置
+        </el-button>
+        <el-button size="small">
+          <template #icon><el-icon>
+              <Setting />
+            </el-icon></template>
+          设置
+        </el-button>
+        <el-button size="small">
+          <template #icon><el-icon>
+              <FullScreen />
+            </el-icon></template>
+          全屏
+        </el-button>
+      </div>
+    </div>
     <div ref="monacoEditorRef" class="editor-container"></div>
     <div class="card-footer">
       <el-button type="primary" @click="submitCode">提交</el-button>
@@ -13,7 +45,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, shallowRef, computed } from 'vue';
 import * as monaco from 'monaco-editor';
-import HeaderCard from './CodeCard/HeaderCard.vue';
+import { Document, Refresh, Setting, FullScreen } from '@element-plus/icons-vue';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
@@ -97,27 +129,97 @@ defineExpose({ getCode, resetCode });
 
 <style scoped>
 .code-card {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  background-color: #fff;
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+  padding-right: 16px;
+}
+
+.language-tabs {
+  flex: 1;
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.editor-actions .el-button {
+  font-size: 12px;
+  padding: 4px 8px;
 }
 
 .editor-container {
-  flex-grow: 1;
+  flex: 1;
   overflow: hidden;
-  border-top: 1px solid #f0f0f0;
-  border-bottom: 1px solid #f0f0f0;
 }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
+  padding: 12px 16px;
   flex-shrink: 0;
   font-size: 12px;
-  color: #8c8c8c;
+  color: #666;
+  background: #fafafa;
+  border-top: 1px solid #e8e8e8;
+}
+
+.card-footer .el-button {
+  border-radius: 6px;
+  font-size: 14px;
+  padding: 8px 16px;
+}
+
+/* Language tabs 样式 */
+:deep(.language-tabs .el-tabs__header) {
+  margin: 0;
+  border-bottom: none;
+}
+
+:deep(.language-tabs .el-tabs__nav-wrap) {
+  padding: 0 16px;
+}
+
+:deep(.language-tabs .el-tabs__item) {
+  color: #666;
+  font-size: 14px;
+  padding: 0 16px;
+  height: 40px;
+  line-height: 40px;
+}
+
+:deep(.language-tabs .el-tabs__item.is-active) {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+:deep(.language-tabs .el-tabs__active-bar) {
+  background-color: #1890ff;
+}
+
+:deep(.language-tabs .el-tabs__content) {
+  display: none;
 }
 </style>
