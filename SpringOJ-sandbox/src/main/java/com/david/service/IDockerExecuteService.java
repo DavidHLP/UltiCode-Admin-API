@@ -1,7 +1,8 @@
 package com.david.service;
 
-import com.david.dto.JudgeResult;
-import com.david.dto.SandboxExecuteRequest;
+
+import com.david.sandbox.dto.JudgeResult;
+import com.david.sandbox.dto.SandboxExecuteRequest;
 
 /**
  * Docker执行服务接口

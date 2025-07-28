@@ -26,7 +26,7 @@ spring:
     password: Alone117
   data:
     redis:
-      host: 127.0.0.1
+      host: 10.25.0.16
       port: 6379
       database: 0
       timeout: 1800000 # 使用毫秒格式，兼容 Redis Lettuce

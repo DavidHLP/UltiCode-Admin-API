@@ -28,6 +28,68 @@ services:
     networks:
       spring-cloud-networks:
         ipv4_address: 10.25.0.12
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    hostname: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://10.25.0.13:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@10.25.0.13:9093
+      # 修改这些值为1，因为是单节点部署
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.13
+    restart: always
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    environment:
+      DYNAMIC_CONFIG_ENABLED: true
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.14
+    restart: always
+
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    hostname: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_BINLOG_FORMAT: row
+      MYSQL_SERVER-ID: 1
+      MYSQL_MASTER_RECOVERY: true
+      MYSQL_LOG_BIN: mysql-bin
+    volumes:
+      - /bigdata/mysql/data:/var/lib/mysql
+      - /bigdata/mysql/conf.d:/etc/mysql/conf.d
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.15
+
+  redis:
+    image: redis/redis-stack:latest
+    container_name: redis
+    environment:
+      - REDIS_ARGS=--requirepass Alone117 # 设置 Redis 密码
+    restart: always # 容器崩溃时自动重启
+    networks:
+      spring-cloud-networks:
+        ipv4_address: 10.25.0.16
 
   openjdk-17-alpine:
     image: openjdk:17-alpine

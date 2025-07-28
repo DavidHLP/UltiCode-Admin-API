@@ -1,35 +1,28 @@
 package com.david.template.java;
 
-import com.david.dto.JudgeResult;
-import com.david.dto.SandboxExecuteRequest;
-import com.david.judge.enums.JudgeStatus;
-import com.david.judge.enums.LanguageType;
-import com.david.template.SandboxTemplate;
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.api.async.ResultCallback;
-import com.github.dockerjava.api.command.CreateContainerResponse;
-import com.github.dockerjava.api.command.ExecCreateCmdResponse;
-import com.github.dockerjava.api.model.Bind;
-import com.github.dockerjava.api.model.Capability;
-import com.github.dockerjava.api.model.Frame;
-import com.github.dockerjava.api.model.HostConfig;
-import com.github.dockerjava.api.model.StreamType;
-import com.github.dockerjava.api.model.Volume;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.springframework.stereotype.Component;
+
+import com.david.judge.enums.JudgeStatus;
+import com.david.judge.enums.LanguageType;
+import com.david.sandbox.dto.JudgeResult;
+import com.david.sandbox.dto.SandboxExecuteRequest;
+import com.david.sandbox.dto.TestCaseResult;
+import com.david.template.SandboxTemplate;
+import com.github.dockerjava.api.DockerClient;
+import com.github.dockerjava.api.async.ResultCallback;
+import com.github.dockerjava.api.command.CreateContainerResponse;
+import com.github.dockerjava.api.command.ExecCreateCmdResponse;
+import com.github.dockerjava.api.model.*;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Java 语言 Docker ACM 模式沙箱实现
@@ -172,14 +165,15 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
         result.setScore(0);
         result.setTimeUsed(0);
         result.setMemoryUsed(0);
+        result.setSubmissionId(request.getSubmissionId());
 
-        List<JudgeResult.TestCaseResult> testCaseResults = new ArrayList<>();
+        List<TestCaseResult> testCaseResults = new ArrayList<>();
 
         for (int i = 0; i < request.getInputs().size(); i++) {
             String input = request.getInputs().get(i);
             String expectedOutput = request.getExpectedOutputs().get(i);
 
-            JudgeResult.TestCaseResult testResult = runSingleTestCase(
+            TestCaseResult testResult = runSingleTestCase(
                     containerId, input, expectedOutput, request, i + 1);
 
             testCaseResults.add(testResult);
@@ -245,10 +239,10 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
         };
     }
 
-    private JudgeResult.TestCaseResult runSingleTestCase(String containerId, String input,
-            String expectedOutput, SandboxExecuteRequest request, int testCaseId) {
+    private TestCaseResult runSingleTestCase(String containerId, String input,
+                                             String expectedOutput, SandboxExecuteRequest request, int testCaseId) {
 
-        JudgeResult.TestCaseResult result = new JudgeResult.TestCaseResult();
+        TestCaseResult result = new TestCaseResult();
         result.setTestCaseId((long) testCaseId);
         result.setStatus(JudgeStatus.ACCEPTED);
         result.setScore(0); // Default score

@@ -1,14 +1,24 @@
-package com.david.dto;
+package com.david.sandbox.dto;
+
+import java.util.List;
 
 import com.david.judge.enums.JudgeStatus;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import java.util.List;
+import lombok.NoArgsConstructor;
 
 /**
  * 判题结果DTO
  */
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class JudgeResult {
+    /** 提交ID */
+    private Long submissionId;
     /** 判题状态 */
     private JudgeStatus status;
 
@@ -29,25 +39,4 @@ public class JudgeResult {
 
     /** 测试点详情 */
     private List<TestCaseResult> testCaseResults;
-
-    @Data
-    public static class TestCaseResult {
-        /** 测试点ID */
-        private Long testCaseId;
-
-        /** 测试点状态 */
-        private JudgeStatus status;
-
-        /** 运行时间(ms) */
-        private Integer timeUsed;
-
-        /** 内存使用(KB) */
-        private Integer memoryUsed;
-
-        /** 得分 */
-        private Integer score;
-
-        /** 错误信息 */
-        private String errorMessage;
-    }
 }

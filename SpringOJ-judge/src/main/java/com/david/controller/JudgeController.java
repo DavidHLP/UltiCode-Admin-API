@@ -3,9 +3,8 @@ package com.david.controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import com.david.dto.SubmitCodeRequest;
-import com.david.interfaces.SubmissionServiceFeignClient;
 import com.david.judge.Submission;
+import com.david.sandbox.dto.SubmitCodeRequest;
 import com.david.service.IJudgeService;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
@@ -20,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JudgeController extends BaseController {
 
-	private final SubmissionServiceFeignClient submissionService;
 	private final IJudgeService judgeService;
 
 	/**
@@ -28,22 +26,8 @@ public class JudgeController extends BaseController {
 	 */
 	@PostMapping("/submit")
 	public ResponseResult<Long> submitCode(@RequestBody @Validated SubmitCodeRequest request) {
-		try {
-			ResponseResult<Submission> submissionResponse = submissionService.createSubmission(
-					Submission.builder().language(request.getLanguage()).sourceCode(request.getSourceCode())
-							.userId(getCurrentUserId()).problemId(request.getProblemId()).build());
-			if (submissionResponse.getCode() != 200 || submissionResponse.getData() == null) {
-				return ResponseResult.fail(500, "创建提交记录失败");
-			}
-			Long submissionId = submissionResponse.getData().getId();
-
-			// 同步执行判题
-			judgeService.judge(submissionId);
-
-			return ResponseResult.success("代码提交成功", submissionId);
-		} catch (Exception e) {
-			return ResponseResult.fail(500, "提交失败: " + e.getMessage());
-		}
+		Long submissionId = judgeService.submitAndJudge(request, getCurrentUserId());
+		return ResponseResult.success("代码提交成功", submissionId);
 	}
 
 	/**
@@ -51,14 +35,7 @@ public class JudgeController extends BaseController {
 	 */
 	@GetMapping("/submission/{submissionId}")
 	public ResponseResult<Submission> getSubmission(@PathVariable Long submissionId) {
-		try {
-			ResponseResult<Submission> response = submissionService.getSubmissionById(submissionId);
-			if (response.getCode() != 200 || response.getData() == null) {
-				return ResponseResult.fail(404, "提交记录不存在");
-			}
-			return ResponseResult.success("提交记录获取成功", response.getData());
-		} catch (Exception e) {
-			return ResponseResult.fail(500, "查询失败: " + e.getMessage());
-		}
+		Submission submission = judgeService.getSubmission(submissionId);
+		return ResponseResult.success("提交记录获取成功", submission);
 	}
 }

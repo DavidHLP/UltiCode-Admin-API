@@ -1,29 +1,37 @@
 package com.david.strategy.impl;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
 import com.david.judge.enums.LanguageType;
 import com.david.strategy.JudgeStrategy;
 
-import lombok.RequiredArgsConstructor;
-
 /**
- * @author david
- * @since 2023/12/5
+ * 简化的判题策略工厂
  */
 @Component
-@RequiredArgsConstructor
 public class JudgeStrategyFactory {
-	private final JavaJudgeStrategy javaJudgeStrategy;
+
+	private final Map<LanguageType, JudgeStrategy> strategyMap;
+
+	public JudgeStrategyFactory(List<JudgeStrategy> strategies) {
+		this.strategyMap = strategies.stream()
+			.collect(Collectors.toMap(JudgeStrategy::getSupportedLanguage, Function.identity()));
+	}
 
 	public JudgeStrategy getStrategy(LanguageType language) {
-		JudgeStrategy judgeStrategy = switch (language) {
-			case JAVA -> javaJudgeStrategy;
-			default -> null;
-		};
-		if (judgeStrategy == null) {
-			throw new RuntimeException("不支持的语言类型");
+		JudgeStrategy strategy = strategyMap.get(language);
+		if (strategy == null) {
+			throw new RuntimeException("不支持的语言类型: " + language);
 		}
-		return judgeStrategy;
+		return strategy;
+	}
+
+	public boolean isLanguageSupported(LanguageType language) {
+		return strategyMap.containsKey(language);
 	}
 }

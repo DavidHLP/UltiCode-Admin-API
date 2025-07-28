@@ -2,6 +2,11 @@ server:
   port: 9095
 
 spring:
+  kafka:
+    bootstrap-servers: 10.25.0.13:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
   application:
     name: judge-service # 应用名称
   jackson:

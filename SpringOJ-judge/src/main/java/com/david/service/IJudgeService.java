@@ -1,11 +1,25 @@
 package com.david.service;
 
+import com.david.judge.Submission;
+import com.david.sandbox.dto.SubmitCodeRequest;
+
 /**
- * 判题服务接口
+ * 判题服务接口 - 简化设计，直接提供业务方法
  */
 public interface IJudgeService {
+
     /**
-     * 执行判题
+     * 提交代码并执行判题
+     * @param request 提交请求
+     * @param userId 用户ID
+     * @return 提交记录ID
      */
-    void judge(Long submissionId);
+    Long submitAndJudge(SubmitCodeRequest request, Long userId);
+
+    /**
+     * 获取提交记录
+     * @param submissionId 提交记录ID
+     * @return 提交记录
+     */
+    Submission getSubmission(Long submissionId);
 }
