@@ -1,27 +1,46 @@
 <template>
   <div class="case-content">
-    <div class="case-tabs-container">
-      <el-tabs v-model="activeTestCaseName" type="card" editable class="case-tabs" @edit="handleTabsEdit">
-        <el-tab-pane v-for="(testCase, index) in localTestCases" :key="index" :label="testCase.name"
-          :name="testCase.name" />
-      </el-tabs>
-    </div>
     <div class="test-case-details" v-if="activeTestCase">
+      <div class="case-tabs-container">
+        <div class="case-selector">
+          <el-button-group>
+            <el-button v-for="(testCase, index) in localTestCases" :key="index"
+              :type="activeTestCaseName === testCase.name ? 'primary' : 'default'" size="small"
+              @click="activeTestCaseName = testCase.name">
+              {{ testCase.name }}
+            </el-button>
+          </el-button-group>
+          <div class="case-actions">
+            <el-button v-if="localTestCases.length > 1" size="small" type="danger" @click="removeCurrentTestCase">
+              <el-icon>
+                <Delete />
+              </el-icon>
+              删除
+            </el-button>
+            <el-button size="small" type="success" @click="addNewTestCase">
+              <el-icon>
+                <Plus />
+              </el-icon>
+              添加
+            </el-button>
+          </div>
+        </div>
+      </div>
       <div class="input-section">
         <div class="section-title">输入参数</div>
         <div class="input-fields">
           <div v-for="(input, idx) in activeTestCase.inputs" :key="idx" class="input-field">
             <div class="input-name-disabled">{{ input.inputName || `参数 ${idx + 1}` }}</div>
-            <el-input v-model="input.input" type="textarea" :autosize="{ minRows: 1, maxRows: 4 }"
-              :placeholder="`请输入 ${input.inputName || '参数 ' + (idx + 1)} 的值`" class="input-value" />
+            <el-input v-model="input.input" :autosize="{ minRows: 1, maxRows: 1 }"
+              :placeholder="`请输入 ${input.inputName || '参数 ' + (idx + 1)} 的值`" class="input-textarea" />
           </div>
         </div>
       </div>
 
       <div class="output-section">
         <div class="section-title">期望输出</div>
-        <el-input v-model="activeTestCase.output" type="textarea" :autosize="{ minRows: 2, maxRows: 4 }"
-          class="output-textarea" placeholder="请输入期望输出结果" />
+        <el-input v-model="activeTestCase.output" :autosize="{ minRows: 1, maxRows: 1 }" class="output-textarea"
+          placeholder="请输入期望输出结果" />
       </div>
     </div>
   </div>
@@ -29,7 +48,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-// 不再需要 Plus 和 Delete 图标，因为参数固定
+import { Plus, Delete } from '@element-plus/icons-vue';
 import type { TestCase, InputDto } from '@/types/problem';
 
 // 扩展测试用例类型以包含名称
@@ -79,43 +98,46 @@ const activeTestCase = computed(() => {
   return testCase;
 });
 
-// 不再需要添加/删除输入字段的方法，因为参数固定
+// 添加新测试用例
+const addNewTestCase = () => {
+  const newCaseName = `Case ${localTestCases.value.length + 1}`;
 
-// 处理标签页编辑事件
-const handleTabsEdit = (targetName: string | number | undefined, action: 'remove' | 'add') => {
-  const targetNameStr = targetName?.toString() || '';
+  // 获取当前激活测试用例的输入参数格式作为模板
+  const currentCase = activeTestCase.value;
+  const templateInputs = currentCase && currentCase.inputs && currentCase.inputs.length > 0
+    ? currentCase.inputs.map(input => ({
+      inputName: input.inputName,
+      input: '' // 保留参数名，但清空输入值
+    }))
+    : [{ inputName: '', input: '' }]; // 如果没有当前用例，使用默认格式
 
-  if (action === 'add') {
-    const newCaseName = `Case ${localTestCases.value.length + 1}`;
-    const newCase: TestCaseWithNames = {
-      id: Date.now(), // 临时ID
-      name: newCaseName,
-      inputs: [{ inputName: '', input: '' }],
-      output: '',
-      sample: true,
-      score: 0
-    };
-    localTestCases.value.push(newCase);
-    activeTestCaseName.value = newCaseName;
-  } else if (action === 'remove' && localTestCases.value.length > 1) {
-    // 确保至少保留一个测试用例
-    const tabs = localTestCases.value;
-    let activeName = activeTestCaseName.value;
+  const newCase: TestCaseWithNames = {
+    id: Date.now(), // 临时ID
+    name: newCaseName,
+    inputs: templateInputs,
+    output: '',
+    sample: true,
+    score: 0
+  };
+  localTestCases.value.push(newCase);
+  activeTestCaseName.value = newCaseName;
+};
 
-    if (activeName === targetNameStr) {
-      // 如果删除的是当前激活的标签页，切换到相邻的标签页
-      const index = tabs.findIndex(tab => tab.name === targetNameStr);
-      if (index !== -1) {
-        const nextTab = tabs[index + 1] || tabs[index - 1];
-        if (nextTab) {
-          activeName = nextTab.name;
-        }
-      }
-    }
+// 删除当前测试用例
+const removeCurrentTestCase = () => {
+  if (localTestCases.value.length <= 1) return;
 
-    activeTestCaseName.value = activeName;
-    localTestCases.value = tabs.filter(tab => tab.name !== targetNameStr);
+  const currentIndex = localTestCases.value.findIndex(tc => tc.name === activeTestCaseName.value);
+  if (currentIndex === -1) return;
+
+  // 选择下一个激活的测试用例
+  const nextCase = localTestCases.value[currentIndex + 1] || localTestCases.value[currentIndex - 1];
+  if (nextCase) {
+    activeTestCaseName.value = nextCase.name;
   }
+
+  // 删除当前测试用例
+  localTestCases.value.splice(currentIndex, 1);
 };
 </script>
 
@@ -124,40 +146,38 @@ const handleTabsEdit = (targetName: string | number | undefined, action: 'remove
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
+  background: #ffffff;
   overflow: hidden;
 }
 
 .case-tabs-container {
-  padding: 0 16px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e4e7ed;
+  margin-top: 12px;
 }
 
-.case-tabs {
-  --el-tabs-header-height: 40px;
+.case-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.case-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .test-case-details {
   flex: 1;
-  padding: 16px;
+  padding: 0 16px 16px 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
 .section-title {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: #606266;
   margin-bottom: 8px;
 }
@@ -165,30 +185,28 @@ const handleTabsEdit = (targetName: string | number | undefined, action: 'remove
 .input-fields {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
 }
 
 .input-field {
   display: flex;
   gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+}
 
-  &:last-child {
-    margin-bottom: 0;
-  }
+.input-field .input-textarea {
+  flex: 1;
 }
 
 .input-name-disabled {
-  min-width: 100px;
-  padding: 0 12px;
+  min-width: 80px;
+  padding: 0 8px;
   height: 32px;
   line-height: 32px;
   background: #f5f7fa;
   border-radius: 4px;
   color: #606266;
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -196,180 +214,46 @@ const handleTabsEdit = (targetName: string | number | undefined, action: 'remove
   border: 1px solid #dcdfe6;
 }
 
-.input-value {
-  flex: 1;
-}
 
 .input-textarea,
 .output-textarea {
   width: 100%;
-  border-radius: 4px;
-  transition: all 0.3s;
-}
-
-.input-textarea:focus,
-.output-textarea:focus {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
 }
 
 .output-section {
   margin-top: 8px;
 }
 
-/* 滚动条样式 */
+/* 简化的滚动条样式 */
 .test-case-details::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
 }
 
 .test-case-details::-webkit-scrollbar-thumb {
-  background-color: #c1c1c1;
-  border-radius: 3px;
-}
-
-.test-case-details::-webkit-scrollbar-thumb:hover {
-  background-color: #a8a8a8;
-}
-
-.test-case-details::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.case-tabs-container {
-  display: flex;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.case-tabs {
-  flex-grow: 1;
-}
-
-:deep(.case-tabs .el-tabs__header) {
-  border-bottom: none;
-  padding: 0;
-  margin: 0;
-}
-
-:deep(.case-tabs .el-tabs__nav) {
-  border: none !important;
-}
-
-:deep(.case-tabs .el-tabs__item) {
-  border: none !important;
-  border-radius: 8px;
-  background: rgba(248, 250, 252, 0.8);
-  margin-right: 8px;
-  padding: 0 16px !important;
-  height: 36px;
-  line-height: 36px;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(226, 232, 240, 0.5);
-}
-
-:deep(.case-tabs .el-tabs__item:hover) {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.3);
-  transform: translateY(-1px);
-}
-
-:deep(.case-tabs .el-tabs__item.is-active) {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.test-case-details {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.input-section,
-.output-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.section-title {
-  font-size: 15px;
-  color: #1e293b;
-  margin-bottom: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.section-title::before {
-  content: '';
-  width: 4px;
-  height: 16px;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background-color: #dcdfe6;
   border-radius: 2px;
 }
 
-.input-textarea :deep(.el-textarea__inner),
-.output-textarea :deep(.el-textarea__inner) {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 12px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #374151;
-  resize: none;
-  padding: 16px;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.test-case-details::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.input-textarea :deep(.el-textarea__inner):focus,
-.output-textarea :deep(.el-textarea__inner):focus {
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .case-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .case-actions {
+    justify-content: center;
+  }
 }
 
-.input-textarea :deep(.el-textarea__inner)::placeholder,
-.output-textarea :deep(.el-textarea__inner)::placeholder {
-  color: #9ca3af;
-  font-style: italic;
-}
-
-/* 添加一些微妙的动画效果 */
 .input-section,
 .output-section {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-.input-section {
-  animation-delay: 0.1s;
-}
-
-.output-section {
-  animation-delay: 0.2s;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  display: flex;
+  flex-direction: column;
 }
 </style>

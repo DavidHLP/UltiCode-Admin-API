@@ -1,7 +1,7 @@
 <template>
-  <div class="code-card">
-    <div class="code-header">
-      <el-tabs v-model="selectedLanguage" class="language-tabs">
+  <div class="code-card-container">
+    <div class="header-section">
+      <el-tabs v-model="selectedLanguage" class="code-tabs">
         <el-tab-pane v-for="lang in availableLanguages" :key="lang" :name="lang">
           <template #label>
             <div class="tab-label">
@@ -22,19 +22,15 @@
         </el-button>
         <el-button size="small">
           <template #icon><el-icon>
-              <Setting />
-            </el-icon></template>
-          设置
-        </el-button>
-        <el-button size="small">
-          <template #icon><el-icon>
               <FullScreen />
             </el-icon></template>
           全屏
         </el-button>
       </div>
     </div>
-    <div ref="monacoEditorRef" class="editor-container"></div>
+    <div class="main-content">
+      <div ref="monacoEditorRef" class="editor-container"></div>
+    </div>
     <div class="card-footer">
       <el-button type="primary" @click="submitCode">提交</el-button>
       <span>行 {{ cursorPosition.line }}, 列 {{ cursorPosition.column }}</span>
@@ -128,41 +124,80 @@ defineExpose({ getCode, resetCode });
 </script>
 
 <style scoped>
-.code-card {
+/* 容器布局 */
+.code-card-container {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  gap: 0;
 }
 
-.code-header {
+/* Header 区域样式 */
+.header-section {
+  flex-shrink: 0;
+  background: #ffffff;
+  border-bottom: 1px solid #e4e7ed;
+  padding: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
-  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
   padding-right: 20px;
-  backdrop-filter: blur(10px);
 }
 
-.language-tabs {
+/* Tab 样式优化 */
+.code-tabs {
+  --el-tabs-header-height: 48px;
   flex: 1;
 }
 
+.code-tabs :deep(.el-tabs__header) {
+  margin: 0;
+  border-bottom: 1px solid #e4e7ed;
+  background: #ffffff;
+}
+
+.code-tabs :deep(.el-tabs__nav-wrap) {
+  padding: 0 16px;
+}
+
+.code-tabs :deep(.el-tabs__item) {
+  height: 48px;
+  line-height: 48px;
+  padding: 0 16px;
+  color: #606266;
+  font-weight: 400;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.code-tabs :deep(.el-tabs__item:hover) {
+  color: #409eff;
+}
+
+.code-tabs :deep(.el-tabs__item.is-active) {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.code-tabs :deep(.el-tabs__active-bar) {
+  height: 2px;
+  background-color: #409eff;
+}
+
+/* Tab 标签内容样式 */
 .tab-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
+.tab-label .el-icon {
+  font-size: 16px;
+}
+
+/* Editor 操作按钮样式 */
 .editor-actions {
   display: flex;
   gap: 8px;
@@ -172,110 +207,50 @@ defineExpose({ getCode, resetCode });
 .editor-actions .el-button {
   font-size: 12px;
   padding: 6px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  color: #64748b;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #dcdfe6;
+  color: #606266;
+  transition: all 0.2s ease;
 }
 
 .editor-actions .el-button:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
-  transform: translateY(-1px);
+  background: #ecf5ff;
+  border-color: #b3d8ff;
+  color: #409eff;
+}
+
+/* Main 内容区域 */
+.main-content {
+  flex: 1;
+  background: #ffffff;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .editor-container {
-  flex: 1;
+  height: 100%;
   overflow: hidden;
   position: relative;
 }
 
+/* Footer 区域样式 */
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 8px 10px;
   flex-shrink: 0;
   font-size: 13px;
-  color: #64748b;
-  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.9));
-  border-top: 1px solid rgba(226, 232, 240, 0.5);
-  backdrop-filter: blur(10px);
+  color: #909399;
+  background: #ffffff;
+  border-top: 1px solid #e4e7ed;
 }
 
 .card-footer .el-button {
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 14px;
-  font-weight: 600;
-  padding: 10px 24px;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border: none;
-  color: white;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-.card-footer .el-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
-}
-
-/* Language tabs 样式 */
-:deep(.language-tabs .el-tabs__header) {
-  margin: 0;
-  border-bottom: none;
-}
-
-:deep(.language-tabs .el-tabs__nav-wrap) {
-  padding: 0 20px;
-}
-
-:deep(.language-tabs .el-tabs__item) {
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 0 20px;
-  height: 48px;
-  line-height: 48px;
-  border-radius: 8px 8px 0 0;
-  margin: 0 2px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-:deep(.language-tabs .el-tabs__item:hover) {
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
-}
-
-:deep(.language-tabs .el-tabs__item.is-active) {
-  color: #3b82f6;
-  font-weight: 600;
-  background: rgba(59, 130, 246, 0.1);
-}
-
-:deep(.language-tabs .el-tabs__active-bar) {
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-  height: 3px;
-  border-radius: 2px;
-}
-
-:deep(.language-tabs .el-tabs__content) {
-  display: none;
-}
-
-/* Monaco Editor 样式增强 */
-:deep(.monaco-editor) {
-  border-radius: 0;
-}
-
-:deep(.monaco-editor .margin) {
-  background: rgba(248, 250, 252, 0.5) !important;
-}
-
-:deep(.monaco-editor .monaco-editor-background) {
-  background: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 400;
+  padding: 8px 20px;
 }
 </style>

@@ -6,9 +6,11 @@ import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 import com.david.dto.CategoryDto;
+import com.david.judge.CodeTemplate;
 import com.david.judge.Problem;
 import com.david.judge.TestCase;
 import com.david.judge.enums.CategoryType;
+import com.david.service.IPCodeTemplateService;
 import com.david.service.IProblemService;
 import com.david.service.ITestCaseService;
 import com.david.utils.ResponseResult;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class ProblemManagementController {
 	private final IProblemService problemService;
 	private final ITestCaseService testCaseService;
+	private final IPCodeTemplateService codeTemplateService;
 
 	@GetMapping
 	public ResponseResult<List<Problem>> getAllProblems() {
@@ -113,5 +116,58 @@ public class ProblemManagementController {
 					.add(CategoryDto.builder().category(type.getCategory()).description(type.getDescription()).build());
 		}
 		return ResponseResult.success("成功获取所有题目类别", categories);
+	}
+
+	@GetMapping("/codetemplates/{problemId}/{language}")
+	public ResponseResult<CodeTemplate> getCodeTemplateByProblemIdAndLanguage(@PathVariable("problemId") Long problemId,
+			@PathVariable("language") String language) {
+		CodeTemplate codeTemplates = codeTemplateService.getCodeTemplateByProblemIdAndLanguage(problemId, language);
+		if (codeTemplates == null) {
+			return ResponseResult.fail(404, "代码模板不存在");
+		}
+		return ResponseResult.success("成功获取代码模板", codeTemplates);
+	}
+
+	/**
+	 * 根据题目ID获取所有代码模板
+	 */
+	@GetMapping("/codetemplates/problem/{problemId}")
+	public ResponseResult<List<CodeTemplate>> getCodeTemplatesByProblemId(@PathVariable Long problemId) {
+		List<CodeTemplate> codeTemplates = codeTemplateService.lambdaQuery().eq(CodeTemplate::getProblemId, problemId)
+				.list();
+		return ResponseResult.success("成功获取代码模板", codeTemplates);
+	}
+
+	/**
+	 * 创建代码模板
+	 */
+	@PostMapping("/codetemplates")
+	public ResponseResult<CodeTemplate> createCodeTemplate(@RequestBody CodeTemplate codeTemplate) {
+		if (codeTemplateService.save(codeTemplate)) {
+			return ResponseResult.success("代码模板创建成功", codeTemplate);
+		}
+		return ResponseResult.fail(500, "代码模板创建失败");
+	}
+
+	/**
+	 * 更新代码模板
+	 */
+	@PutMapping("/codetemplates")
+	public ResponseResult<CodeTemplate> updateCodeTemplate(@RequestBody CodeTemplate codeTemplate) {
+		if (codeTemplateService.updateById(codeTemplate)) {
+			return ResponseResult.success("代码模板更新成功", codeTemplate);
+		}
+		return ResponseResult.fail(500, "代码模板更新失败");
+	}
+
+	/**
+	 * 删除代码模板
+	 */
+	@DeleteMapping("/codetemplates/{id}")
+	public ResponseResult<Void> deleteCodeTemplate(@PathVariable Long id) {
+		if (codeTemplateService.removeById(id)) {
+			return ResponseResult.success("代码模板删除成功");
+		}
+		return ResponseResult.fail(500, "代码模板删除失败");
 	}
 }

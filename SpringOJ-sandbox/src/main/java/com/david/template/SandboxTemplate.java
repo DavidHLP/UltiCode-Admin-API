@@ -37,7 +37,7 @@ public abstract class SandboxTemplate {
             // 1. 环境准备与隔离
             tempDir = setupEnvironment(request);
             String sourceFile = writeSourceCode(tempDir, request.getSourceCode(), request.getLanguage());
-            writeMainWrapper(tempDir, request.getLanguage());
+            writeMainWrapper(tempDir, request.getLanguage(), request.getMainWrapperTemplate());
             containerId = createContainer(tempDir, request);
             startContainer(containerId);
 
@@ -98,7 +98,7 @@ public abstract class SandboxTemplate {
      * @param language 编程语言
      * @throws IOException IO异常
      */
-    protected abstract void writeMainWrapper(String tempDir, LanguageType language) throws IOException;
+    protected abstract void writeMainWrapper(String tempDir, LanguageType language , String mainWrapperTemplate) throws IOException;
 
     /**
      * 抽象方法：创建Docker容器

@@ -10,6 +10,7 @@ import com.david.dto.SandboxExecuteRequest;
 import com.david.dto.SubmitCodeRequest;
 import com.david.interfaces.ProblemServiceFeignClient;
 import com.david.interfaces.SubmissionServiceFeignClient;
+import com.david.judge.CodeTemplate;
 import com.david.judge.Problem;
 import com.david.judge.Submission;
 import com.david.judge.TestCase;
@@ -39,7 +40,6 @@ public class JudgeServiceImpl implements IJudgeService {
 	public Long submitAndJudge(SubmitCodeRequest request, Long userId) {
 		// 1. 创建提交记录
 		Submission submission = createSubmission(request, userId);
-
 		// 2. 直接执行判题
 		executeJudge(submission);
 
@@ -109,6 +109,12 @@ public class JudgeServiceImpl implements IJudgeService {
 		request.setTimeLimit(problem.getTimeLimit());
 		request.setMemoryLimit(problem.getMemoryLimit());
 		request.setSubmissionId(submission.getId());
+		ResponseResult<CodeTemplate> responseResult = problemServiceFeignClient
+				.getCodeTemplateByProblemIdAndLanguage(problem.getId(), submission.getLanguage().getName());
+		if (!responseResult.getCode().equals(200)) {
+			throw new RuntimeException("题目缺少代码模板: " + problem.getId());
+		}
+		request.setMainWrapperTemplate(responseResult.getData().getMainWrapperTemplate());
 
 		// 提取测试用例输入输出
 		List<String> inputs = testCases.stream().map(TestCase::getInputs).flatMap(List::stream).map(InputDto::getInput)

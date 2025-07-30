@@ -1,5 +1,13 @@
 import type { TestCase } from './testCase'
 
+export interface CodeTemplate {
+  id?: number
+  problemId: number
+  language: string
+  mainWrapperTemplate?: string
+  solutionTemplate: string
+}
+
 export interface Problem {
   id: number
   title: string
@@ -16,6 +24,7 @@ export interface Problem {
   createdAt: string
   updatedAt: string
   testCases?: TestCase[]
+  codeTemplates?: CodeTemplate[]
 }
 
 export interface Category {

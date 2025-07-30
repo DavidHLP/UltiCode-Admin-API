@@ -1,12 +1,9 @@
 package com.david.service.impl;
 
-import java.util.Map;
-
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.judge.CodeTemplate;
 import com.david.judge.Problem;
 import com.david.mapper.ProblemMapper;
 import com.david.service.IProblemService;
@@ -28,7 +25,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 			return null;
 		ProblemVo problemVo = new ProblemVo();
 		BeanUtils.copyProperties(problem, problemVo);
-		problemVo.setInitialCode(Map.of("java", CodeTemplate.JAVA_SOLUTION_TEMPLATE));
 		return problemVo;
 	}
 }

@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component;
 import com.david.dto.JudgeResult;
 import com.david.dto.SandboxExecuteRequest;
 import com.david.dto.TestCaseResult;
-import com.david.judge.CodeTemplate;
 import com.david.judge.enums.JudgeStatus;
 import com.david.judge.enums.LanguageType;
 import com.david.template.SandboxTemplate;
@@ -68,11 +67,11 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 	}
 
 	@Override
-	protected void writeMainWrapper(String tempDir, LanguageType language) throws IOException {
+	protected void writeMainWrapper(String tempDir, LanguageType language , String mainWrapperTemplate) throws IOException {
 		if (language == LanguageType.JAVA) {
 			String mainFilePath = tempDir + File.separator + "Main" + language.getSuffix();
 			try (FileWriter writer = new FileWriter(mainFilePath)) {
-				writer.write(CodeTemplate.JAVA_MAIN_WRAPPER_TEMPLATE);
+				writer.write(mainWrapperTemplate);
 			}
 			log.info("写入Main包装文件: {}", mainFilePath);
 		}

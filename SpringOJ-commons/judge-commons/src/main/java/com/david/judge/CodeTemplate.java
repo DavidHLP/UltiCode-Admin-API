@@ -1,40 +1,68 @@
 package com.david.judge;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.Date;
+
+import com.baomidou.mybatisplus.annotation.*;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 /**
- * 代码模板接口
+ * 题目代码模板实体类
  */
-public class CodeTemplate {
-    public static final String JAVA_SOLUTION_TEMPLATE = """
-class Solution {
-    public int[] twoSum(int[] nums, int target) {
-        // Write your code here
-        return null;
-    }
-}
-""";
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@TableName("codetemplate")
+public class CodeTemplate implements Serializable {
 
-    public static final String JAVA_MAIN_WRAPPER_TEMPLATE = """
-import java.util.Arrays;
-import java.util.Scanner;
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-public class Main {
-    public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
-        // Read input for nums
-        String numsStr = scanner.nextLine();
-        int[] nums = Arrays.stream(numsStr.substring(1, numsStr.length() - 1).split(","))
-                            .map(String::trim)
-                            .mapToInt(Integer::parseInt)
-                            .toArray();
+    /**
+     * 模板ID，主键
+     */
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
 
-        // Read input for target
-        int target = scanner.nextInt();
+    /**
+     * 关联的题目ID
+     */
+    @TableField("problem_id")
+    private Long problemId;
 
-        Solution solution = new Solution();
-        int[] result = solution.twoSum(nums, target);
+    /**
+     * 编程语言, 例如: C++, Java, Python
+     */
+    @TableField("language")
+    private String language;
 
-        System.out.println(Arrays.toString(result));
-        scanner.close();
-    }
-}
-""";
+    /**
+     * 主函数或核心逻辑外的包装代码模板
+     */
+    @TableField("main_wrapper_template")
+    private String mainWrapperTemplate;
+
+    /**
+     * 提供给用户的解题函数/类模板
+     */
+    @TableField("solution_template")
+    private String solutionTemplate;
+
+    /**
+     * 创建时间
+     */
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
+    private Date createdAt;
+
+    /**
+     * 更新时间
+     */
+    @TableField(value = "updated_at", fill = FieldFill.INSERT_UPDATE)
+    private Date updatedAt;
 }

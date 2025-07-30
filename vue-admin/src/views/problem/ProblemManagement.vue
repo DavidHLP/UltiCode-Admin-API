@@ -26,60 +26,21 @@
           <template #default="props">
             <div class="problem-detail-view">
               <el-tabs type="border-card">
-                <el-tab-pane label="测试用例管理" :lazy="true">
+                <el-tab-pane label="测试用例管理">
                   <template #label>
                     <span @click="loadTestCases(props.row)">测试用例管理</span>
                   </template>
-                  <div class="test-case-management">
-                    <div class="test-case-header">
-                      <h4>测试用例列表</h4>
-                      <el-button type="primary" @click="openAddTestCaseDialog(props.row)" :icon="Plus" size="small">
-                        添加用例
-                      </el-button>
-                    </div>
-                    <el-table :data="props.row.testCases" size="small" stripe>
-                      <el-table-column prop="id" label="ID" width="80" align="center" />
-                      <el-table-column prop="inputs" label="输入预览" min-width="200">
-                        <template #default="{ row }">
-                          <div v-if="row.inputs && row.inputs.length > 0">
-                            <el-popover placement="top-start" :width="300" trigger="hover">
-                              <template #reference>
-                                <el-tag type="info" size="small" class="input-preview-tag">
-                                  {{ row.inputs.length }} 个输入项
-                                </el-tag>
-                              </template>
-                              <el-descriptions :column="1" border size="small" class="input-descriptions">
-                                <el-descriptions-item v-for="(input, idx) in row.inputs" :key="idx"
-                                  :label="input.inputName || `输入 ${idx + 1}`" label-class-name="input-label">
-                                  <div class="input-value">
-                                    {{ input.input }}
-                                  </div>
-                                </el-descriptions-item>
-                              </el-descriptions>
-                            </el-popover>
-                          </div>
-                          <span v-else class="text-gray-400">无输入</span>
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="output" label="输出预览" show-overflow-tooltip />
-                      <el-table-column prop="isSample" label="是否样例" width="100" align="center">
-                        <template #default="scope">
-                          <el-tag :type="scope.row.isSample ? 'success' : 'info'" size="small">
-                            {{ scope.row.isSample ? '是' : '否' }}
-                          </el-tag>
-                        </template>
-                      </el-table-column>
-                      <el-table-column prop="score" label="分数" width="100" align="center" />
-                      <el-table-column label="操作" width="150" align="center">
-                        <template #default="scope">
-                          <el-button @click="openEditTestCaseDialog(props.row, scope.row)" :icon="Edit" size="small"
-                            type="primary" plain />
-                          <el-button @click="handleDeleteTestCase(props.row, scope.row.id)" :icon="Delete" size="small"
-                            type="danger" plain />
-                        </template>
-                      </el-table-column>
-                    </el-table>
-                  </div>
+                  <TestCaseView :test-cases="props.row.testCases" @add="openAddTestCaseDialog(props.row)"
+                    @edit="(testCase) => openEditTestCaseDialog(props.row, testCase)"
+                    @delete="(testCaseId) => handleDeleteTestCase(props.row, testCaseId)" />
+                </el-tab-pane>
+                <el-tab-pane label="代码模板管理">
+                  <template #label>
+                    <span @click="loadCodeTemplates(props.row)">代码模板管理</span>
+                  </template>
+                  <CodeTemplateView :code-templates="props.row.codeTemplates" @add="openAddCodeTemplateDialog(props.row)"
+                    @edit="(codeTemplate) => openEditCodeTemplateDialog(props.row, codeTemplate)"
+                    @delete="(codeTemplateId) => handleDeleteCodeTemplate(props.row, codeTemplateId)" />
                 </el-tab-pane>
                 <el-tab-pane label="题目详情">
                   <div class="problem-content-display">
@@ -168,15 +129,20 @@
     <!-- 测试用例表单对话框 -->
     <TestCaseForm :visible="addEditTestCaseDialogVisible" :is-edit="isEditTestCase" :test-case="currentTestCase"
       @update:visible="addEditTestCaseDialogVisible = $event" @save="handleTestCaseSave" />
+
+    <!-- 代码模板表单对话框 -->
+    <CodeTemplateForm :visible="addEditCodeTemplateDialogVisible" :is-edit="isEditCodeTemplate" :code-template="currentCodeTemplate"
+      :problem-id="activeProblemForCodeTemplates.id" @update:visible="addEditCodeTemplateDialogVisible = $event"
+      @save="handleCodeTemplateSave" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import ManageComponent from '@/components/management/ManageComponent.vue'
-import { fetchProblems, deleteProblem, fetchCategories, getTestCasesByProblemId } from '@/api/problem'
+import { fetchProblems, deleteProblem, fetchCategories, getTestCasesByProblemId, getCodeTemplatesByProblemId, deleteCodeTemplate } from '@/api/problem'
 import { deleteTestCase } from '@/api/testCase'
-import type { Problem, Category } from '@/types/problem'
+import type { Problem, Category, CodeTemplate } from '@/types/problem'
 import type { TestCase } from '@/types/testCase'
 import { ElMessage } from 'element-plus'
 import { Plus, Edit, Delete, Memo } from '@element-plus/icons-vue'
@@ -184,6 +150,9 @@ import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import ProblemForm from './components/ProblemForm.vue'
 import TestCaseForm from './components/TestCaseForm.vue'
+import TestCaseView from './components/TestCaseView.vue'
+import CodeTemplateForm from './components/CodeTemplateForm.vue'
+import CodeTemplateView from './components/CodeTemplateView.vue'
 
 const problems = ref<Problem[]>([])
 const loading = ref(false)
@@ -200,6 +169,11 @@ const addEditTestCaseDialogVisible = ref(false)
 const isEditTestCase = ref(false)
 const currentTestCase = ref<Partial<TestCase>>({})
 const activeProblemForTestCases = ref<Partial<Problem>>({})
+
+const addEditCodeTemplateDialogVisible = ref(false)
+const isEditCodeTemplate = ref(false)
+const currentCodeTemplate = ref<Partial<CodeTemplate>>({})
+const activeProblemForCodeTemplates = ref<Partial<Problem>>({})
 
 const filteredProblems = computed(() => {
   let result = problems.value
@@ -250,6 +224,18 @@ const loadTestCases = async (problem: Problem) => {
     } catch (error) {
       console.error('Error fetching test cases:', error)
       ElMessage.error('获取测试用例失败')
+    }
+  }
+}
+
+const loadCodeTemplates = async (problem: Problem) => {
+  if (!problem.codeTemplates) {
+    try {
+      const codeTemplates = await getCodeTemplatesByProblemId(problem.id!)
+      problem.codeTemplates = codeTemplates
+    } catch (error) {
+      console.error('Error fetching code templates:', error)
+      ElMessage.error('获取代码模板失败')
     }
   }
 }
@@ -365,6 +351,44 @@ const handleDeleteTestCase = async (problem: Problem, testCaseId: number) => {
   } catch (error) {
     console.error('Error deleting test case:', error)
     ElMessage.error('删除测试用例失败。')
+  }
+}
+
+const openAddCodeTemplateDialog = (problem: Problem) => {
+  isEditCodeTemplate.value = false
+  activeProblemForCodeTemplates.value = problem
+  currentCodeTemplate.value = { problemId: problem.id }
+  addEditCodeTemplateDialogVisible.value = true
+}
+
+const openEditCodeTemplateDialog = (problem: Problem, codeTemplate: CodeTemplate) => {
+  isEditCodeTemplate.value = true
+  activeProblemForCodeTemplates.value = problem
+  currentCodeTemplate.value = { ...codeTemplate }
+  addEditCodeTemplateDialogVisible.value = true
+}
+
+const handleCodeTemplateSave = async () => {
+  const problemId = activeProblemForCodeTemplates.value.id!;
+  const problemWithDetails = await getCodeTemplatesByProblemId(problemId);
+  const targetProblem = problems.value.find((p) => p.id === problemId);
+  if (targetProblem) {
+    targetProblem.codeTemplates = problemWithDetails;
+  }
+}
+
+const handleDeleteCodeTemplate = async (problem: Problem, codeTemplateId: number) => {
+  try {
+    await deleteCodeTemplate(codeTemplateId)
+    const updatedCodeTemplates = await getCodeTemplatesByProblemId(problem.id!)
+    const targetProblem = problems.value.find((p) => p.id === problem.id)
+    if (targetProblem) {
+      targetProblem.codeTemplates = updatedCodeTemplates
+    }
+    ElMessage.success('代码模板删除成功。')
+  } catch (error) {
+    console.error('Error deleting code template:', error)
+    ElMessage.error('删除代码模板失败。')
   }
 }
 
