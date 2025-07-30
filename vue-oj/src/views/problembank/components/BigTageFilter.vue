@@ -1,37 +1,42 @@
 <template>
   <div class="tag-container">
-    <el-button v-for="tag in tags" :key="tag.category" :class="['tag-button', { active: activeTag === tag.category }]"
-      @click="setActiveTag(tag.category)" round>
+    <el-button
+      v-for="tag in tags"
+      :key="tag.category"
+      :class="['tag-button', { active: activeTag === tag.category }]"
+      round
+      @click="setActiveTag(tag.category)"
+    >
       <i :class="tag.icon" :style="{ color: tag.color, marginRight: '8px' }"></i>
       <span>{{ tag.description }}</span>
     </el-button>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
+<script lang="ts" setup>
+import { ref } from 'vue'
 import type { QuestionBankQuery } from '@/types/questionbank'
 
 const emit = defineEmits<{
-  (e: 'category', category: QuestionBankQuery['category']): void;
-}>();
+  (e: 'category', category: QuestionBankQuery['category']): void
+}>()
 
-const activeTag = ref<string>('');
+const activeTag = ref<string>('')
 
 const tags = ref([
   { description: '全部题目', category: '', icon: 'fas fa-bars', color: '#555555' },
   { description: '算法', category: 'ALGORITHMS', icon: 'fas fa-sitemap', color: '#ff9900' },
   { description: '数据库', category: 'DATABASE', icon: 'fas fa-database', color: '#007bff' },
   { description: 'Shell', category: 'SHELL', icon: 'fas fa-dollar-sign', color: '#28a745' },
-  { description: '多线程', category: 'MULTI-THREADING', icon: 'fas fa-sync-alt', color: '#8a2be2' },
+  { description: '多线程', category: 'MULTI_THREADING', icon: 'fas fa-sync-alt', color: '#8a2be2' },
   { description: 'JavaScript', category: 'JAVASCRIPT', icon: 'fab fa-js', color: '#f7df1e' },
   { description: 'pandas', category: 'PANDAS', icon: 'fas fa-chart-line', color: '#61DAFB' },
-]);
+])
 
 const setActiveTag = (tagName: string) => {
-  activeTag.value = tagName;
-  emit('category', tagName as QuestionBankQuery['category']);
-};
+  activeTag.value = tagName
+  emit('category', tagName as QuestionBankQuery['category'])
+}
 </script>
 
 <style scoped>

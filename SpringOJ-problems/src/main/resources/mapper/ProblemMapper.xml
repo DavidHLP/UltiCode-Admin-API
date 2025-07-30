@@ -2,14 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.david.mapper.ProblemMapper">
 
-    <resultMap id="QuestionBankItemDtoMap" type="com.david.dto.QuestionBankItemDto">
+    <resultMap id="QuestionBankItemDtoMap" type="com.david.vo.ProblemBankItemVo">
         <id property="id" column="id"/>
         <result property="title" column="title"/>
         <result property="difficulty" column="difficulty" javaType="com.david.judge.enums.ProblemDifficulty"/>
         <result property="tags" column="tags" javaType="java.util.List" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
         <result property="submissionCount" column="submissionCount"/>
         <result property="passRate" column="passRate"/>
-        <result property="status" column="status" javaType="com.david.dto.QuestionStatus"/>
+        <result property="status" column="status" javaType="com.david.enums.ProblemStatus"/>
     </resultMap>
 
     <select id="findProblemsForQuestionBank" resultMap="QuestionBankItemDtoMap">

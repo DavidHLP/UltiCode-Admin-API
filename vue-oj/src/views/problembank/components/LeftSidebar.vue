@@ -1,22 +1,26 @@
 <template>
   <div class="left-sidebar">
-
-    <BigTagesFilter @category="categoryHandle"></BigTagesFilter>
+    <BigTageFilter @category="categoryHandle"></BigTageFilter>
     <!-- 题目表格区域 -->
     <div class="content-section">
       <QuestionSearch @search="questionHandleSearch"></QuestionSearch>
-      <QuestionTable ref="questionTableRef" :questions="questions" :loading="loading" :has-more="hasMore"
-        @load-more="loadMoreQuestions" />
+      <QuestionTable
+        ref="questionTableRef"
+        :has-more="hasMore"
+        :loading="loading"
+        :questions="questions"
+        @load-more="loadMoreQuestions"
+      />
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+<script lang="ts" setup>
+import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import QuestionTable from './QuestionTable.vue'
-import BigTagesFilter from './BigTagesFilter.vue'
-import { getQuestionBank } from '@/api/questionbank'
+import BigTageFilter from './BigTageFilter.vue'
+import { getProblemBank } from '@/api/problembank.ts'
 import type { Question, QuestionBankQuery } from '@/types/questionbank'
 import QuestionSearch from './QuestionSearch.vue'
 
@@ -59,34 +63,34 @@ const hasMore = ref(true)
 
 // 获取题目数据
 const fetchQuestions = async (isLoadMore = false) => {
-  if (loading.value) return;
-  loading.value = true;
+  if (loading.value) return
+  loading.value = true
 
   try {
     if (isLoadMore) {
-      questionBankQuery.value.page++;
+      questionBankQuery.value.page++
     } else {
-      questionBankQuery.value.page = 1;
+      questionBankQuery.value.page = 1
     }
 
-    const res = await getQuestionBank(questionBankQuery.value);
-    const newQuestions = res.records;
+    const res = await getProblemBank(questionBankQuery.value)
+    const newQuestions = res.records
 
     if (isLoadMore) {
-      questions.value.push(...newQuestions);
+      questions.value.push(...newQuestions)
     } else {
-      questions.value = newQuestions;
+      questions.value = newQuestions
     }
 
-    hasMore.value = questions.value.length < res.total;
-    emit('questions-loaded', questions.value.length);
+    hasMore.value = questions.value.length < res.total
+    emit('questions-loaded', questions.value.length)
   } catch (error) {
-    ElMessage.error('获取题目列表失败');
-    console.error('Error fetching questions:', error);
+    ElMessage.error('获取题目列表失败')
+    console.error('Error fetching questions:', error)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 // 加载更多题目
 const loadMoreQuestions = () => {
@@ -99,16 +103,22 @@ onMounted(() => {
   fetchQuestions()
 })
 
-watch(questionBankQuery.value, (newVal, oldVal) => {
-  if (newVal.category !== oldVal.category ||
-    newVal.difficulty !== oldVal.difficulty ||
-    newVal.status !== oldVal.status ||
-    newVal.tags !== oldVal.tags ||
-    newVal.title !== oldVal.title ||
-    newVal.sortBy !== oldVal.sortBy) {
-    fetchQuestions(false);
-  }
-}, { deep: true });
+watch(
+  questionBankQuery.value,
+  (newVal, oldVal) => {
+    if (
+      newVal.category !== oldVal.category ||
+      newVal.difficulty !== oldVal.difficulty ||
+      newVal.status !== oldVal.status ||
+      newVal.tags !== oldVal.tags ||
+      newVal.title !== oldVal.title ||
+      newVal.sortBy !== oldVal.sortBy
+    ) {
+      fetchQuestions(false)
+    }
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>

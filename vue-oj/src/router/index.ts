@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/login/LoginView.vue'
-import QuestionBank from '@/views/problembank/QuestionBank.vue'
-import { MainLayout } from '@/layout'
+import ProblemBank from '@/views/problembank/ProblemBank.vue'
 import ProblemView from '@/views/problem/ProblemView.vue'
+import { MainLayout } from '@/layout'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,7 +28,7 @@ const router = createRouter({
         {
           path: '/',
           name: 'problembank',
-          component: QuestionBank,
+          component: ProblemBank,
         },
       ],
     },

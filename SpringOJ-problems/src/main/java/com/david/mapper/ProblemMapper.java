@@ -1,12 +1,13 @@
 package com.david.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.dto.QuestionBankItemDto;
-import com.david.dto.QuestionBankQueryDto;
-import com.david.judge.Problem;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.dto.ProblemBankQueryDto;
+import com.david.judge.Problem;
+import com.david.vo.ProblemBankItemVo;
 
 /**
  * <p>
@@ -18,5 +19,5 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface ProblemMapper extends BaseMapper<Problem> {
-    Page<QuestionBankItemDto> findProblemsForQuestionBank(Page<QuestionBankItemDto> page, @Param("query") QuestionBankQueryDto query, @Param("userId") Long userId);
+    Page<ProblemBankItemVo> findProblemsForQuestionBank(Page<ProblemBankItemVo> page, @Param("query") ProblemBankQueryDto query, @Param("userId") Long userId);
 }

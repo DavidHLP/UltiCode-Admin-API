@@ -132,9 +132,11 @@ defineExpose({ getCode, resetCode });
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -142,9 +144,10 @@ defineExpose({ getCode, resetCode });
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fafafa;
-  border-bottom: 1px solid #e8e8e8;
-  padding-right: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  padding-right: 20px;
+  backdrop-filter: blur(10px);
 }
 
 .language-tabs {
@@ -154,8 +157,10 @@ defineExpose({ getCode, resetCode });
 .tab-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .editor-actions {
@@ -166,30 +171,56 @@ defineExpose({ getCode, resetCode });
 
 .editor-actions .el-button {
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  color: #64748b;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+}
+
+.editor-actions .el-button:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  transform: translateY(-1px);
 }
 
 .editor-container {
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 16px 20px;
   flex-shrink: 0;
-  font-size: 12px;
-  color: #666;
-  background: #fafafa;
-  border-top: 1px solid #e8e8e8;
+  font-size: 13px;
+  color: #64748b;
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(255, 255, 255, 0.9));
+  border-top: 1px solid rgba(226, 232, 240, 0.5);
+  backdrop-filter: blur(10px);
 }
 
 .card-footer .el-button {
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
-  padding: 8px 16px;
+  font-weight: 600;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none;
+  color: white;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.card-footer .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
 
 /* Language tabs 样式 */
@@ -199,27 +230,52 @@ defineExpose({ getCode, resetCode });
 }
 
 :deep(.language-tabs .el-tabs__nav-wrap) {
-  padding: 0 16px;
+  padding: 0 20px;
 }
 
 :deep(.language-tabs .el-tabs__item) {
-  color: #666;
+  color: #64748b;
   font-size: 14px;
-  padding: 0 16px;
-  height: 40px;
-  line-height: 40px;
+  font-weight: 500;
+  padding: 0 20px;
+  height: 48px;
+  line-height: 48px;
+  border-radius: 8px 8px 0 0;
+  margin: 0 2px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.language-tabs .el-tabs__item:hover) {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
 }
 
 :deep(.language-tabs .el-tabs__item.is-active) {
-  color: #1890ff;
-  font-weight: 500;
+  color: #3b82f6;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.1);
 }
 
 :deep(.language-tabs .el-tabs__active-bar) {
-  background-color: #1890ff;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  height: 3px;
+  border-radius: 2px;
 }
 
 :deep(.language-tabs .el-tabs__content) {
   display: none;
+}
+
+/* Monaco Editor 样式增强 */
+:deep(.monaco-editor) {
+  border-radius: 0;
+}
+
+:deep(.monaco-editor .margin) {
+  background: rgba(248, 250, 252, 0.5) !important;
+}
+
+:deep(.monaco-editor .monaco-editor-background) {
+  background: rgba(255, 255, 255, 0.8) !important;
 }
 </style>

@@ -6,10 +6,10 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.dto.SubmissionDto;
 import com.david.judge.Submission;
 import com.david.mapper.SubmissionMapper;
 import com.david.service.ISubmissionService;
+import com.david.vo.SubmissionVo;
 
 /**
  * <p>
@@ -23,13 +23,13 @@ import com.david.service.ISubmissionService;
 public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submission> implements ISubmissionService {
 
     @Override
-    public List<SubmissionDto> getSubmissionsByProblemId(Long problemId) {
+    public List<SubmissionVo> getSubmissionsByProblemId(Long problemId) {
         return this.lambdaQuery()
                 .eq(Submission::getProblemId, problemId)
                 .list()
                 .stream()
                 .map(submission -> {
-                    SubmissionDto dto = new SubmissionDto();
+                    SubmissionVo dto = new SubmissionVo();
                     org.springframework.beans.BeanUtils.copyProperties(submission, dto);
                     return dto;
                 })

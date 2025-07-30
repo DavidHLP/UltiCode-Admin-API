@@ -3,8 +3,8 @@ package com.david.service;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.dto.SubmissionDto;
 import com.david.judge.Submission;
+import com.david.vo.SubmissionVo;
 
 /**
  * <p>
@@ -16,5 +16,5 @@ import com.david.judge.Submission;
  */
 public interface ISubmissionService extends IService<Submission> {
 
-    List<SubmissionDto> getSubmissionsByProblemId(Long problemId);
+    List<SubmissionVo> getSubmissionsByProblemId(Long problemId);
 }

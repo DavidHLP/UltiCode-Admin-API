@@ -1,10 +1,10 @@
 package com.david.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.dto.TestCaseDto;
-import com.david.judge.TestCase;
-
 import java.util.List;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.david.judge.TestCase;
+import com.david.vo.TestCaseVo;
 
 /**
  * <p>
@@ -15,5 +15,5 @@ import java.util.List;
  * @since 2025-07-21
  */
 public interface ITestCaseService extends IService<TestCase> {
-    List<TestCaseDto> getTestCaseDtoById(Long id);
+    List<TestCaseVo> getTestCaseDtoById(Long id);
 }

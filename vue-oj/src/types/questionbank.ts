@@ -1,22 +1,22 @@
 export interface Question {
   id: number
   title: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  tags: string[]
+  difficulty: string
   passRate: number
   submissionCount: number
-  status: 'completed' | 'attempted' | 'not-attempted'
-  tags: string[]
+  status: string
 }
 
 export interface QuestionBankQuery {
   page: number
   size: number
-  category?: '' | 'ALGORITHMS' | 'DATABASE' | 'SHELL' | 'MULTI-THREADING' | 'JAVASCRIPT' | 'PANDAS'
-  difficulty?: 'Easy' | 'Medium' | 'Hard' | ''
-  status?: 'completed' | 'attempted' | 'not-attempted' | ''
-  tags?: string[]
-  title?: string
-  sortBy?: string
+  category: string
+  difficulty: string
+  status: string
+  tags: string[]
+  title: string
+  sortBy: string
 }
 
 export interface Page<T> {
@@ -24,5 +24,9 @@ export interface Page<T> {
   total: number
   size: number
   current: number
-  pages: number
+}
+
+export interface SubmissionCalendar {
+  date: string
+  count: number
 }

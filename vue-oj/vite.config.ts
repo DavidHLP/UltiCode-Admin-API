@@ -31,7 +31,7 @@ export default defineConfig({
         target: 'http://localhost:9090',
         changeOrigin: true,
       },
-      '/question-bank/api': {
+      '/problem-bank/api': {
         target: 'http://localhost:9090',
         changeOrigin: true,
       },
@@ -44,6 +44,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/solutions/api/view': {
+        target: 'http://localhost:9090',
+        changeOrigin: true,
+      },
+      '/submissions/api/view': {
         target: 'http://localhost:9090',
         changeOrigin: true,
       },

@@ -26,6 +26,7 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (response: AxiosResponse<Response<any>>) => {
     const res = response.data
     if (res.code !== 200) {

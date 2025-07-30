@@ -1,8 +1,13 @@
 package com.david.mapper;
 
+import java.util.List;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.david.judge.Submission;
-import org.apache.ibatis.annotations.Mapper;
+import com.david.vo.SubmissionCalendarVo;
 
 /**
  * <p>
@@ -14,5 +19,7 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface SubmissionMapper extends BaseMapper<Submission> {
+
+    List<SubmissionCalendarVo> getSubmissionCalendar(@Param("userId") Long userId);
 
 }

@@ -11,7 +11,7 @@
  Target Server Version : 80036 (8.0.36)
  File Encoding         : 65001
 
- Date: 28/07/2025 20:52:14
+ Date: 30/07/2025 11:49:31
 */
 
 SET NAMES utf8mb4;
@@ -57,6 +57,33 @@ CREATE TABLE `role` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
+-- Table structure for solution_comments
+-- ----------------------------
+DROP TABLE IF EXISTS `solution_comments`;
+CREATE TABLE `solution_comments` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '评论ID，主键',
+  `solution_id` bigint NOT NULL COMMENT '被评论的题解ID，关联到solutions.id',
+  `user_id` bigint NOT NULL COMMENT '评论发表者的用户ID，关联到user.user_id',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '评论内容，支持Markdown',
+  `parent_id` bigint DEFAULT NULL COMMENT '回复的父评论ID，为NULL表示顶层评论',
+  `root_id` bigint DEFAULT NULL COMMENT '所属的根评论ID，用于快速拉取整个评论树',
+  `reply_to_user_id` bigint DEFAULT NULL COMMENT '被回复用户的ID，用于前端显示@某人',
+  `upvotes` int DEFAULT '0' COMMENT '评论的点赞数',
+  `downvotes` int DEFAULT '0' COMMENT '评论的点踩数',
+  `status` enum('Pending','Approved','Rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Pending' COMMENT '评论状态，用于审核',
+  `meta` json DEFAULT NULL COMMENT '元数据，可存储IP、User-Agent等信息',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_solution_id_root_id` (`solution_id`,`root_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_parent_id` (`parent_id`),
+  CONSTRAINT `fk_comment_parent` FOREIGN KEY (`parent_id`) REFERENCES `solution_comments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_comment_solution` FOREIGN KEY (`solution_id`) REFERENCES `solutions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='题解的评论及回复表（增强版）';
+
+-- ----------------------------
 -- Table structure for solutions
 -- ----------------------------
 DROP TABLE IF EXISTS `solutions`;
@@ -66,9 +93,12 @@ CREATE TABLE `solutions` (
   `user_id` bigint NOT NULL COMMENT '题解作者的用户ID，关联到user表',
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '题解标题',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '题解内容，使用Markdown格式存储',
+  `tags` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '标签',
   `language` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '题解中代码示例所用的编程语言',
+  `views` int DEFAULT NULL COMMENT '浏览量',
   `upvotes` int DEFAULT '0' COMMENT '点赞数',
   `downvotes` int DEFAULT '0' COMMENT '点踩数',
+  `comments` int NOT NULL DEFAULT '0' COMMENT '评论数',
   `status` enum('Pending','Approved','Rejected') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Pending' COMMENT '题解状态，默认为''Pending''，用于审核',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
@@ -77,7 +107,7 @@ CREATE TABLE `solutions` (
   KEY `user_id` (`user_id`),
   CONSTRAINT `solutions_ibfk_1` FOREIGN KEY (`problem_id`) REFERENCES `problems` (`id`) ON DELETE CASCADE,
   CONSTRAINT `solutions_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='题目题解表';
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='题目题解表';
 
 -- ----------------------------
 -- Table structure for submissions
@@ -134,7 +164,7 @@ CREATE TABLE `token` (
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   CONSTRAINT `token_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1949672146643267587 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1950379196176154626 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- ----------------------------
 -- Table structure for user

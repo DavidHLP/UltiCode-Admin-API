@@ -15,7 +15,11 @@
         <el-config-provider :locale="zhCn">
           <el-calendar v-model="calendarValue" class="custom-calendar">
             <template #date-cell="{ data }">
-              <div class="calendar-day" :class="getCalendarDayClass(data.day)">
+              <div
+                :class="getCalendarDayClass(data.day)"
+                class="calendar-day"
+                :style="getCalendarDayStyle(data.day)"
+              >
                 {{ data.day.split('-').pop() }}
               </div>
             </template>
@@ -27,8 +31,12 @@
       <div class="recommend-widget">
         <div class="widget-title">推荐题目</div>
         <div class="recommend-list">
-          <div v-for="item in recommendedQuestions" :key="item.id" class="recommend-item"
-            @click="goToQuestion(item.id)">
+          <div
+            v-for="item in recommendedQuestions"
+            :key="item.id"
+            class="recommend-item"
+            @click="goToQuestion(item.id)"
+          >
             <div class="recommend-title">{{ item.title }}</div>
             <el-tag :type="getDifficultyType(item.difficulty)" size="small">
               {{ item.difficulty }}
@@ -40,11 +48,13 @@
   </el-affix>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue'
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { Refresh } from '@element-plus/icons-vue'
+import { getSubmissionCalendar } from '@/api/problembank'
+import type { SubmissionCalendar } from '@/types/questionbank'
 
 // 定义接口
 interface RecommendedQuestion {
@@ -58,6 +68,7 @@ const router = useRouter()
 
 // 响应式数据
 const calendarValue = ref(new Date())
+const submissionData = ref<SubmissionCalendar[]>([])
 
 // 推荐题目数据
 const recommendedQuestions = ref<RecommendedQuestion[]>([
@@ -65,32 +76,68 @@ const recommendedQuestions = ref<RecommendedQuestion[]>([
   { id: 12, title: '买卖股票的最佳时机', difficulty: '简单' },
   { id: 13, title: '最大子序和', difficulty: '简单' },
   { id: 14, title: '合并两个有序链表', difficulty: '简单' },
-  { id: 15, title: '有效的括号', difficulty: '简单' }
+  { id: 15, title: '有效的括号', difficulty: '简单' },
 ])
 
 // 方法
+onMounted(() => {
+  fetchSubmissionCalendar()
+})
+
+const fetchSubmissionCalendar = async () => {
+  try {
+    submissionData.value = await getSubmissionCalendar()
+  } catch (error) {
+    console.error('获取提交日历失败', error)
+  }
+}
+
 const getDifficultyType = (difficulty: string) => {
   switch (difficulty) {
-    case '简单': return 'success'
-    case '中等': return 'warning'
-    case '困难': return 'danger'
-    default: return 'info'
+    case '简单':
+      return 'success'
+    case '中等':
+      return 'warning'
+    case '困难':
+      return 'danger'
+    default:
+      return 'info'
   }
 }
 
 const getCalendarDayClass = (day: string) => {
-  // 这里可以根据实际的学习记录来设置不同的样式
-  const dayNum = parseInt(day.split('-').pop() || '0')
-  const today = new Date().getDate()
-
-  if (dayNum === today) return 'today'
-  if (dayNum % 7 === 0) return 'active-day'
-  if (dayNum % 5 === 0) return 'partial-day'
+  const today = new Date()
+  const date = new Date(day)
+  if (date.toDateString() === today.toDateString()) {
+    return 'today'
+  }
   return ''
 }
 
+const getCalendarDayStyle = (day: string) => {
+  const data = submissionData.value.find((item) => item.date === day)
+  if (!data) return {}
+
+  const count = data.count
+  let opacity = 0
+  if (count > 0 && count <= 2) {
+    opacity = 0.2
+  } else if (count > 2 && count <= 5) {
+    opacity = 0.4
+  } else if (count > 5 && count <= 10) {
+    opacity = 0.6
+  } else if (count > 10) {
+    opacity = 0.8
+  }
+
+  return {
+    backgroundColor: `rgba(103, 194, 58, ${opacity})`,
+    color: opacity > 0.5 ? '#fff' : 'inherit',
+  }
+}
+
 const goToQuestion = (questionId: number) => {
-  router.push(`/question/${questionId}`)
+  router.push(`/problem/${questionId}`)
 }
 
 const formatSelectedDate = () => {

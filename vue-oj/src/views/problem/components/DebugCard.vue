@@ -82,9 +82,11 @@ watch(() => props.submissionResult, (newVal) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -97,33 +99,78 @@ watch(() => props.submissionResult, (newVal) => {
 .tab-label {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 :deep(.el-tabs__header) {
   margin: 0;
-  background: #fafafa;
-  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.9));
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  backdrop-filter: blur(10px);
 }
 
 :deep(.el-tabs__nav-wrap) {
-  padding: 0 16px;
+  padding: 0 20px;
 }
 
 :deep(.el-tabs__item) {
-  padding: 0 16px;
-  height: 40px;
-  line-height: 40px;
+  padding: 0 20px;
+  height: 48px;
+  line-height: 48px;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px 8px 0 0;
+  margin: 0 2px;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
 }
 
 :deep(.el-tabs__item.is-active) {
-  color: #1890ff;
-  font-weight: 500;
+  color: #3b82f6;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+:deep(.el-tabs__active-bar) {
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  height: 3px;
+  border-radius: 2px;
 }
 
 :deep(.el-tabs__content) {
   flex: 1;
   overflow-y: auto;
+  padding: 0;
+}
+
+:deep(.el-tab-pane) {
+  height: 100%;
+}
+
+/* 滚动条样式 */
+:deep(.el-tabs__content::-webkit-scrollbar) {
+  width: 6px;
+}
+
+:deep(.el-tabs__content::-webkit-scrollbar-track) {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+:deep(.el-tabs__content::-webkit-scrollbar-thumb) {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+:deep(.el-tabs__content::-webkit-scrollbar-thumb:hover) {
+  background: rgba(0, 0, 0, 0.3);
 }
 </style>

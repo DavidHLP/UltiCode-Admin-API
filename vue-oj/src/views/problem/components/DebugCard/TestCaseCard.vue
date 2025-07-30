@@ -103,12 +103,15 @@ const handleTabsEdit = (targetName: string | number | undefined, action: 'remove
 
 <style scoped>
 .case-content {
-  padding: 16px;
+  padding: 24px;
+  height: 100%;
+  background: transparent;
 }
 
 .case-tabs-container {
   display: flex;
   align-items: center;
+  margin-bottom: 24px;
 }
 
 .case-tabs {
@@ -127,25 +130,38 @@ const handleTabsEdit = (targetName: string | number | undefined, action: 'remove
 
 :deep(.case-tabs .el-tabs__item) {
   border: none !important;
-  border-radius: 4px;
-  background-color: #f5f5f5;
+  border-radius: 8px;
+  background: rgba(248, 250, 252, 0.8);
   margin-right: 8px;
-  padding: 0 12px !important;
-  height: 28px;
-  line-height: 28px;
-  color: #666;
-  font-size: 13px;
+  padding: 0 16px !important;
+  height: 36px;
+  line-height: 36px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+}
+
+:deep(.case-tabs .el-tabs__item:hover) {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
 }
 
 :deep(.case-tabs .el-tabs__item.is-active) {
-  background-color: #1890ff;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
 .test-case-details {
   display: flex;
   flex-direction: column;
-  margin-left: 12px;
+  gap: 20px;
 }
 
 .input-section,
@@ -155,28 +171,75 @@ const handleTabsEdit = (targetName: string | number | undefined, action: 'remove
 }
 
 .section-title {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 8px;
-  font-weight: 500;
+  font-size: 15px;
+  color: #1e293b;
+  margin-bottom: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 2px;
 }
 
 .input-textarea :deep(.el-textarea__inner),
 .output-textarea :deep(.el-textarea__inner) {
-  background-color: #f8f9fa;
-  border: 1px solid #e8e8e8;
-  border-radius: 6px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #333;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 0.5);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
   resize: none;
-  padding: 12px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .input-textarea :deep(.el-textarea__inner):focus,
 .output-textarea :deep(.el-textarea__inner):focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.input-textarea :deep(.el-textarea__inner)::placeholder,
+.output-textarea :deep(.el-textarea__inner)::placeholder {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* 添加一些微妙的动画效果 */
+.input-section,
+.output-section {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.input-section {
+  animation-delay: 0.1s;
+}
+
+.output-section {
+  animation-delay: 0.2s;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

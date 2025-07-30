@@ -1,22 +1,22 @@
-package com.david.dto;
+package com.david.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum QuestionStatus {
+public enum ProblemStatus {
     NOT_ATTEMPTED("not-attempted"),
     ATTEMPTED("attempted"),
     COMPLETED("completed");
 
     private final String value;
 
-    QuestionStatus(String value) {
+    ProblemStatus(String value) {
         this.value = value;
     }
 
     @JsonCreator
-    public static QuestionStatus fromValue(String value) {
-        for (QuestionStatus status : values()) {
+    public static ProblemStatus fromValue(String value) {
+        for (ProblemStatus status : values()) {
             if (status.value.equalsIgnoreCase(value)) {
                 return status;
             }

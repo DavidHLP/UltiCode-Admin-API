@@ -7,11 +7,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.david.dto.ProblemDto;
-import com.david.dto.TestCaseDto;
 import com.david.service.IProblemService;
 import com.david.service.ITestCaseService;
 import com.david.utils.ResponseResult;
+import com.david.vo.ProblemVo;
+import com.david.vo.TestCaseVo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,16 +32,16 @@ public class ProblemViewController {
 	private final ITestCaseService testCaseService;
 
 	@GetMapping("/{id}")
-	public ResponseResult<ProblemDto> getProblemById(@PathVariable Long id) {
-		ProblemDto problemDto = problemService.getProblemDtoById(id);
-		if (problemDto == null) {
+	public ResponseResult<ProblemVo> getProblemById(@PathVariable Long id) {
+		ProblemVo problemVo = problemService.getProblemDtoById(id);
+		if (problemVo == null) {
 			return ResponseResult.fail(404, "题目不存在或已被删除");
 		}
-		List<TestCaseDto> testCaseDos = testCaseService.getTestCaseDtoById(id);
+		List<TestCaseVo> testCaseDos = testCaseService.getTestCaseDtoById(id);
 		if (testCaseDos == null) {
 			return ResponseResult.fail(404, "测试用例样例不存在");
 		}
-		problemDto.setTestCases(testCaseDos);
-		return ResponseResult.success("成功获取题目", problemDto);
+		problemVo.setTestCases(testCaseDos);
+		return ResponseResult.success("成功获取题目", problemVo);
 	}
 }

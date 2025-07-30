@@ -30,7 +30,20 @@ export interface Submission {
   createdAt: string
 }
 
-export interface Solution {
+export interface SolutionCardVo {
+  id: number
+  title: string
+  upvotes: number
+  downvotes: number
+  views: number
+  createdAt: string
+  authorUsername: string
+  authorAvatar: string
+  tags: string[]
+  problem: string
+}
+
+export interface SolutionVo {
   id: number
   problemId: number
   userId: number
@@ -44,4 +57,12 @@ export interface Solution {
   updatedAt: string
   authorUsername: string
   authorAvatar: string
+}
+
+export interface Page<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
 }
