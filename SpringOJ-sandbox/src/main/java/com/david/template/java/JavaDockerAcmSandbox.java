@@ -110,8 +110,9 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
     }
 
     @Override
-    protected JudgeResult compileCode(String containerId, String sourceFile, LanguageType language) {
+    protected JudgeResult compileCode(String containerId, String sourceFile, LanguageType language, SandboxExecuteRequest request) {
         JudgeResult compileResult = new JudgeResult();
+        compileResult.setSubmissionId(request.getSubmissionId()); // 设置 submissionId
         try {
             String[] compileCmd = getCompileCommand(sourceFile, language);
             if (compileCmd.length == 0) {
@@ -147,14 +148,16 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
             if (stderr.length() > 0) {
                 compileResult.setStatus(JudgeStatus.COMPILE_ERROR);
                 compileResult.setCompileInfo(stderr);
-                log.warn("编译错误: submissionId={}, info={}", compileResult.getCompileInfo());
+                log.warn("编译错误: submissionId={}, info={}", request.getSubmissionId(), compileResult.getCompileInfo());
                 return compileResult;
             }
             log.info("编译成功");
             return createSuccessResult();
         } catch (Exception e) {
             log.error("编译失败", e);
-            return createErrorResult(JudgeStatus.SYSTEM_ERROR, "编译错误: " + e.getMessage());
+            compileResult.setStatus(JudgeStatus.SYSTEM_ERROR);
+            compileResult.setErrorMessage("编译错误: " + e.getMessage());
+            return compileResult;
         }
     }
 
@@ -246,6 +249,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
         result.setTestCaseId((long) testCaseId);
         result.setStatus(JudgeStatus.ACCEPTED);
         result.setScore(0); // Default score
+        result.setMemoryUsed(0);
 
         try {
             // 1. 启动内存监控
@@ -340,6 +344,8 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
             memStdout.close();
             memStderr.close();
 
+            result.setMemoryUsed((int) (maxMemoryUsage.get() / 1024)); // bytes to KB
+
             if (!completed) {
                 // Time Limit Exceeded
                 result.setStatus(JudgeStatus.TIME_LIMIT_EXCEEDED);
@@ -356,8 +362,8 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
             }
 
             // Compare output
-            String actualOutput = output.toString("UTF-8").replaceAll("\\r\\n", "\n").trim();
-            String expectedOutputTrimmed = expectedOutput.replaceAll("\\r\\n", "\n").trim();
+            String actualOutput = output.toString("UTF-8").replaceAll("\r\n", "\n").trim();
+            String expectedOutputTrimmed = expectedOutput.replaceAll("\r\n", "\n").trim();
 
             if (actualOutput.equals(expectedOutputTrimmed)) {
                 result.setStatus(JudgeStatus.ACCEPTED);
@@ -366,9 +372,6 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
                 result.setStatus(JudgeStatus.WRONG_ANSWER);
                 result.setErrorMessage("输出不匹配. 期望: \"" + expectedOutputTrimmed + "\", 实际: \"" + actualOutput + "\"");
             }
-
-            // 实际内存使用
-            result.setMemoryUsed((int) (maxMemoryUsage.get() / 1024)); // bytes to KB
 
         } catch (Exception e) {
             log.error("测试用例执行失败: testCase={}", testCaseId, e);

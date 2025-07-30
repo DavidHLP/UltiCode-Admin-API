@@ -1,16 +1,8 @@
 <template>
   <div class="solution-table-container">
-    <HeaderComponent 
-      :search-query="searchQuery"
-      :current-sort="currentSort"
-      @search-change="handleSearchChange"
-      @sort-change="handleSortChange"
-    />
-    <MainComponent 
-      :search-query="searchQuery"
-      :current-sort="currentSort"
-      @solution-click="handleSolutionClick"
-    />
+    <HeaderComponent :search-query="searchQuery" :current-sort="currentSort" @search-change="handleSearchChange"
+      @sort-change="handleSortChange" />
+    <MainComponent :search-query="searchQuery" :current-sort="currentSort" @solution-click="handleSolutionClick" />
   </div>
 </template>
 
@@ -21,13 +13,13 @@ import MainComponent from './SolutionTableComponent/MainComponent.vue'
 import type { SolutionCardVo } from '@/types/problem';
 
 // 定义事件
-const emit = defineEmits<{ 
+const emit = defineEmits<{
   (e: 'row-click', solution: SolutionCardVo): void;
 }>()
 
 // 状态管理
 const searchQuery = ref('')
-const currentSort = ref('hot') // 'hot' | 'new'
+const currentSort = ref<'hot' | 'new'>('hot')
 
 // 处理搜索变化
 const handleSearchChange = (query: string) => {
@@ -36,7 +28,7 @@ const handleSearchChange = (query: string) => {
 
 // 处理排序变化
 const handleSortChange = (sort: string) => {
-  currentSort.value = sort
+  currentSort.value = sort as 'hot' | 'new'
 }
 
 // 处理题解点击

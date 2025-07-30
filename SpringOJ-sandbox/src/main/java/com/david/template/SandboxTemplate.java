@@ -2,6 +2,8 @@ package com.david.template;
 
 import java.io.IOException;
 
+import com.david.judge.enums.JudgeStatus;
+import com.david.judge.enums.LanguageType;
 import com.david.sandbox.dto.JudgeResult;
 import com.david.sandbox.dto.SandboxExecuteRequest;
 import com.github.dockerjava.api.DockerClient;
@@ -39,8 +41,8 @@ public abstract class SandboxTemplate {
             startContainer(containerId);
 
             // 2. 编译代码
-            JudgeResult compileResult = compileCode(containerId, sourceFile, request.getLanguage());
-            if (compileResult.getStatus() == com.david.judge.enums.JudgeStatus.COMPILE_ERROR) {
+            JudgeResult compileResult = compileCode(containerId, sourceFile, request.getLanguage(), request);
+            if (compileResult.getStatus() == JudgeStatus.COMPILE_ERROR) {
                 return compileResult;
             }
 
@@ -52,7 +54,9 @@ public abstract class SandboxTemplate {
 
         } catch (Exception e) {
             log.error("沙箱执行异常: submissionId={}", request.getSubmissionId(), e);
-            return createErrorResult(com.david.judge.enums.JudgeStatus.SYSTEM_ERROR, "系统错误: " + e.getMessage());
+            JudgeResult errorResult = createErrorResult(JudgeStatus.SYSTEM_ERROR, "系统错误: " + e.getMessage());
+            errorResult.setSubmissionId(request.getSubmissionId());
+            return errorResult;
         } finally {
             // 确保容器被清理
             if (containerId != null) {
@@ -84,7 +88,7 @@ public abstract class SandboxTemplate {
      * @throws IOException IO异常
      */
     protected abstract String writeSourceCode(String tempDir, String sourceCode,
-            com.david.judge.enums.LanguageType language) throws IOException;
+            LanguageType language) throws IOException;
 
     /**
      * 抽象方法：创建Docker容器
@@ -111,7 +115,7 @@ public abstract class SandboxTemplate {
      * @return 编译结果
      */
     protected abstract JudgeResult compileCode(String containerId, String sourceFile,
-            com.david.judge.enums.LanguageType language);
+            LanguageType language, SandboxExecuteRequest request);
 
     /**
      * 抽象方法：执行测试用例
@@ -154,7 +158,7 @@ public abstract class SandboxTemplate {
      * @param errorMessage 错误信息
      * @return 判题结果
      */
-    protected JudgeResult createErrorResult(com.david.judge.enums.JudgeStatus status, String errorMessage) {
+    protected JudgeResult createErrorResult(JudgeStatus status, String errorMessage) {
         JudgeResult result = new JudgeResult();
         result.setStatus(status);
         result.setScore(0);
@@ -171,7 +175,7 @@ public abstract class SandboxTemplate {
      */
     protected JudgeResult createSuccessResult() {
         JudgeResult result = new JudgeResult();
-        result.setStatus(com.david.judge.enums.JudgeStatus.ACCEPTED);
+        result.setStatus(JudgeStatus.ACCEPTED);
         return result;
     }
 }

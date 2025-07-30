@@ -164,14 +164,10 @@ const formatDate = (dateString: string) => {
 </script>
 
 <style scoped>
-/* 容器样式保持不变 */
 .solution-list-container {
-  height: 650px;
+  height: 100%;
   overflow: auto;
-  background-color: #f7f7f7;
-  /* 图片中的背景色 */
   padding: 8px;
-  /* 给卡片留出一些边距 */
 }
 
 .infinite-list {
@@ -180,7 +176,6 @@ const formatDate = (dateString: string) => {
   list-style: none;
 }
 
-/* 移除旧的 item 样式，改为 card 的样式 */
 .list-item-wrapper {
   margin-bottom: 12px;
   /* 卡片之间的垂直间距 */

@@ -24,11 +24,15 @@
     <div class="solution-footer">
       <el-button-group>
         <el-button :type="userVote === 'up' ? 'primary' : 'default'" @click="handleVote('up')">
-          <el-icon><ElIconCaretTop /></el-icon>
+          <el-icon>
+            <ElIconCaretTop />
+          </el-icon>
           <span>赞同 {{ solution.upvotes }}</span>
         </el-button>
         <el-button :type="userVote === 'down' ? 'primary' : 'default'" @click="handleVote('down')">
-          <el-icon><ElIconCaretBottom /></el-icon>
+          <el-icon>
+            <ElIconCaretBottom />
+          </el-icon>
           <span>反对 {{ solution.downvotes }}</span>
         </el-button>
       </el-button-group>
@@ -43,7 +47,7 @@ import { MdPreview } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import type { SolutionVo } from '@/types/problem';
 
-const props = defineProps<{
+defineProps<{
   solution: SolutionVo & { viewCount?: number };
 }>();
 
