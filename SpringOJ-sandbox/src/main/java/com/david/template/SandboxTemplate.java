@@ -2,10 +2,10 @@ package com.david.template;
 
 import java.io.IOException;
 
+import com.david.dto.JudgeResult;
+import com.david.dto.SandboxExecuteRequest;
 import com.david.judge.enums.JudgeStatus;
 import com.david.judge.enums.LanguageType;
-import com.david.sandbox.dto.JudgeResult;
-import com.david.sandbox.dto.SandboxExecuteRequest;
 import com.github.dockerjava.api.DockerClient;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +37,7 @@ public abstract class SandboxTemplate {
             // 1. 环境准备与隔离
             tempDir = setupEnvironment(request);
             String sourceFile = writeSourceCode(tempDir, request.getSourceCode(), request.getLanguage());
+            writeMainWrapper(tempDir, request.getLanguage());
             containerId = createContainer(tempDir, request);
             startContainer(containerId);
 
@@ -89,6 +90,15 @@ public abstract class SandboxTemplate {
      */
     protected abstract String writeSourceCode(String tempDir, String sourceCode,
             LanguageType language) throws IOException;
+
+    /**
+     * 抽象方法：写入主函数包装文件
+     * 
+     * @param tempDir 临时工作目录
+     * @param language 编程语言
+     * @throws IOException IO异常
+     */
+    protected abstract void writeMainWrapper(String tempDir, LanguageType language) throws IOException;
 
     /**
      * 抽象方法：创建Docker容器

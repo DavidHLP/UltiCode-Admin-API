@@ -39,7 +39,28 @@
                     </div>
                     <el-table :data="props.row.testCases" size="small" stripe>
                       <el-table-column prop="id" label="ID" width="80" align="center" />
-                      <el-table-column prop="input" label="输入预览" show-overflow-tooltip />
+                      <el-table-column prop="inputs" label="输入预览" min-width="200">
+                        <template #default="{ row }">
+                          <div v-if="row.inputs && row.inputs.length > 0">
+                            <el-popover placement="top-start" :width="300" trigger="hover">
+                              <template #reference>
+                                <el-tag type="info" size="small" class="input-preview-tag">
+                                  {{ row.inputs.length }} 个输入项
+                                </el-tag>
+                              </template>
+                              <el-descriptions :column="1" border size="small" class="input-descriptions">
+                                <el-descriptions-item v-for="(input, idx) in row.inputs" :key="idx"
+                                  :label="input.inputName || `输入 ${idx + 1}`" label-class-name="input-label">
+                                  <div class="input-value">
+                                    {{ input.input }}
+                                  </div>
+                                </el-descriptions-item>
+                              </el-descriptions>
+                            </el-popover>
+                          </div>
+                          <span v-else class="text-gray-400">无输入</span>
+                        </template>
+                      </el-table-column>
                       <el-table-column prop="output" label="输出预览" show-overflow-tooltip />
                       <el-table-column prop="isSample" label="是否样例" width="100" align="center">
                         <template #default="scope">
@@ -380,6 +401,7 @@ onMounted(() => {
 }
 
 .action-btn {
+  margin: 0 2px;
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -389,8 +411,10 @@ onMounted(() => {
 }
 
 .problem-detail-view {
-  padding: 20px;
-  background-color: #fcfcfc;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  margin: 5px 0;
 }
 
 .test-case-management {
@@ -404,37 +428,110 @@ onMounted(() => {
   margin-bottom: 15px;
 }
 
+.problem-content-display {
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 4px;
+  min-height: 100px;
+}
+
 .problem-content-display h4 {
   margin-top: 0;
-  margin-bottom: 10px;
-  font-size: 16px;
-  color: #333;
-}
-
-.problem-content-display p,
-.problem-content-display pre {
-  margin-top: 0;
+  color: #303133;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
   margin-bottom: 15px;
-  line-height: 1.6;
-  color: #555;
-}
-
-.problem-content-display pre {
-  background-color: #f5f5f5;
-  padding: 10px;
-  border-radius: 4px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
 }
 
 .tags-cell {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
 }
 
 .problem-tag {
-  border-radius: 6px;
+  margin: 2px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-btn {
+  margin: 0 2px;
+}
+
+.id-tag {
+  font-weight: bold;
+  min-width: 40px;
+  justify-content: center;
+}
+
+.problem-title {
   font-weight: 500;
+  color: #303133;
+}
+
+.difficulty-filter,
+.category-filter {
+  width: 120px;
+  margin-right: 10px;
+}
+
+.add-problem-btn {
+  margin-left: auto;
+}
+
+/* 输入预览样式 */
+.input-preview-tag {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.input-preview-tag:hover {
+  opacity: 0.8;
+  transform: translateY(-1px);
+}
+
+:deep(.input-descriptions) {
+  margin: 5px 0;
+  max-width: 100%;
+}
+
+:deep(.input-descriptions .el-descriptions__label) {
+  width: 100px;
+  background-color: #f5f7fa;
+  font-weight: 600;
+  color: #606266;
+}
+
+:deep(.input-descriptions .el-descriptions__content) {
+  padding: 8px 12px;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+:deep(.input-descriptions .el-descriptions__cell) {
+  padding: 0 !important;
+}
+
+:deep(.input-descriptions .el-descriptions__label) {
+  padding: 8px 12px !important;
+}
+
+.input-value {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 3px;
+  border-left: 3px solid #7354af;
+  margin: 2px 0;
+  word-break: break-all;
+}
+
+.text-gray-400 {
+  color: #c0c4cc;
 }
 </style>

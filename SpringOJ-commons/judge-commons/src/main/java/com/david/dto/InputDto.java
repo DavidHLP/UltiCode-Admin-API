@@ -1,8 +1,4 @@
-package com.david.vo;
-
-import java.util.List;
-
-import com.david.dto.InputDto;
+package com.david.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TestCaseVo {
-    private List<InputDto> inputs;
-    private String output;
+public class InputDto {
+	private String input;
+	private String inputName;
 }

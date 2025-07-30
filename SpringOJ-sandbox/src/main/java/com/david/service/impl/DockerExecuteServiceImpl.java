@@ -2,8 +2,8 @@ package com.david.service.impl;
 
 import org.springframework.stereotype.Service;
 
-import com.david.sandbox.dto.JudgeResult;
-import com.david.sandbox.dto.SandboxExecuteRequest;
+import com.david.dto.JudgeResult;
+import com.david.dto.SandboxExecuteRequest;
 import com.david.service.IDockerExecuteService;
 import com.david.template.SandboxTemplate;
 import com.david.template.java.JavaDockerAcmSandbox;

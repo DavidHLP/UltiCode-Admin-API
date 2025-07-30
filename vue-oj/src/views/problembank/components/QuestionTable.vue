@@ -2,10 +2,10 @@
   <div>
     <!-- 题目表格 -->
     <div v-infinite-scroll="loadMore" :infinite-scroll-disabled="loading || !hasMore">
-      <el-table :data="questions" v-loading="loading" stripe style="width: 100%" class="simple-table"
-        :show-header="false" @row-click="handleRowClick">
+      <el-table v-loading="loading" :data="questions" :show-header="false" class="simple-table" stripe
+        style="width: 100%" @row-click="handleRowClick">
         <!-- 状态列 -->
-        <el-table-column prop="status" label="状态" width="70" align="center">
+        <el-table-column align="center" label="状态" prop="status" width="70">
           <template #default="{ row }">
             <div class="status-icon">
               <span v-if="row.status === 'completed'" class="status-completed">✓</span>
@@ -16,7 +16,7 @@
         </el-table-column>
 
         <!-- 题目标题列 -->
-        <el-table-column prop="title" label="题目" min-width="200">
+        <el-table-column label="题目" min-width="200" prop="title">
           <template #default="{ row }">
             <router-link :to="`/problem/${row.id}`" class="question-title">
               {{ row.id }}. {{ row.title }}
@@ -24,32 +24,32 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="tags" label="标签" width="200" align="center">
+        <el-table-column align="center" label="标签" prop="tags" width="200">
           <template #default="{ row }">
-            <el-tag v-for="tag in row.tags" :key="tag" size="" effect="light" style="margin-right: 8px;">
+            <el-tag v-for="tag in row.tags" :key="tag" effect="light" size="" style="margin-right: 8px">
               {{ tag }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- 难度列 -->
-        <el-table-column prop="difficulty" label="难度" width="100" align="center">
+        <el-table-column align="center" label="难度" prop="difficulty" width="100">
           <template #default="{ row }">
-            <el-tag :type="getDifficultyType(row.difficulty)" size="" effect="light">
+            <el-tag :type="getDifficultyType(row.difficulty)" effect="light" size="">
               {{ getDifficultyChinese(row.difficulty) }}
             </el-tag>
           </template>
         </el-table-column>
 
         <!-- 通过率列 -->
-        <el-table-column prop="passRate" label="通过率" width="100" align="center">
+        <el-table-column align="center" label="通过率" prop="passRate" width="100">
           <template #default="{ row }">
             <span class="pass-rate">{{ row.passRate.toFixed(1) }}%</span>
           </template>
         </el-table-column>
 
         <!-- 提交次数列 -->
-        <el-table-column prop="submissionCount" label="提交" width="100" align="center">
+        <el-table-column align="center" label="提交" prop="submissionCount" width="100">
           <template #default="{ row }">
             <span class="submission-count">{{ formatNumber(row.submissionCount) }}</span>
           </template>
@@ -59,12 +59,12 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { useRouter } from 'vue-router'
-import type { Question } from '@/types/questionbank'
+import type { Problem } from '@/types/problembank.d.ts'
 
 defineProps<{
-  questions: Question[]
+  questions: Problem[]
   loading: boolean
   hasMore: boolean
 }>()
@@ -93,29 +93,29 @@ const getDifficultyType = (difficulty: string) => {
 
 const formatNumber = (num: number) => {
   if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万';
+    return (num / 10000).toFixed(1) + '万'
   } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + '千';
+    return (num / 1000).toFixed(1) + '千'
   }
-  return num.toString();
-};
+  return num.toString()
+}
 
 // 将英文难度转换为中文
 const getDifficultyChinese = (difficulty: string) => {
   const map: Record<string, string> = {
-    'Easy': '简单',
-    'Medium': '中等',
-    'Hard': '困难'
-  };
-  return map[difficulty];
-};
+    Easy: '简单',
+    Medium: '中等',
+    Hard: '困难',
+  }
+  return map[difficulty]
+}
 
 const loadMore = () => {
   emit('load-more')
 }
 
 // 处理行点击事件
-const handleRowClick = (row: Question) => {
+const handleRowClick = (row: Problem) => {
   router.push(`/problem/${row.id}`)
 }
 </script>

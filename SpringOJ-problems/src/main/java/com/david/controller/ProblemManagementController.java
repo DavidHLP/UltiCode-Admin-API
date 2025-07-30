@@ -65,7 +65,7 @@ public class ProblemManagementController {
 	 */
 	@GetMapping("/testcases/problem/{problemId}")
 	public ResponseResult<List<TestCase>> getTestCasesByProblemId(@PathVariable Long problemId) {
-		List<TestCase> testCases = testCaseService.lambdaQuery().eq(TestCase::getProblemId, problemId).list();
+		List<TestCase> testCases = testCaseService.getTestCasesByProblemId(problemId);
 		return ResponseResult.success("成功获取测试用例", testCases);
 	}
 
@@ -74,7 +74,7 @@ public class ProblemManagementController {
 	 */
 	@PostMapping("/testcases")
 	public ResponseResult<TestCase> createTestCase(@RequestBody TestCase testCase) {
-		if (testCaseService.save(testCase)) {
+		if (testCaseService.saveTestCase(testCase)) {
 			return ResponseResult.success("测试用例创建成功", testCase);
 		}
 		return ResponseResult.fail(500, "测试用例创建失败");
@@ -85,7 +85,7 @@ public class ProblemManagementController {
 	 */
 	@PutMapping("/testcases")
 	public ResponseResult<TestCase> updateTestCase(@RequestBody TestCase testCase) {
-		if (testCaseService.updateById(testCase)) {
+		if (testCaseService.updateTestCase(testCase)) {
 			return ResponseResult.success("测试用例更新成功", testCase);
 		}
 		return ResponseResult.fail(500, "测试用例更新失败");

@@ -9,10 +9,15 @@ export interface Problem {
 
 export interface TestCase {
   id: number
-  input: string
+  inputs: InputDto[]
   output: string
   sample: boolean
   score: number
+}
+
+export interface InputDto {
+  input: string
+  inputName: string
 }
 
 export interface Submission {

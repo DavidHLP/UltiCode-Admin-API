@@ -1,4 +1,4 @@
-package com.david.sandbox.dto;
+package com.david.dto;
 
 import com.david.judge.enums.LanguageType;
 

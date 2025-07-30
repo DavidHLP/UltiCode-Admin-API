@@ -15,5 +15,11 @@ import com.david.vo.TestCaseVo;
  * @since 2025-07-21
  */
 public interface ITestCaseService extends IService<TestCase> {
-    List<TestCaseVo> getTestCaseDtoById(Long id);
+    List<TestCaseVo> getTestCaseVoByProblemId(Long problemId);
+
+    List<TestCase> getTestCasesByProblemId(Long problemId);
+
+    boolean saveTestCase(TestCase testCase);
+
+    boolean updateTestCase(TestCase testCase);
 }

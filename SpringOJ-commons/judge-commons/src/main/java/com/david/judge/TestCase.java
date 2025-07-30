@@ -1,16 +1,19 @@
 package com.david.judge;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
+import com.david.dto.InputDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serial;
-import java.io.Serializable;
-import java.time.LocalDateTime;
 
 /**
  * 测试用例实体类
@@ -38,7 +41,8 @@ public class TestCase implements Serializable {
     /**
      * 输入内容
      */
-    private String input;
+    @TableField(exist = false)
+    private List<InputDto> inputs;
 
     /**
      * 期望输出内容

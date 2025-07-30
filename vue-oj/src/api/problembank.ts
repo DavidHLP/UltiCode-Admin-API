@@ -1,7 +1,7 @@
 import request from '@/utils/request'
-import type { Page, Question, QuestionBankQuery, SubmissionCalendar } from '@/types/questionbank'
+import type { Page, Problem, ProblemBankQuery, SubmissionCalendar } from '@/types/problembank.d.ts'
 
-export function getProblemBank(params: QuestionBankQuery): Promise<Page<Question>> {
+export function getProblemBank(params: ProblemBankQuery): Promise<Page<Problem>> {
   return request({
     url: '/problem-bank/api',
     method: 'get',

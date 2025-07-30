@@ -1,7 +1,7 @@
 package com.david.strategy;
 
+import com.david.dto.SandboxExecuteRequest;
 import com.david.judge.enums.LanguageType;
-import com.david.sandbox.dto.SandboxExecuteRequest;
 
 /**
  * 简化的判题策略接口 - 仅用于构建沙箱请求的语言特定逻辑

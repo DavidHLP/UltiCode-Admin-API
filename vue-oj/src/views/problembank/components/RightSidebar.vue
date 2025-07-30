@@ -17,8 +17,8 @@
             <template #date-cell="{ data }">
               <div
                 :class="getCalendarDayClass(data.day)"
-                class="calendar-day"
                 :style="getCalendarDayStyle(data.day)"
+                class="calendar-day"
               >
                 {{ data.day.split('-').pop() }}
               </div>
@@ -49,12 +49,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { Refresh } from '@element-plus/icons-vue'
 import { getSubmissionCalendar } from '@/api/problembank'
-import type { SubmissionCalendar } from '@/types/questionbank'
+import type { SubmissionCalendar } from '@/types/problembank.d.ts'
 
 // 定义接口
 interface RecommendedQuestion {

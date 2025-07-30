@@ -54,16 +54,18 @@ const mainTab = ref('test-cases');
 
 // 初始化第一个测试用例
 watch(() => props.testCases, (newCases) => {
-  if (newCases.length > 0) {
-    // 可以在这里添加初始化逻辑
+  console.log('newCases', newCases);
+  // 确保每个测试用例都有有效的 inputs 数组
+  if (newCases.some(tc => !tc.inputs || !Array.isArray(tc.inputs))) {
+    console.warn('Some test cases have invalid inputs format');
   }
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 // 添加测试用例方法
 const addTestCase = () => {
   emit('addTestCase', {
     id: Date.now(),
-    input: '',
+    inputs: [{ inputName: '', input: '' }],
     output: '',
     sample: true,
     score: 0

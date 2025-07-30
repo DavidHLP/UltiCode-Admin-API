@@ -2,8 +2,8 @@ package com.david.strategy.impl;
 
 import org.springframework.stereotype.Component;
 
+import com.david.dto.SandboxExecuteRequest;
 import com.david.judge.enums.LanguageType;
-import com.david.sandbox.dto.SandboxExecuteRequest;
 import com.david.strategy.JudgeStrategy;
 
 import lombok.extern.slf4j.Slf4j;

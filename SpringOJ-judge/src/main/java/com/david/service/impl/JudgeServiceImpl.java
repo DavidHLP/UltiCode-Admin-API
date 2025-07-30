@@ -1,9 +1,13 @@
 package com.david.service.impl;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.david.dto.InputDto;
+import com.david.dto.SandboxExecuteRequest;
+import com.david.dto.SubmitCodeRequest;
 import com.david.interfaces.ProblemServiceFeignClient;
 import com.david.interfaces.SubmissionServiceFeignClient;
 import com.david.judge.Problem;
@@ -11,8 +15,6 @@ import com.david.judge.Submission;
 import com.david.judge.TestCase;
 import com.david.judge.enums.JudgeStatus;
 import com.david.producer.SandboxProducer;
-import com.david.sandbox.dto.SandboxExecuteRequest;
-import com.david.sandbox.dto.SubmitCodeRequest;
 import com.david.service.IJudgeService;
 import com.david.strategy.impl.JudgeStrategyFactory;
 import com.david.utils.ResponseResult;
@@ -53,13 +55,8 @@ public class JudgeServiceImpl implements IJudgeService {
 	 * 创建提交记录
 	 */
 	private Submission createSubmission(SubmitCodeRequest request, Long userId) {
-		Submission submission = Submission.builder()
-			.language(request.getLanguage())
-			.sourceCode(request.getSourceCode())
-			.userId(userId)
-			.problemId(request.getProblemId())
-			.status(JudgeStatus.PENDING)
-			.build();
+		Submission submission = Submission.builder().language(request.getLanguage()).sourceCode(request.getSourceCode())
+				.userId(userId).problemId(request.getProblemId()).status(JudgeStatus.PENDING).build();
 
 		ResponseResult<Submission> response = submissionServiceFeignClient.createSubmission(submission);
 		if (isResponseValid(response)) {
@@ -92,8 +89,8 @@ public class JudgeServiceImpl implements IJudgeService {
 			// 发送到沙箱执行
 			sandboxProducer.executeInSandbox(sandboxRequest);
 
-			log.info("判题请求已发送到沙箱: submissionId={}, problemId={}, language={}",
-				submission.getId(), problem.getId(), submission.getLanguage());
+			log.info("判题请求已发送到沙箱: submissionId={}, problemId={}, language={}", submission.getId(), problem.getId(),
+					submission.getLanguage());
 
 		} catch (Exception e) {
 			log.error("判题失败: submissionId={}", submission.getId(), e);
@@ -104,7 +101,8 @@ public class JudgeServiceImpl implements IJudgeService {
 	/**
 	 * 构建沙箱执行请求
 	 */
-	private SandboxExecuteRequest buildSandboxRequest(Submission submission, Problem problem, List<TestCase> testCases) {
+	private SandboxExecuteRequest buildSandboxRequest(Submission submission, Problem problem,
+			List<TestCase> testCases) {
 		SandboxExecuteRequest request = new SandboxExecuteRequest();
 		request.setSourceCode(submission.getSourceCode());
 		request.setLanguage(submission.getLanguage());
@@ -113,7 +111,9 @@ public class JudgeServiceImpl implements IJudgeService {
 		request.setSubmissionId(submission.getId());
 
 		// 提取测试用例输入输出
-		request.setInputs(testCases.stream().map(TestCase::getInput).toList());
+		List<String> inputs = testCases.stream().map(TestCase::getInputs).flatMap(List::stream).map(InputDto::getInput)
+				.collect(Collectors.toList());
+		request.setInputs(testCases.stream().map(tc -> String.join("\n", inputs)).collect(Collectors.toList()));
 		request.setExpectedOutputs(testCases.stream().map(TestCase::getOutput).toList());
 
 		return request;

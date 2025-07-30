@@ -1,14 +1,14 @@
-export interface Question {
+export interface Problem {
   id: number
   title: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  tags: string[]
+  difficulty: string
   passRate: number
   submissionCount: number
-  status: 'completed' | 'attempted' | 'not-attempted'
-  tags: string[]
+  status: string
 }
 
-export interface QuestionBankQuery {
+export interface ProblemBankQuery {
   page: number
   size: number
   category?: '' | 'ALGORITHMS' | 'DATABASE' | 'SHELL' | '"MULTI_THREADING' | 'JAVASCRIPT' | 'PANDAS'
@@ -24,5 +24,19 @@ export interface Page<T> {
   total: number
   size: number
   current: number
-  pages: number
+}
+
+export interface SubmissionCalendar {
+  date: string
+  count: number
+}
+
+export interface Problem {
+  id: number
+  title: string
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  passRate: number
+  submissionCount: number
+  status: 'completed' | 'attempted' | 'not-attempted'
+  tags: string[]
 }

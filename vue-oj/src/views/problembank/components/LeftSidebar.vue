@@ -4,13 +4,8 @@
     <!-- 题目表格区域 -->
     <div class="content-section">
       <QuestionSearch @search="questionHandleSearch"></QuestionSearch>
-      <QuestionTable
-        ref="questionTableRef"
-        :has-more="hasMore"
-        :loading="loading"
-        :questions="questions"
-        @load-more="loadMoreQuestions"
-      />
+      <QuestionTable ref="questionTableRef" :has-more="hasMore" :loading="loading" :questions="questions"
+        @load-more="loadMoreQuestions" />
     </div>
   </div>
 </template>
@@ -21,10 +16,10 @@ import { ElMessage } from 'element-plus'
 import QuestionTable from './QuestionTable.vue'
 import BigTageFilter from './BigTageFilter.vue'
 import { getProblemBank } from '@/api/problembank.ts'
-import type { Question, QuestionBankQuery } from '@/types/questionbank'
+import type { Problem, ProblemBankQuery } from '@/types/problembank.d.ts'
 import QuestionSearch from './QuestionSearch.vue'
 
-const questionBankQuery = ref<QuestionBankQuery>({
+const questionBankQuery = ref<ProblemBankQuery>({
   page: 1,
   size: 10,
   category: '',
@@ -41,7 +36,7 @@ const questionHandleSearch = (title: string) => {
   fetchQuestions(false)
 }
 
-const categoryHandle = (category: QuestionBankQuery['category']) => {
+const categoryHandle = (category: ProblemBankQuery['category']) => {
   questionBankQuery.value.category = category || ''
   questionBankQuery.value.page = 1
   fetchQuestions(false)
@@ -57,7 +52,7 @@ const questionTableRef = ref<InstanceType<typeof QuestionTable>>()
 
 // 响应式数据
 const loading = ref(false)
-const questions = ref<Question[]>([])
+const questions = ref<Problem[]>([])
 
 const hasMore = ref(true)
 

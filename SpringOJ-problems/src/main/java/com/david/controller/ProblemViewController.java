@@ -37,11 +37,11 @@ public class ProblemViewController {
 		if (problemVo == null) {
 			return ResponseResult.fail(404, "题目不存在或已被删除");
 		}
-		List<TestCaseVo> testCaseDos = testCaseService.getTestCaseDtoById(id);
-		if (testCaseDos == null) {
+		List<TestCaseVo> testCaseVos = testCaseService.getTestCaseVoByProblemId(id);
+		if (testCaseVos == null) {
 			return ResponseResult.fail(404, "测试用例样例不存在");
 		}
-		problemVo.setTestCases(testCaseDos);
+		problemVo.setTestCases(testCaseVos);
 		return ResponseResult.success("成功获取题目", problemVo);
 	}
 }

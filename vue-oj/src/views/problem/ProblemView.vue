@@ -45,6 +45,7 @@ const fetchProblem = async () => {
 
   try {
     problem.value = await getProblemById(problemId)
+    console.log(problem.value)
   } catch (error) {
     console.error('Failed to fetch problem:', error)
     ElMessage.error('题目加载失败')

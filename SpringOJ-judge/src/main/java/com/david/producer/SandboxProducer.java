@@ -3,7 +3,7 @@ package com.david.producer;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import com.david.sandbox.dto.SandboxExecuteRequest;
+import com.david.dto.SandboxExecuteRequest;
 
 import lombok.RequiredArgsConstructor;
 

@@ -3,8 +3,8 @@ package com.david.controller;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.david.dto.SubmitCodeRequest;
 import com.david.judge.Submission;
-import com.david.sandbox.dto.SubmitCodeRequest;
 import com.david.service.IJudgeService;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;

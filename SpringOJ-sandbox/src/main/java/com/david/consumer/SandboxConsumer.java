@@ -3,9 +3,9 @@ package com.david.consumer;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
+import com.david.dto.JudgeResult;
+import com.david.dto.SandboxExecuteRequest;
 import com.david.producer.JudgeResultProducer;
-import com.david.sandbox.dto.JudgeResult;
-import com.david.sandbox.dto.SandboxExecuteRequest;
 import com.david.service.IDockerExecuteService;
 
 import lombok.RequiredArgsConstructor;

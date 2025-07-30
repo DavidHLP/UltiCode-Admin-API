@@ -1,12 +1,7 @@
 <template>
   <div class="tag-container">
-    <el-button
-      v-for="tag in tags"
-      :key="tag.category"
-      :class="['tag-button', { active: activeTag === tag.category }]"
-      round
-      @click="setActiveTag(tag.category)"
-    >
+    <el-button v-for="tag in tags" :key="tag.category" :class="['tag-button', { active: activeTag === tag.category }]"
+      round @click="setActiveTag(tag.category)">
       <i :class="tag.icon" :style="{ color: tag.color, marginRight: '8px' }"></i>
       <span>{{ tag.description }}</span>
     </el-button>
@@ -15,10 +10,10 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import type { QuestionBankQuery } from '@/types/questionbank'
+import type { ProblemBankQuery } from '@/types/problembank.d.ts'
 
 const emit = defineEmits<{
-  (e: 'category', category: QuestionBankQuery['category']): void
+  (e: 'category', category: ProblemBankQuery['category']): void
 }>()
 
 const activeTag = ref<string>('')
@@ -35,7 +30,7 @@ const tags = ref([
 
 const setActiveTag = (tagName: string) => {
   activeTag.value = tagName
-  emit('category', tagName as QuestionBankQuery['category'])
+  emit('category', tagName as ProblemBankQuery['category'])
 }
 </script>
 

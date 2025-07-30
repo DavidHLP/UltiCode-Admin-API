@@ -28,7 +28,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem> impl
 			return null;
 		ProblemVo problemVo = new ProblemVo();
 		BeanUtils.copyProperties(problem, problemVo);
-		problemVo.setInitialCode(Map.of("java", CodeTemplate.JAVA_CODE_TEMPLATE));
+		problemVo.setInitialCode(Map.of("java", CodeTemplate.JAVA_SOLUTION_TEMPLATE));
 		return problemVo;
 	}
 }
