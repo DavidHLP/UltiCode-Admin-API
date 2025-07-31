@@ -163,5 +163,19 @@ h1 {
 
 .submission-tabs {
   margin-top: 20px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* 为tabs内容区域添加滚动条样式 */
+.submission-tabs :deep(.el-tab-pane) {
+  overflow: auto;
+  max-height: calc(100vh - 300px);
+}
+
+/* 针对代码标签页的特殊处理 */
+.submission-tabs :deep(.el-tab-pane) .code-component {
+  max-height: none;
+  height: auto;
 }
 </style>
