@@ -2,8 +2,10 @@ server:
   port: 9094
 
 spring:
+  profiles:
+    active: myself
   kafka:
-    bootstrap-servers: 10.25.0.13:9092
+    bootstrap-servers: 127.0.0.1:9092
     consumer:
       group-id: judge-consumer-group
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -18,23 +20,23 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 10.25.0.11:8848 #配置Nacos地址
+        server-addr: 127.0.0.1:8848 #配置Nacos地址
         username: nacos
         password: '#Alone117'
     sentinel:
       transport:
-        dashboard: 10.25.0.12:8080
+        dashboard: 127.0.0.1:9090
         port: 8719
       web-context-unify: false # 关闭上下文整合，启用链路模式
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
+    url: jdbc:mysql://127.0.0.1:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
     username: root
     password: Alone117
   data:
     redis:
-      host: 10.25.0.16
+      host: 127.0.0.1
       port: 6379
       database: 0
       timeout: 1800000 # 使用毫秒格式，兼容 Redis Lettuce

@@ -30,7 +30,7 @@ import CodeCard from './components/CodeCard.vue'
 import DebugCard from './components/DebugCard.vue'
 import { getProblemById, submitCode } from '@/api/problem'
 import { getSubmissionById } from '@/api/submission'
-import type { Problem, Submission } from '@/types/problem.d'
+import type { Problem, Submission,ProblemVO} from '@/types/problem.d'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
@@ -44,8 +44,20 @@ const fetchProblem = async () => {
   if (isNaN(problemId)) return
 
   try {
-    problem.value = await getProblemById(problemId)
-    console.log(problem.value)
+    const res = await getProblemById(problemId) as ProblemVO
+    const initialCodeMap = res.initialCode.reduce((acc, curr) => {
+      acc[curr.language] = curr.code
+      return acc
+    }, {} as { [key: string]: string })
+
+    problem.value = {
+      id: res.id,
+      title: res.title,
+      description: res.description,
+      difficulty: res.difficulty,
+      initialCode: initialCodeMap,
+      testCases: res.testCases,
+    }
   } catch (error) {
     console.error('Failed to fetch problem:', error)
     ElMessage.error('题目加载失败')

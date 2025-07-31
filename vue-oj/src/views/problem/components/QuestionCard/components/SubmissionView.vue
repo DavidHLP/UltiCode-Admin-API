@@ -45,56 +45,60 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, defineProps, defineEmits } from 'vue';
-import { Back as ElIconBack } from '@element-plus/icons-vue';
-import CodeComponent from '@/components/CodeComponent.vue';
-import ErrorCodeComponent from '@/components/ErrorCodeComponent.vue';
-import type { Submission } from '@/types/problem';
+<script lang="ts" setup>
+import { defineEmits, defineProps, ref } from 'vue'
+import { Back as ElIconBack } from '@element-plus/icons-vue'
+import CodeComponent from '@/components/CodeComponent.vue'
+import ErrorCodeComponent from '@/components/ErrorCodeComponent.vue'
+import type { Submission } from '@/types/problem'
 
-
-const activeTab = ref('code');
+const activeTab = ref('code')
 
 // 定义 props 和 emits
 const { submission } = defineProps<{
-  submission: Submission;
-}>();
+  submission: Submission
+}>()
 
 const emit = defineEmits<{
-  (e: 'back'): void;
-}>();
+  (e: 'back'): void
+}>()
 
 const getStatusTagType = (status: string) => {
   switch (status) {
     case 'Accepted':
-      return 'success';
+      return 'success'
     case 'Wrong Answer':
     case 'Time Limit Exceeded':
     case 'Memory Limit Exceeded':
     case 'Runtime Error':
     case 'Compile Error':
-      return 'danger';
+      return 'danger'
     default:
-      return 'warning';
+      return 'warning'
   }
-};
+}
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString();
-};
+  return new Date(dateString).toLocaleString()
+}
 
 const handleBack = () => {
-  emit('back');
-};
-
-
+  emit('back')
+}
 </script>
 
 <style scoped>
+@import '@/assets/styles/scrollbar.css';
 .submission-content {
-  height: 100%;
+  height: calc(100vh - 12px);
   overflow-y: auto;
+  overflow-x: hidden;
   background-color: transparent;
+  padding: 24px;
+  box-sizing: border-box;
+  /* 确保滚动条可见性 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.4) rgba(0, 0, 0, 0.05);
 }
 
 .submission-header {

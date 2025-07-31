@@ -41,7 +41,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, shallowRef, computed } from 'vue';
 import * as monaco from 'monaco-editor';
-import { Document, Refresh, Setting, FullScreen } from '@element-plus/icons-vue';
+import { Document, Refresh, FullScreen } from '@element-plus/icons-vue';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 

@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@monaco-editor/loader": "^1.5.0",
     "axios": "^1.10.0",
     "element-plus": "^2.10.4",
     "md-editor-v3": "^5.8.2",
+    "monaco-editor": "^0.52.2",
     "pinia": "^3.0.3",
     "prettier-plugin-java": "^2.7.3",
     "vue": "^3.5.17",

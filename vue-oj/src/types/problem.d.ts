@@ -7,6 +7,20 @@ export interface Problem {
   testCases: TestCase[]
 }
 
+export interface ProblemVO {
+  id: number
+  title: string
+  description: string
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  initialCode: InitialCode[]
+  testCases: TestCase[]
+}
+
+export interface InitialCode {
+  language: string
+  code: string
+}
+
 export interface TestCase {
   id: number
   inputs: InputDto[]

@@ -59,8 +59,14 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 		String solutionFileName = "Solution" + language.getSuffix();
 		String solutionFilePath = tempDir + File.separator + solutionFileName;
 
+		// 为Solution代码添加默认的import
+		String finalSourceCode = "import java.util.*;\n" +
+				"import java.io.*;\n" +
+				"import java.math.*;\n\n" +
+				sourceCode;
+
 		try (FileWriter writer = new FileWriter(solutionFilePath)) {
-			writer.write(sourceCode);
+			writer.write(finalSourceCode);
 		}
 		log.info("写入用户源代码文件: {}", solutionFilePath);
 		return solutionFileName;

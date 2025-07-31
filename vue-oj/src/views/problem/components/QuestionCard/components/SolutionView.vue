@@ -11,7 +11,7 @@
 
     <div class="solution-meta">
       <div class="author-info">
-        <el-avatar :src="solution.authorAvatar" :size="40" />
+        <el-avatar :size="40" :src="solution.authorAvatar" />
         <div class="author-details">
           <span class="author-name">{{ solution.authorUsername }}</span>
           <span class="publish-time">{{ formatDate(solution.createdAt) }}</span>
@@ -40,42 +40,46 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
-import { Back as ElIconBack, CaretTop as ElIconCaretTop, CaretBottom as ElIconCaretBottom } from '@element-plus/icons-vue';
-import { MdPreview } from 'md-editor-v3';
-import 'md-editor-v3/lib/preview.css';
-import type { SolutionVo } from '@/types/problem';
+<script lang="ts" setup>
+import { ref } from 'vue'
+import {
+  Back as ElIconBack,
+  CaretBottom as ElIconCaretBottom,
+  CaretTop as ElIconCaretTop,
+} from '@element-plus/icons-vue'
+import { MdPreview } from 'md-editor-v3'
+import 'md-editor-v3/lib/preview.css'
+import type { SolutionVo } from '@/types/problem'
 
 defineProps<{
-  solution: SolutionVo & { viewCount?: number };
-}>();
+  solution: SolutionVo & { viewCount?: number }
+}>()
 
 const emit = defineEmits<{
-  (e: 'back'): void;
-  (e: 'vote', type: 'up' | 'down'): void;
-}>();
+  (e: 'back'): void
+  (e: 'vote', type: 'up' | 'down'): void
+}>()
 
-const userVote = ref<'up' | 'down' | null>(null);
+const userVote = ref<'up' | 'down' | null>(null)
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString();
-};
+  return new Date(dateString).toLocaleString()
+}
 
 const handleBack = () => {
-  emit('back');
-};
+  emit('back')
+}
 
 const handleVote = (type: 'up' | 'down') => {
   if (userVote.value === type) {
     // 取消投票
-    userVote.value = null;
+    userVote.value = null
     // 这里可以再发一个请求到后端取消投票，如果后端支持的话
   } else {
-    userVote.value = type;
-    emit('vote', type);
+    userVote.value = type
+    emit('vote', type)
   }
-};
+}
 </script>
 
 <style scoped>
@@ -85,8 +89,8 @@ const handleVote = (type: 'up' | 'down') => {
 
 .solution-content {
   padding: 24px;
-  height: calc(100vh - 64px);
-  overflow-y: auto;
+  height: calc(100vh - 12px);
+  overflow: auto;
   background: transparent;
   box-sizing: border-box;
   display: flex;
@@ -119,7 +123,6 @@ const handleVote = (type: 'up' | 'down') => {
 }
 
 .solution-meta {
-
   .author-info {
     display: flex;
     align-items: center;

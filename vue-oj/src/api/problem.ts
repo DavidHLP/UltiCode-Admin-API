@@ -1,7 +1,7 @@
 import request from '@/utils/request'
-import type { Problem } from '@/types/problem'
+import type { ProblemVO } from '@/types/problem'
 
-export const getProblemById = (id: number): Promise<Problem> => {
+export const getProblemById = (id: number): Promise<ProblemVO> => {
   return request({
     url: `/problems/api/view/${id}`,
     method: 'get',

@@ -3,7 +3,7 @@ server:
 
 spring:
   kafka:
-    bootstrap-servers: 10.25.0.13:9092
+    bootstrap-servers: 129.204.227.158:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -15,18 +15,18 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 10.25.0.11:8848 #配置Nacos地址
+        server-addr: 129.204.227.158:8848 #配置Nacos地址
         username: nacos
         password: '#Alone117'
     sentinel:
       transport:
-        dashboard: 10.25.0.12:8080
+        dashboard: 129.204.227.158:9090
         port: 8719
       web-context-unify: false # 关闭上下文整合，启用链路模式
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
+    url: jdbc:mysql://129.204.227.158:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
     username: root
     password: Alone117
 

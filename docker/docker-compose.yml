@@ -67,14 +67,14 @@ services:
     hostname: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: Alone117
       MYSQL_BINLOG_FORMAT: row
       MYSQL_SERVER-ID: 1
       MYSQL_MASTER_RECOVERY: true
       MYSQL_LOG_BIN: mysql-bin
     volumes:
-      - /bigdata/mysql/data:/var/lib/mysql
-      - /bigdata/mysql/conf.d:/etc/mysql/conf.d
+      - ./data/mysql/data:/var/lib/mysql
+      - ./data/mysql/conf.d:/etc/mysql/conf.d
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     networks:
