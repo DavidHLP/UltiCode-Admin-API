@@ -1,25 +1,51 @@
 <template>
   <div class="solution-table-container">
-    <HeaderComponent :search-query="searchQuery" :current-sort="currentSort" @search-change="handleSearchChange"
-      @sort-change="handleSortChange" />
-    <MainComponent :search-query="searchQuery" :current-sort="currentSort" @solution-click="handleSolutionClick" />
+    <HeaderComponent
+      :search-query="searchQuery"
+      :current-sort="currentSort"
+      @search-change="handleSearchChange"
+      @sort-change="handleSortChange"
+      @add-solution="handleAddSolution"
+    />
+    <MainComponent
+      ref="mainComponentRef"
+      :search-query="searchQuery"
+      :current-sort="currentSort"
+      @solution-click="handleSolutionClick"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import HeaderComponent from './SolutionTableComponent/HeaderComponent.vue'
 import MainComponent from './SolutionTableComponent/MainComponent.vue'
 import type { SolutionCardVo } from '@/types/problem';
 
-// 定义事件
-const emit = defineEmits<{
-  (e: 'row-click', solution: SolutionCardVo): void;
+const router = useRouter()
+
+// 定义属性
+const props = defineProps<{
+  problemId: number
 }>()
+
+// 暴露刷新方法给父组件
+const refresh = () => {
+  if (mainComponentRef.value?.refresh) {
+    return mainComponentRef.value.refresh()
+  }
+  return Promise.resolve()
+}
+
+defineExpose({
+  refresh
+})
 
 // 状态管理
 const searchQuery = ref('')
 const currentSort = ref<'hot' | 'new'>('hot')
+const showEditDialog = ref(false)
 
 // 处理搜索变化
 const handleSearchChange = (query: string) => {
@@ -33,7 +59,26 @@ const handleSortChange = (sort: string) => {
 
 // 处理题解点击
 const handleSolutionClick = (solution: SolutionCardVo) => {
-  emit('row-click', solution)
+  router.push({
+    name: 'solution-detail',
+    params: { solutionId: solution.id }
+  })
+}
+
+// 处理添加题解按钮点击
+const handleAddSolution = () => {
+  router.push({
+    name: 'solution-add',
+    params: { problemId: props.problemId }
+  })
+}
+
+const mainComponentRef = ref()
+
+// 处理题解提交（已弃用，保留以兼容旧代码）
+const handleSolutionSubmit = () => {
+  // 不再使用此方法，所有逻辑已在 handleSolutionAdded 中处理
+  console.log('题解提交成功')
 }
 </script>
 

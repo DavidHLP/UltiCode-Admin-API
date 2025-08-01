@@ -3,7 +3,7 @@
     <div class="problem-container">
       <Splitpanes class="problem-splitpanes" @resize="paneSize = $event[0].size">
         <Pane :size="paneSize" class="question-pane">
-          <QuestionCard v-if="problem" :problem="problem" />
+          <QuestionCardRouter v-if="problem" :problem="problem" />
         </Pane>
         <Pane :size="100 - paneSize" class="workspace-pane">
           <Splitpanes class="workspace-splitpanes" horizontal>
@@ -25,7 +25,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
-import QuestionCard from './components/QuestionCard.vue'
+import QuestionCardRouter from './components/QuestionCard.vue'
 import CodeCard from './components/CodeCard.vue'
 import DebugCard from './components/DebugCard.vue'
 import { getProblemById, submitCode } from '@/api/problem'
@@ -106,7 +106,7 @@ onMounted(() => {
 
 <style scoped>
 .problem-view {
-  height: 100vh;
+  height: calc(98vh);
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   overflow: hidden;
 }

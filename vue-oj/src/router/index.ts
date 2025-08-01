@@ -4,6 +4,12 @@ import LoginView from '@/views/login/LoginView.vue'
 import ProblemBank from '@/views/problembank/ProblemBank.vue'
 import ProblemView from '@/views/problem/ProblemView.vue'
 import { MainLayout } from '@/layout'
+import DescriptionCard from '@/views/problem/components/QuestionCard/DescriptionCard.vue'
+import SolutionCard from '@/views/problem/components/QuestionCard/SolutionCard.vue'
+import SubmissionCard from '@/views/problem/components/QuestionCard/SubmissionCard.vue'
+import SolutionEditOrAdd from '@/views/problem/components/QuestionCard/components/SolutionEditOrAdd.vue'
+import SolutionView from '@/views/problem/components/QuestionCard/components/SolutionView.vue'
+import SolutionTable from '@/views/problem/components/QuestionCard/components/SolutionTable.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,6 +23,55 @@ const router = createRouter({
       path: '/problem/:id',
       name: 'problem',
       component: ProblemView,
+      redirect: (to) => ({ name: 'problem-description', params: to.params }),
+      children: [
+        {
+          path: 'description',
+          name: 'problem-description',
+          component: DescriptionCard,
+        },
+        {
+          path: 'solution',
+          name: 'problem-solution',
+          component: SolutionCard,
+          redirect: (to) => ({ name: 'solution-list', params: to.params }),
+          children: [
+            {
+              path: 'list',
+              name: 'solution-list',
+              component: SolutionTable,
+              props: true
+            },
+            {
+              path: 'add',
+              name: 'solution-add',
+              component: SolutionEditOrAdd,
+              props: true
+            },
+            {
+              path: ':solutionId',
+              name: 'solution-detail',
+              component: SolutionView,
+              props: (route) => ({
+                solutionId: Number(route.params.solutionId)
+              })
+            },
+            {
+              path: ':solutionId/edit',
+              name: 'solution-edit',
+              component: SolutionEditOrAdd,
+              props: (route) => ({
+                solutionId: Number(route.params.solutionId)
+              })
+            }
+          ]
+        },
+        {
+          path: 'submissions',
+          name: 'problem-submissions',
+          component: SubmissionCard,
+        },
+      ],
     },
     {
       path: '/',

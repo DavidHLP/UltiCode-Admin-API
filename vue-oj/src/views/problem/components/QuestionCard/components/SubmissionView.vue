@@ -87,7 +87,7 @@ const handleBack = () => {
 }
 </script>
 
-<style scoped>
+<style>
 @import '@/assets/styles/scrollbar.css';
 .submission-content {
   height: calc(100vh - 12px);

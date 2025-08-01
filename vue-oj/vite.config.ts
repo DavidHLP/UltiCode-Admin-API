@@ -19,6 +19,7 @@ export default defineConfig({
       dts: true, // 自动生成组件类型声明文件
       include: [/\.vue$/, /\.vue\?vue/, /\.md$/],
     }),
+    // verbatimModulesyntax(),
   ],
   resolve: {
     alias: {

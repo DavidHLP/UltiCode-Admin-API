@@ -1,5 +1,6 @@
 import request from '@/utils/request'
 import type { SolutionCardVo, SolutionVo } from '@/types/problem'
+import type { Solution } from '@/types/solution'
 import type { Page } from '@/types/commons'
 
 export interface SolutionQueryParams {
@@ -47,4 +48,23 @@ export const getSolutionById = (solutionId: number): Promise<SolutionVo> => {
  */
 export const voteSolution = (solutionId: number, type: 'up' | 'down'): Promise<void> => {
   return request.post(`/solutions/api/vote/${solutionId}`, { type })
+}
+
+/**
+ * 新增题解
+ * @param solution 题解数据
+ * @returns 新增的题解ID
+ */
+export const addSolution = (solution: Solution): Promise<number> => {
+  return request.post('/solutions/api/view/', solution)
+}
+
+/**
+ * 更新题解
+ * @param id 题解ID
+ * @param solution 题解数据
+ * @returns 更新是否成功
+ */
+export const updateSolution = (id: number, solution: Partial<Solution>): Promise<boolean> => {
+  return request.put(`/solutions/api/view/${id}`, solution)
 }

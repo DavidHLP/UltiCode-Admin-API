@@ -1,7 +1,7 @@
 <template>
   <div class="question-card-container">
     <div class="header-section">
-      <el-tabs v-model="activeTab" class="question-tabs">
+      <el-tabs v-model="activeTab" class="question-tabs" @tab-click="handleTabChange">
         <el-tab-pane name="description">
           <template #label>
             <div class="tab-label">
@@ -35,29 +35,61 @@
       </el-tabs>
     </div>
     <div class="main-content">
-      <DescriptionCard :problem="problem" v-show="activeTab === 'description'" />
-      <SolutionCard v-show="activeTab === 'solution'" />
-      <SubmissionCard :problem-id="problem.id" v-show="activeTab === 'submissions'" />
+      <router-view :problem="problem" :problem-id="problem?.id" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { Document, Promotion, List } from '@element-plus/icons-vue';
-import type { Problem } from '@/types/problem';
-import SolutionCard from './QuestionCard/SolutionCard.vue';
-import DescriptionCard from './QuestionCard/DescriptionCard.vue';
-import SubmissionCard from './QuestionCard/SubmissionCard.vue';
+import { ref, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Document, Promotion, List } from '@element-plus/icons-vue'
+import type { Problem } from '@/types/problem'
+import type { TabsPaneContext } from 'element-plus'
 
 defineProps<{
-  problem: Problem;
-}>();
+  problem: Problem | null
+}>()
 
-const activeTab = ref('description');
+const route = useRoute()
+const router = useRouter()
+const activeTab = ref('description')
+
+// 根据当前路由更新激活的标签页
+const updateActiveTab = () => {
+  const path = route.path
+  if (path.includes('/solution')) {
+    activeTab.value = 'solution'
+  } else if (path.includes('/submissions')) {
+    activeTab.value = 'submissions'
+  } else {
+    activeTab.value = 'description'
+  }
+}
+
+// 处理标签切换
+const handleTabChange = (pane: TabsPaneContext) => {
+  const problemId = route.params.id
+  const tabName = pane.paneName as string
+  switch (tabName) {
+    case 'description':
+      router.push({ name: 'problem-description', params: { id: problemId } })
+      break
+    case 'solution':
+      router.push({ name: 'solution-list', params: { id: problemId } })
+      break
+    case 'submissions':
+      router.push({ name: 'problem-submissions', params: { id: problemId } })
+      break
+  }
+}
+
+// 监听路由变化
+watch(() => route.path, updateActiveTab, { immediate: true })
 
 onMounted(() => {
-});
+  updateActiveTab()
+})
 </script>
 
 <style scoped>

@@ -5,24 +5,24 @@
       <div class="header-container">
         <!-- 左侧导航菜单 -->
         <nav class="nav-menu">
-          <router-link v-for="item in navItems" :key="item.path" :to="item.path" class="nav-item"
-            :class="{ active: $route.path === item.path }">
+          <router-link
+            v-for="item in navItems"
+            :key="item.path"
+            :class="{ active: $route.path === item.path }"
+            :to="item.path"
+            class="nav-item"
+          >
             {{ item.name }}
           </router-link>
         </nav>
 
         <!-- 右侧操作区域 -->
         <div class="header-actions">
-
           <!-- 用户操作按钮 -->
           <div class="user-actions">
             <template v-if="!isLoggedIn">
-              <el-button type="primary" size="small" @click="handleLogin">
-                注册
-              </el-button>
-              <el-button size="small" @click="handleRegister">
-                登录
-              </el-button>
+              <el-button size="small" type="primary" @click="handleLogin"> 注册 </el-button>
+              <el-button size="small" @click="handleRegister"> 登录 </el-button>
             </template>
             <template v-else>
               <el-dropdown @command="handleUserAction">
@@ -37,14 +37,14 @@
                   <el-dropdown-menu>
                     <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                     <el-dropdown-item command="settings">设置</el-dropdown-item>
-                    <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                    <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
             </template>
 
             <!-- 分享按钮 -->
-            <el-button size="small" text class="share-btn" @click="handleShare">
+            <el-button class="share-btn" size="small" text @click="handleShare">
               <el-icon>
                 <Share />
               </el-icon>
@@ -62,7 +62,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script lang="ts" setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowDown, Share } from '@element-plus/icons-vue'
@@ -76,9 +76,9 @@ const userAvatar = ref('')
 
 // 导航菜单项
 const navItems = ref([
-  { name: '题库', path: '/questionbank' },
+  { name: '题库', path: '/' },
   { name: '竞赛', path: '/contest' },
-  { name: '论坛', path: '/forum' }
+  { name: '论坛', path: '/forum' },
 ])
 
 const handleLogin = () => {
@@ -111,7 +111,7 @@ const handleShare = () => {
   if (navigator.share) {
     navigator.share({
       title: document.title,
-      url: window.location.href
+      url: window.location.href,
     })
   } else {
     // 降级处理：复制链接到剪贴板

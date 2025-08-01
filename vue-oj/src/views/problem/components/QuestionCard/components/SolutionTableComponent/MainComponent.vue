@@ -131,12 +131,22 @@ const load = () => {
   }
 };
 
+// 重置并重新获取题解列表
 const resetAndFetch = () => {
-  currentPage.value = 1;
-  noMore.value = false;
-  solutions.value = [];
-  fetchSolutions(true);
-};
+  currentPage.value = 1
+  solutions.value = []
+  fetchSolutions(true)
+}
+
+// 暴露给父组件的方法
+const refresh = () => {
+  resetAndFetch()
+}
+
+// 暴露方法给父组件
+defineExpose({
+  refresh
+});
 
 watch(() => [props.searchQuery, props.currentSort], () => {
   resetAndFetch();

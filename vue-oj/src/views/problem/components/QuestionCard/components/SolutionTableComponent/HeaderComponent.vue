@@ -27,6 +27,9 @@
         </el-dropdown>
 
         <el-button :icon="Finished" text bg aria-label="切换视图" />
+        <el-button type="primary" @click="handleAddSolution">
+          <el-icon><Plus /></el-icon> 新增题解
+        </el-button>
       </el-space>
     </div>
   </div>
@@ -34,7 +37,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Search, Sort, Finished } from '@element-plus/icons-vue'
+import { Search, Sort, Finished, Plus } from '@element-plus/icons-vue'
 
 // 定义 props
 interface Props {
@@ -48,6 +51,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   searchChange: [query: string]
   sortChange: [sort: string]
+  addSolution: []
 }>()
 
 // 定义排序选项的文本映射
@@ -68,8 +72,12 @@ const handleSearchInput = (value: string) => {
 const handleSortChange = (command: string | number | object) => {
   if (typeof command === 'string') {
     emit('sortChange', command)
-    console.log(`排序方式已切换为: ${sortOptions[command]}`)
   }
+}
+
+// 处理新增题解按钮点击
+const handleAddSolution = () => {
+  emit('addSolution')
 }
 </script>
 
@@ -108,15 +116,5 @@ const handleSortChange = (command: string | number | object) => {
 .el-dropdown-menu__item.is-active {
   color: var(--el-color-primary);
   font-weight: bold;
-}
-
-/* 调整右侧视图切换按钮的样式，使其更像图片中的效果 */
-.right-panel .el-button {
-  font-size: 18px;
-  color: #606266;
-}
-
-.right-panel .el-button:hover {
-  color: var(--el-color-primary);
 }
 </style>
