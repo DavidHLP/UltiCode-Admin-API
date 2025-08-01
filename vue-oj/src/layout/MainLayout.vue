@@ -4,17 +4,27 @@
     <header class="header">
       <div class="header-container">
         <!-- 左侧导航菜单 -->
-        <nav class="nav-menu">
-          <router-link
+        <el-menu
+          :default-active="activeIndex"
+          class="nav-menu"
+          mode="horizontal"
+          :ellipsis="false"
+          @select="handleSelect"
+          background-color="transparent"
+          text-color="#666"
+          active-text-color="#1890ff"
+        >
+          <el-menu-item
             v-for="item in navItems"
             :key="item.path"
-            :class="{ active: $route.path === item.path }"
-            :to="item.path"
+            :index="item.path"
             class="nav-item"
           >
-            {{ item.name }}
-          </router-link>
-        </nav>
+            <router-link :to="item.path" class="menu-link">
+              {{ item.name }}
+            </router-link>
+          </el-menu-item>
+        </el-menu>
 
         <!-- 右侧操作区域 -->
         <div class="header-actions">
@@ -73,6 +83,7 @@ const router = useRouter()
 const isLoggedIn = ref(false) // 这里应该从用户状态管理中获取
 const username = ref('用户名')
 const userAvatar = ref('')
+const activeIndex = ref('/')
 
 // 导航菜单项
 const navItems = ref([
@@ -80,6 +91,11 @@ const navItems = ref([
   { name: '竞赛', path: '/contest' },
   { name: '论坛', path: '/forum' },
 ])
+
+// 处理菜单选择
+const handleSelect = (key: string) => {
+  activeIndex.value = key
+}
 
 const handleLogin = () => {
   router.push('/login')
@@ -142,7 +158,7 @@ const handleShare = () => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 64px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -150,37 +166,45 @@ const handleShare = () => {
 
 /* 左侧导航菜单 */
 .nav-menu {
+  border-bottom: none !important;
+  height: 48px;
   display: flex;
   align-items: center;
-  gap: 32px;
 }
 
-.nav-item {
-  color: #666;
-  text-decoration: none;
+:deep(.el-menu--horizontal) {
+  border-bottom: none;
+}
+
+:deep(.el-menu--horizontal > .el-menu-item) {
+  height: 48px;
+  line-height: 48px;
+  margin: 0 8px;
+  padding: 0 8px;
   font-size: 14px;
   font-weight: 500;
-  padding: 8px 0;
-  position: relative;
+  color: #666;
   transition: color 0.3s;
+  border-bottom: 2px solid transparent;
 }
 
-.nav-item:hover {
+:deep(.el-menu--horizontal > .el-menu-item.is-active) {
   color: #1890ff;
+  border-bottom-color: #1890ff;
+  background: transparent !important;
 }
 
-.nav-item.active {
+:deep(.el-menu--horizontal > .el-menu-item:not(.is-disabled):hover) {
   color: #1890ff;
+  background: transparent !important;
 }
 
-.nav-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -17px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #1890ff;
+.menu-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
 }
 
 /* 右侧操作区域 */
@@ -196,22 +220,6 @@ const handleShare = () => {
 
 .search-input {
   border-radius: 20px;
-}
-
-:deep(.search-input .el-input__wrapper) {
-  border-radius: 20px;
-  border: 1px solid #d9d9d9;
-  box-shadow: none;
-  transition: all 0.3s;
-}
-
-:deep(.search-input .el-input__wrapper:hover) {
-  border-color: #1890ff;
-}
-
-:deep(.search-input .el-input__wrapper.is-focus) {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
 }
 
 .search-icon {
@@ -265,42 +273,5 @@ const handleShare = () => {
 .main-content {
   flex: 1;
   background: #f5f5f5;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .header-container {
-    padding: 0 16px;
-  }
-
-  .nav-menu {
-    gap: 16px;
-  }
-
-  .nav-item {
-    font-size: 13px;
-  }
-
-  .search-box {
-    width: 180px;
-  }
-
-  .user-actions {
-    gap: 8px;
-  }
-}
-
-@media (max-width: 640px) {
-  .nav-menu {
-    display: none;
-  }
-
-  .search-box {
-    width: 140px;
-  }
-
-  .username {
-    display: none;
-  }
 }
 </style>

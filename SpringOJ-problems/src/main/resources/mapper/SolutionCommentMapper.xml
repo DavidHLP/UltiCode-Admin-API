@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.david.mapper.SolutionCommentMapper">
+
+    <select id="selectCommentsBySolutionId" resultType="com.david.vo.SolutionCommentVo">
+        SELECT
+            sc.id,
+            sc.solution_id,
+            sc.user_id,
+            u1.username,
+            u1.avatar,
+            sc.content,
+            sc.parent_id,
+            sc.root_id,
+            sc.reply_to_user_id,
+            u2.username AS reply_to_username,
+            sc.upvotes,
+            sc.downvotes,
+            sc.created_at
+        FROM
+            solution_comments sc
+        JOIN
+            user u1 ON sc.user_id = u1.user_id
+        LEFT JOIN
+            user u2 ON sc.reply_to_user_id = u2.user_id
+        WHERE
+            sc.solution_id = #{solutionId}
+        ORDER BY
+            sc.created_at ASC
+    </select>
+</mapper>

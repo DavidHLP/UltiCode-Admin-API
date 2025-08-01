@@ -42,20 +42,24 @@
         </el-button>
       </el-button-group>
     </div>
+    <CommentComponent v-if="solution" :comments="comments" :solutionId="solution.id" @comment-submitted="fetchComments" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch, defineEmits } from 'vue'
+import { ref, watch, defineEmits } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Back as ElIconBack, CaretTop as ElIconCaretTop, CaretBottom as ElIconCaretBottom } from '@element-plus/icons-vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
 import { getSolutionById } from '@/api/solution'
+import { getCommentsBySolutionId } from '@/api/comment'
 import type { SolutionVo } from '@/types/problem'
+import type { SolutionCommentVo } from '@/types/comment'
 import { config } from 'md-editor-v3'
 import { lineNumbers } from '@codemirror/view'
+import CommentComponent from '@/components/CommentComponent.vue'
 
 config({
   codeMirrorExtensions(_theme, extensions) {
@@ -73,6 +77,7 @@ const router = useRouter()
 const solution = ref<SolutionVo | null>(null)
 const loading = ref(false)
 const userVote = ref<'up' | 'down' | null>(null)
+const comments = ref<SolutionCommentVo[]>([])
 
 // 获取题解详情
 const fetchSolution = async (id: number) => {
@@ -81,6 +86,7 @@ const fetchSolution = async (id: number) => {
     const data = await getSolutionById(id)
     if (data) {
       solution.value = data
+      fetchComments()
     } else {
       ElMessage.warning('未找到该题解')
       router.push({ name: 'solution-list' })
@@ -93,6 +99,16 @@ const fetchSolution = async (id: number) => {
     loading.value = false
   }
 }
+
+const fetchComments = async () => {
+  if (solution.value) {
+    try {
+      comments.value = await getCommentsBySolutionId(solution.value.id);
+    } catch (error) {
+      ElMessage.error('获取评论失败');
+    }
+  }
+};
 
 // 监听路由参数变化
 watch(
@@ -118,10 +134,10 @@ const handleBack = () => {
 
 const handleVote = (type: 'up' | 'down') => {
   if (!solution.value) return
-  
+
   // 这里直接触发父组件的投票处理
   emit('vote', solution.value, type)
-  
+
   // 本地更新UI
   if (userVote.value === type) {
     // 取消投票
@@ -135,14 +151,14 @@ const handleVote = (type: 'up' | 'down') => {
     // 新投票或切换投票
     const oldVote = userVote.value
     userVote.value = type
-    
+
     // 更新计数
     if (oldVote === 'up') {
       solution.value.upvotes = Math.max(0, (solution.value.upvotes || 0) - 1)
     } else if (oldVote === 'down') {
       solution.value.downvotes = Math.max(0, (solution.value.downvotes || 0) - 1)
     }
-    
+
     if (type === 'up') {
       solution.value.upvotes = (solution.value.upvotes || 0) + 1
     } else {
