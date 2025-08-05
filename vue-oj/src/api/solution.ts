@@ -47,7 +47,7 @@ export const getSolutionById = (solutionId: number): Promise<SolutionVo> => {
  * @param type 投票类型：'up' 或 'down'
  */
 export const voteSolution = (solutionId: number, type: 'up' | 'down'): Promise<void> => {
-  return request.post(`/solutions/api/vote/${solutionId}`, { type })
+  return request.post(`/solutions/api/view/vote/${solutionId}/${type}`)
 }
 
 /**

@@ -9,4 +9,5 @@ public interface AuthService {
     void sendVerificationCode(String email);
     AuthUser validateToken(String token);
     void logout(String username ,String token);
+    AuthUser getUserInfo(String username);
 }

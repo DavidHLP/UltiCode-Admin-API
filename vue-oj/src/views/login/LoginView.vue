@@ -23,7 +23,7 @@
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" class="login-btn" size="large" :loading="loading" @click.prevent="handleLogin">
+          <el-button type="primary" class="login-btn" size="large" :loading="authStore.loading" @click.prevent="handleLogin">
             登 录
           </el-button>
         </el-form-item>
@@ -45,69 +45,29 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
-import { login } from '@/api/auth'
+import { useAuthStore, createAuthValidationRules, type LoginForm } from '@/stores/auth'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const loginFormRef = ref()
 
-const loading = ref(false)
 const rememberMe = ref(false)
-const loginForm = reactive({
+const loginForm = reactive<LoginForm>({
   username: '',
   password: ''
 })
 
-const validateUsername = (rule: any, value: string, callback: (error?: Error) => void) => {
-  if (!value) {
-    callback(new Error('请输入用户名'))
-  } else if (value.length < 3 || value.length > 20) {
-    callback(new Error('用户名长度在3到20个字符之间'))
-  } else {
-    callback()
-  }
-}
-
-const validatePassword = (rule: any, value: string, callback: (error?: Error) => void) => {
-  if (!value) {
-    callback(new Error('请输入密码'))
-  } else if (value.length < 6) {
-    callback(new Error('密码长度不能小于6位'))
-  } else {
-    callback()
-  }
-}
-
-const loginRules = {
-  username: [
-    { required: true, trigger: 'blur', validator: validateUsername }
-  ],
-  password: [
-    { required: true, trigger: 'blur', validator: validatePassword }
-  ]
-}
+// 使用集中化的验证规则
+const { loginRules } = createAuthValidationRules()
 
 const handleLogin = async () => {
-  try {
-    loading.value = true
-    const token = await login(loginForm)
-    authStore.setToken(token.token)
-
-    ElMessage.success('登录成功')
-    await router.push('/')
-  } catch (error) {
-    console.error('登录失败:', error)
-    ElMessage.error('用户名或密码错误')
-  } finally {
-    loading.value = false
-  }
+  const valid = await loginFormRef.value?.validate().catch(() => false)
+  if (!valid) return
+  
+  await authStore.handleLogin(loginForm)
 }
 
 const handleRegister = () => {
-  router.push('/register')
+  authStore.navigateToRegister()
 }
 </script>
 

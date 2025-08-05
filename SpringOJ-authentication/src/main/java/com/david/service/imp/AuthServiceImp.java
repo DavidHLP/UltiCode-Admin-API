@@ -1,9 +1,16 @@
 package com.david.service.imp;
 
-import com.david.entity.user.User;
+import java.util.Random;
+
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.david.entity.token.Token;
 import com.david.entity.token.TokenType;
 import com.david.entity.user.AuthUser;
+import com.david.entity.user.User;
 import com.david.locks.RedisCacheKeys;
 import com.david.locks.RedisLocks;
 import com.david.mapper.TokenMapper;
@@ -13,14 +20,9 @@ import com.david.service.EmailService;
 import com.david.utils.JwtService;
 import com.david.utils.RedisCacheUtil;
 import com.david.utils.RedisLockUtil;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Random;
 
 @Slf4j
 @Service
@@ -70,6 +72,7 @@ public class AuthServiceImp implements AuthService {
     @Override
     @Transactional
     public void register(String username, String password, String email, String code) {
+        log.debug("register: {} {} {} {}", username, password, email, code);
         String storedCode = (String) redisCacheUtil.get(RedisCacheKeys.VERIFICATION_CODE_KEY_PREFIX + email);
         if (storedCode == null || !storedCode.equals(code)) {
             throw new RuntimeException("验证码错误或已过期");
@@ -129,5 +132,10 @@ public class AuthServiceImp implements AuthService {
             tokenMapper.deleteByToken(token);
             return null;
         });
+    }
+
+    @Override
+    public AuthUser getUserInfo(String username) {
+        return userMapper.loadUserByUsername(username);
     }
 }

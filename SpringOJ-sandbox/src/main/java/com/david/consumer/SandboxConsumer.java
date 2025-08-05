@@ -9,7 +9,9 @@ import com.david.producer.JudgeResultProducer;
 import com.david.service.IDockerExecuteService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SandboxConsumer {

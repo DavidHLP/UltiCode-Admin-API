@@ -6,13 +6,13 @@
         <!-- 左侧导航菜单 -->
         <el-menu
           :default-active="activeIndex"
+          :ellipsis="false"
+          active-text-color="#1890ff"
+          background-color="transparent"
           class="nav-menu"
           mode="horizontal"
-          :ellipsis="false"
-          @select="handleSelect"
-          background-color="transparent"
           text-color="#666"
-          active-text-color="#1890ff"
+          @select="handleSelect"
         >
           <el-menu-item
             v-for="item in navItems"
@@ -31,8 +31,8 @@
           <!-- 用户操作按钮 -->
           <div class="user-actions">
             <template v-if="!isLoggedIn">
-              <el-button size="small" type="primary" @click="handleLogin"> 注册 </el-button>
-              <el-button size="small" @click="handleRegister"> 登录 </el-button>
+              <el-button size="small" type="primary" @click="handleRegister"> 注册 </el-button>
+              <el-button size="small" @click="handleLogin"> 登录 </el-button>
             </template>
             <template v-else>
               <el-dropdown @command="handleUserAction">
@@ -73,66 +73,65 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowDown, Share } from '@element-plus/icons-vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
-// 响应式数据
-const isLoggedIn = ref(false) // 这里应该从用户状态管理中获取
-const username = ref('用户名')
-const userAvatar = ref('')
+// 从store中获取响应式数据
+const isLoggedIn = computed(() => authStore.isLoggedIn)
+const username = computed(() => authStore.username)
+const userAvatar = computed(() => authStore.userAvatar)
+
 const activeIndex = ref('/')
 
 // 导航菜单项
 const navItems = ref([
   { name: '题库', path: '/' },
   { name: '竞赛', path: '/contest' },
-  { name: '论坛', path: '/forum' },
+  { name: '论坛', path: '/forum' }
 ])
+
+// 组件挂载时初始化认证状态并获取用户信息
+onMounted(() => {
+  authStore.initAuth()
+  if (isLoggedIn.value) {
+    authStore.fetchUserInfo()
+  }
+})
 
 // 处理菜单选择
 const handleSelect = (key: string) => {
   activeIndex.value = key
+  router.push(key)
 }
 
 const handleLogin = () => {
-  router.push('/login')
+  authStore.navigateToLogin()
 }
 
 const handleRegister = () => {
-  router.push('/register')
+  authStore.navigateToRegister()
 }
 
 const handleUserAction = (command: string) => {
-  switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
-    case 'settings':
-      router.push('/settings')
-      break
-    case 'logout':
-      // 实现登出逻辑
-      isLoggedIn.value = false
-      console.log('用户已登出')
-      break
-  }
+  authStore.handleUserAction(command)
 }
 
 const handleShare = () => {
   // 实现分享功能
-  console.log('分享当前页面')
   if (navigator.share) {
     navigator.share({
       title: document.title,
-      url: window.location.href,
+      url: window.location.href
     })
   } else {
     // 降级处理：复制链接到剪贴板
     navigator.clipboard.writeText(window.location.href)
-    console.log('链接已复制到剪贴板')
+    alert('链接已复制到剪贴板')
   }
 }
 </script>

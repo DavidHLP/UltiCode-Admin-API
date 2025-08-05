@@ -1,9 +1,5 @@
 package com.david.config;
 
-import com.david.filter.AuthenticationFilter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -12,6 +8,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.david.filter.AuthenticationFilter;
+
+import lombok.RequiredArgsConstructor;
 
 
 /**
@@ -22,14 +22,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity()
 public class SecurityConfiguration {
     private final String[] AUTH_WHITELIST = {
             "/actuator/**",
             "/favicon.ico",
             "/error",
             "/api/auth/login/**",
-            "/api/auth/register/**",
+            "/api/auth/register**",
             "/api/auth/refresh/**",
             "/api/auth/validate/**",
             "/api/auth/send-code/**"

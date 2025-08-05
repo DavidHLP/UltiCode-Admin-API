@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import com.david.dto.InputDto;
 import com.david.dto.SandboxExecuteRequest;
 import com.david.dto.SubmitCodeRequest;
 import com.david.interfaces.ProblemServiceFeignClient;
@@ -116,10 +115,14 @@ public class JudgeServiceImpl implements IJudgeService {
 		}
 		request.setMainWrapperTemplate(responseResult.getData().getMainWrapperTemplate());
 
-		// 提取测试用例输入输出
-		List<String> inputs = testCases.stream().map(TestCase::getInputs).flatMap(List::stream).map(InputDto::getInput)
-				.collect(Collectors.toList());
-		request.setInputs(testCases.stream().map(tc -> String.join("\n", inputs)).collect(Collectors.toList()));
+		// 提取测试用例输入
+		List<String> inputs = testCases.stream()
+				.map(TestCase::getInputs)
+				.map(inputsList -> inputsList.stream()
+						.map(input -> String.join("\n", input.getInput()))
+						.collect(Collectors.joining("\n")))
+				.toList();
+		request.setInputs(inputs);
 		request.setExpectedOutputs(testCases.stream().map(TestCase::getOutput).toList());
 
 		return request;

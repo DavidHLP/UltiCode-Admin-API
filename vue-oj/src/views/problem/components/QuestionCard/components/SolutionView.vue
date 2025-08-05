@@ -2,8 +2,10 @@
   <div class="solution-content">
     <div class="solution-header">
       <div class="header-left">
-        <el-button type="text" class="back-button" @click="handleBack">
-          <el-icon><ElIconBack /></el-icon>
+        <el-button type="text" link class="back-button" @click="handleBack">
+          <el-icon>
+            <ElIconBack />
+          </el-icon>
           <span>返回题解列表</span>
         </el-button>
         <h1>{{ solution?.title || '加载中...' }}</h1>
@@ -42,7 +44,8 @@
         </el-button>
       </el-button-group>
     </div>
-    <CommentComponent v-if="solution" :comments="comments" :solutionId="solution.id" @comment-submitted="fetchComments" />
+    <CommentComponent v-if="solution" :comments="comments" :solutionId="solution.id"
+      @comment-submitted="fetchComments" />
   </div>
 </template>
 
@@ -91,6 +94,7 @@ const fetchSolution = async (id: number) => {
       ElMessage.warning('未找到该题解')
       router.push({ name: 'solution-list' })
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('获取题解详情失败:', error)
     ElMessage.error(error.response?.data?.message || '获取题解详情失败')
@@ -104,7 +108,9 @@ const fetchComments = async () => {
   if (solution.value) {
     try {
       comments.value = await getCommentsBySolutionId(solution.value.id);
-    } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error('获取评论失败:', error)
       ElMessage.error('获取评论失败');
     }
   }

@@ -33,7 +33,7 @@ public class SolutionViewController extends BaseController {
 
 	@GetMapping("/")
 	public ResponseResult<SolutionVo> getSolutionById(@RequestParam("id") Long id) {
-		SolutionVo solution = solutionService.getSolutionById(id , getCurrentUserId());
+		SolutionVo solution = solutionService.getSolutionById(id, getCurrentUserId());
 		if (solution == null) {
 			return ResponseResult.fail(404, "题解不存在");
 		}
@@ -58,8 +58,9 @@ public class SolutionViewController extends BaseController {
 		return ResponseResult.fail(500, "提交记录更新失败");
 	}
 
-	@PostMapping("/vote/{solutionId}")
-	public ResponseResult<Void> voteSolution(@PathVariable Long solutionId, @RequestParam String type) {
+	@PostMapping("/vote/{solutionId}/{type}")
+	public ResponseResult<Void> voteSolution(@PathVariable("solutionId") Long solutionId,
+			@PathVariable("type") String type) {
 		solutionService.voteSolution(solutionId, type);
 		return ResponseResult.success("投票成功");
 	}

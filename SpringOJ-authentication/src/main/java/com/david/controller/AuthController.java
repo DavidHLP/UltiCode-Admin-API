@@ -53,4 +53,11 @@ public class AuthController extends BaseController {
         AuthUser authUser = authService.validateToken(token);
         return ResponseResult.success("验证Token成功",authUser);
     }
+
+    @GetMapping("/me")
+    public ResponseResult<AuthUser> getUserInfo() {
+        String username = getCurrentUsername();
+        AuthUser authUser = authService.getUserInfo(username);
+        return ResponseResult.success("获取用户信息成功", authUser);
+    }
 }

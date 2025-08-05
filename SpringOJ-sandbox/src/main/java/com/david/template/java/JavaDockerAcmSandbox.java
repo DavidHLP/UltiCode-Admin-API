@@ -187,7 +187,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 		for (int i = 0; i < request.getInputs().size(); i++) {
 			String input = request.getInputs().get(i);
 			String expectedOutput = request.getExpectedOutputs().get(i);
-
+			log.debug("开始执行测试点 {}, 输入: {}, 期望输出: {}", i + 1, input, expectedOutput);
 			TestCaseResult testResult = runSingleTestCase(containerId, input, expectedOutput, request, i + 1);
 
 			testCaseResults.add(testResult);
@@ -388,7 +388,7 @@ public class JavaDockerAcmSandbox extends SandboxTemplate {
 	private String[] getExecuteCommand(LanguageType language) {
 		return switch (language) {
 			case JAVA -> new String[]{"java", String.format("-Xmx%dm", 128), "-cp", "/tmp/classes", "Main"}; // 使用新的编译输出目录
-			default -> new String[]{}; // Should not happen if all languages are handled
+			default -> new String[]{};
 		};
 	}
 }

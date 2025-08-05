@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import LoginView from '@/views/login/LoginView.vue'
+import RegisterView from '@/views/register/RegisterView.vue' // 导入注册视图
 import ProblemBank from '@/views/problembank/ProblemBank.vue'
 import ProblemView from '@/views/problem/ProblemView.vue'
 import { MainLayout } from '@/layout'
@@ -18,6 +19,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+    },
+    {
+      path: '/register', // 添加注册路由
+      name: 'register',
+      component: RegisterView,
     },
     {
       path: '/problem/:id',
@@ -40,31 +46,31 @@ const router = createRouter({
               path: 'list',
               name: 'solution-list',
               component: SolutionTable,
-              props: true
+              props: true,
             },
             {
               path: 'add',
               name: 'solution-add',
               component: SolutionEditOrAdd,
-              props: true
+              props: true,
             },
             {
               path: ':solutionId',
               name: 'solution-detail',
               component: SolutionView,
               props: (route) => ({
-                solutionId: Number(route.params.solutionId)
-              })
+                solutionId: Number(route.params.solutionId),
+              }),
             },
             {
               path: ':solutionId/edit',
               name: 'solution-edit',
               component: SolutionEditOrAdd,
               props: (route) => ({
-                solutionId: Number(route.params.solutionId)
-              })
-            }
-          ]
+                solutionId: Number(route.params.solutionId),
+              }),
+            },
+          ],
         },
         {
           path: 'submissions',
@@ -81,11 +87,23 @@ const router = createRouter({
       },
       children: [
         {
-          path: '/',
+          path: '',
           name: 'problembank',
           component: ProblemBank,
         },
+        {
+          path: '/profile',
+          name: 'profile',
+          component: () => import('@/views/userinfo/UserInfoView.vue'),
+        },
       ],
+    },
+    {
+      path: '/problems',
+      redirect: '/',
+      meta: {
+        requiresAuth: true,
+      },
     },
   ],
 })

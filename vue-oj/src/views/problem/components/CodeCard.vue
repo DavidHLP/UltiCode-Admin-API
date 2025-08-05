@@ -32,7 +32,6 @@
       <div ref="monacoEditorRef" class="editor-container"></div>
     </div>
     <div class="card-footer">
-      <el-button type="primary" @click="submitCode">提交</el-button>
       <span>行 {{ cursorPosition.line }}, 列 {{ cursorPosition.column }}</span>
     </div>
   </div>
@@ -120,7 +119,9 @@ const submitCode = () => {
   }
 };
 
-defineExpose({ getCode, resetCode });
+// 暴露submitCode方法给父组件调用
+
+defineExpose({ getCode, resetCode, submitCode });
 </script>
 
 <style scoped>

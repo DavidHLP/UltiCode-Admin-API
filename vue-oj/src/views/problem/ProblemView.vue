@@ -1,43 +1,84 @@
 <template>
-  <div class="problem-view">
-    <div class="problem-container">
-      <Splitpanes class="problem-splitpanes" @resize="paneSize = $event[0].size">
-        <Pane :size="paneSize" class="question-pane">
-          <QuestionCardRouter v-if="problem" :problem="problem" />
-        </Pane>
-        <Pane :size="100 - paneSize" class="workspace-pane">
-          <Splitpanes class="workspace-splitpanes" horizontal>
-            <Pane class="code-pane">
-              <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" @submit="handleSubmit" />
-            </Pane>
-            <Pane class="debug-pane">
-              <DebugCard v-if="problem" :submission-result="submissionResult" :test-cases="problem.testCases" />
-            </Pane>
-          </Splitpanes>
-        </Pane>
-      </Splitpanes>
-    </div>
-  </div>
+  <ProblemLayout ref="problemLayoutRef" :initial-left-pane-size="50" :initial-top-pane-size="60" :save-layout="true"
+    layout-key="problem-view" @layout-change="handleLayoutChange" @pane-resize="handlePaneResize">
+
+    <!-- Header 插槽 -->
+    <template #header-left>
+      <div class="header-breadcrumb">
+        <router-link to="/problems" class="breadcrumb-link">
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
+          题目列表
+        </router-link>
+        <el-icon class="breadcrumb-separator">
+          <Right />
+        </el-icon>
+        <span class="current-problem">题目详情</span>
+      </div>
+    </template>
+
+    <template #header-center>
+      <div v-if="problem" class="problem-title-section">
+        <el-button type="primary" size="default" @click="handleSubmitCode" :loading="isSubmitting"
+          class="submit-button">
+          <el-icon>
+            <SubmitIcon />
+          </el-icon>
+          {{ isSubmitting ? '提交中...' : '提交' }}
+        </el-button>
+      </div>
+    </template>
+
+    <template #header-right>
+      <div class="header-actions">
+        <!-- TODO 待开发 -->
+      </div>
+    </template>
+
+    <!-- 题目描述插槽 -->
+    <template #question>
+      <QuestionCardRouter v-if="problem" :problem="problem" />
+    </template>
+
+    <!-- 代码编辑器插槽 -->
+    <template #code>
+      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" @submit="handleSubmit" />
+    </template>
+
+    <!-- 调试面板插槽 -->
+    <template #debug>
+      <DebugCard v-if="problem" :submission-result="submissionResult" :test-cases="problem.testCases" />
+    </template>
+  </ProblemLayout>
 </template>
 
 <script lang="ts" setup>
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { Splitpanes, Pane } from 'splitpanes'
-import 'splitpanes/dist/splitpanes.css'
+import { ArrowLeft, Right } from '@element-plus/icons-vue'
+import SubmitIcon from '@/assets/icon/SubmitIcon.vue'
+import ProblemLayout from './layout/ProblemLayout.vue'
 import QuestionCardRouter from './components/QuestionCard.vue'
 import CodeCard from './components/CodeCard.vue'
 import DebugCard from './components/DebugCard.vue'
 import { getProblemById, submitCode } from '@/api/problem'
 import { getSubmissionById } from '@/api/submission'
-import type { Problem, Submission,ProblemVO} from '@/types/problem.d'
+import type { Problem, Submission, ProblemVO } from '@/types/problem.d'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const problem = ref<Problem | null>(null)
 const codeCardRef = ref<InstanceType<typeof CodeCard> | null>(null)
-const paneSize = ref(50)
 const submissionResult = ref<Submission | null>(null)
+const problemLayoutRef = ref<InstanceType<typeof ProblemLayout> | null>(null)
+const isSubmitting = ref(false)
+
+// 布局相关状态
+const layoutState = ref({
+  leftPaneSize: 50,
+  topPaneSize: 60
+})
 
 const fetchProblem = async () => {
   const problemId = Number(route.params.id)
@@ -99,122 +140,225 @@ const pollSubmissionResult = (submissionId: number) => {
   }, 2000)
 }
 
+// 布局变化处理
+const handleLayoutChange = (data: { leftPaneSize: number; topPaneSize: number }) => {
+  layoutState.value = data
+  console.log('Layout changed:', data)
+}
+
+// 面板调整处理
+const handlePaneResize = (data: { type: 'horizontal' | 'vertical'; sizes: number[] }) => {
+  console.log('Pane resized:', data)
+}
+
+// 获取难度标签类型
+const getDifficultyType = (difficulty: string) => {
+  switch (difficulty?.toLowerCase()) {
+    case 'easy':
+    case '简单':
+      return 'success'
+    case 'medium':
+    case '中等':
+      return 'warning'
+    case 'hard':
+    case '困难':
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+// 处理提交代码
+const handleSubmitCode = async () => {
+  if (!codeCardRef.value || !problem.value) {
+    ElMessage.warning('请等待页面加载完成')
+    return
+  }
+
+  try {
+    isSubmitting.value = true
+    // 调用CodeCard的submitCode方法
+    codeCardRef.value.submitCode()
+  } catch (error) {
+    console.error('Submit failed:', error)
+    ElMessage.error('提交失败，请重试')
+  } finally {
+    // 延迟重置加载状态，给用户反馈
+    setTimeout(() => {
+      isSubmitting.value = false
+    }, 1000)
+  }
+}
+
 onMounted(() => {
   fetchProblem()
 })
 </script>
 
 <style scoped>
-.problem-view {
-  height: calc(98vh);
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  overflow: hidden;
+/* ProblemView 现在主要负责业务逻辑，样式由 ProblemLayout 组件处理 */
+
+/* 如果需要覆盖 ProblemLayout 的某些样式，可以在这里添加 */
+:deep(.problem-layout) {
+  /* 确保布局组件正确显示 */
+  min-height: 100vh;
 }
 
-.problem-container {
-  height: 100%;
-  padding: 12px;
-  box-sizing: border-box;
+/* 确保组件内容正确显示 */
+:deep(.pane-content) {
+  display: flex;
+  flex-direction: column;
 }
 
-.problem-splitpanes {
-  height: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-.question-pane,
-.workspace-pane,
-.code-pane,
-.debug-pane {
-  background: transparent;
-  overflow: hidden;
-}
-
-.workspace-splitpanes {
-  height: 100%;
-}
-
-/* 优雅的分割线样式 */
-:deep(.splitpanes__splitter) {
-  background: rgba(255, 255, 255, 0.8) !important;
-  border: none !important;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* 针对特定组件的样式调整 */
+:deep(.question-pane .pane-content) {
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
 }
 
-:deep(.splitpanes__splitter::before) {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: linear-gradient(45deg, #667eea, #764ba2);
-  border-radius: 2px;
-  opacity: 0.6;
+:deep(.code-pane .pane-content) {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+:deep(.debug-pane .pane-content) {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* Header 相关样式 */
+.header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.breadcrumb-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #606266;
+  text-decoration: none;
   transition: all 0.3s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
-:deep(.splitpanes--vertical > .splitpanes__splitter) {
-  width: 8px !important;
-  cursor: col-resize;
+.breadcrumb-link:hover {
+  color: #409eff;
+  background: rgba(64, 158, 255, 0.1);
 }
 
-:deep(.splitpanes--vertical > .splitpanes__splitter::before) {
-  width: 2px;
-  height: 24px;
+.breadcrumb-separator {
+  color: #c0c4cc;
+  font-size: 12px;
 }
 
-:deep(.splitpanes--horizontal > .splitpanes__splitter) {
-  height: 8px !important;
-  cursor: row-resize;
+.current-problem {
+  color: #303133;
+  font-weight: 500;
 }
 
-:deep(.splitpanes--horizontal > .splitpanes__splitter::before) {
-  width: 24px;
-  height: 2px;
+.problem-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+  justify-content: center;
 }
 
-:deep(.splitpanes__splitter:hover) {
-  background: rgba(255, 255, 255, 0.95) !important;
+.problem-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
 }
 
-:deep(.splitpanes__splitter:hover::before) {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.2);
+.difficulty-tag {
+  flex-shrink: 0;
+  font-weight: 500;
 }
 
-/* 响应式设计 */
-@media (max-width: 1200px) {
-  .problem-container {
-    padding: 8px;
-  }
+.submit-button {
+  flex-shrink: 0;
+  margin-left: 8px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
 }
 
+.submit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 响应式调整 */
 @media (max-width: 768px) {
-  .problem-view {
-    background: #f8fafc;
+  .problem-title {
+    font-size: 16px;
+    max-width: 150px;
   }
 
-  .problem-container {
-    padding: 4px;
+  .problem-title-section {
+    gap: 8px;
   }
 
-  .problem-splitpanes {
-    border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  .submit-button {
+    font-size: 12px;
+    padding: 6px 12px;
+    margin-left: 4px;
+  }
+
+  .header-breadcrumb {
+    font-size: 12px;
+  }
+
+  .breadcrumb-link {
+    padding: 2px 4px;
+  }
+
+  .header-actions {
+    gap: 4px;
+  }
+
+  :deep(.pane-content) {
+    background: rgba(255, 255, 255, 0.98) !important;
   }
 }
 
 @media (max-width: 480px) {
-  .problem-container {
-    padding: 2px;
+  .problem-title-section {
+    gap: 6px;
+    flex-wrap: wrap;
   }
 
-  .problem-splitpanes {
-    border-radius: 6px;
+  .problem-title {
+    font-size: 14px;
+    max-width: 120px;
+  }
+
+  .submit-button {
+    font-size: 11px;
+    padding: 4px 8px;
+    margin-left: 2px;
+  }
+
+  .header-actions .el-button {
+    padding: 4px 8px;
   }
 }
 </style>

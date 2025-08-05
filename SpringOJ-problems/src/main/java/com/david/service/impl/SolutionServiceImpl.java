@@ -58,7 +58,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution> i
 			solutionMapper.incrementUpvotes(solutionId);
 		} else if ("down".equals(type)) {
 			solutionMapper.incrementDownvotes(solutionId);
-		}
+		}else throw new RuntimeException("投票转态异常");
 	}
 
 }
