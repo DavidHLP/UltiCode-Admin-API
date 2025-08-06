@@ -7,14 +7,10 @@
     </el-table-column>
     <el-table-column label="语言" prop="language" />
     <el-table-column label="执行用时" prop="timeUsed">
-      <template #default="{ row }">
-        {{ row.timeUsed }} ms
-      </template>
+      <template #default="{ row }"> {{ row.timeUsed }} ms </template>
     </el-table-column>
     <el-table-column label="内存消耗" prop="memoryUsed">
-      <template #default="{ row }">
-        {{ row.memoryUsed }} MB
-      </template>
+      <template #default="{ row }"> {{ row.memoryUsed }} KB </template>
     </el-table-column>
     <el-table-column label="提交时间" prop="createdAt">
       <template #default="{ row }">

@@ -4,22 +4,9 @@
     <header class="header">
       <div class="header-container">
         <!-- 左侧导航菜单 -->
-        <el-menu
-          :default-active="activeIndex"
-          :ellipsis="false"
-          active-text-color="#1890ff"
-          background-color="transparent"
-          class="nav-menu"
-          mode="horizontal"
-          text-color="#666"
-          @select="handleSelect"
-        >
-          <el-menu-item
-            v-for="item in navItems"
-            :key="item.path"
-            :index="item.path"
-            class="nav-item"
-          >
+        <el-menu :default-active="activeIndex" :ellipsis="false" active-text-color="#1890ff"
+          background-color="transparent" class="nav-menu" mode="horizontal" text-color="#666" @select="handleSelect">
+          <el-menu-item v-for="item in navItems" :key="item.path" :index="item.path" class="nav-item">
             <router-link :to="item.path" class="menu-link">
               {{ item.name }}
             </router-link>

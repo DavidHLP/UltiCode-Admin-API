@@ -55,11 +55,11 @@
             <el-button
               type="primary"
               @click="handleLogin"
-              :loading="loading"
+              :loading="authStore.isLoading"
               size="large"
               class="login-button"
             >
-              <span v-if="!loading">登录</span>
+              <span v-if="!authStore.isLoading">登录</span>
               <span v-else>登录中...</span>
             </el-button>
           </el-form-item>
@@ -76,17 +76,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth.ts'
-import { login } from '@/api/auth.ts'
+import { useAuthStore } from '@/stores/auth'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import type { LoginRequest } from '@/types/auth.ts'
+import type { LoginRequest } from '@/types/auth'
 import { User, Lock, Platform } from '@element-plus/icons-vue'
 
-const router = useRouter()
 const authStore = useAuthStore()
 const loginFormRef = ref<FormInstance>()
-const loading = ref(false)
 
 const loginForm = ref<LoginRequest>({
   username: '',
@@ -112,21 +108,20 @@ const handleLogin = async () => {
     // 表单验证
     await loginFormRef.value.validate()
 
-    loading.value = true
-    const response = await login(loginForm.value)
-    authStore.setToken(response.token)
+    const result = await authStore.login(loginForm.value)
 
-    ElMessage.success('登录成功！')
-    router.push('/')
-  } catch (error) {
-    console.error('Login failed:', error)
-    ElMessage.error('登录失败，请检查用户名和密码')
-  } finally {
-    loading.value = false
+    if (result.success) {
+      ElMessage.success(result.message)
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch (validationError) {
+    // ElMessage 会在验证失败时自动提示，这里只需捕获异常防止程序崩溃
+    console.log('表单验证失败', validationError)
   }
 }
 </script>
 
 <style scoped>
-@import "./index.css";
+@import './index.css';
 </style>

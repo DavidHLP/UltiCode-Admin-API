@@ -1,4 +1,4 @@
-package com.david.strategy;
+package com.david.strategy.code;
 
 import com.david.dto.SandboxExecuteRequest;
 import com.david.judge.enums.LanguageType;

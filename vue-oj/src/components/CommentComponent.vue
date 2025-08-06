@@ -1,6 +1,5 @@
 <template>
   <div class="comment-section">
-    <!-- Only show comment form if showCommentForm is true -->
     <template v-if="showCommentForm">
       <AComment>
         <template #avatar>
@@ -8,13 +7,7 @@
         </template>
         <template #content>
           <AFormItem>
-            <ATextarea
-              v-model:value="commentText"
-              placeholder="发表你的评论..."
-              :rows="4"
-              :maxlength="500"
-              show-count
-            />
+            <ATextarea v-model:value="commentText" placeholder="发表你的评论..." :rows="4" :maxlength="500" show-count />
           </AFormItem>
           <AFormItem>
             <AButton type="primary" @click="handleSubmitComment" :loading="submitting">
@@ -25,39 +18,23 @@
       </AComment>
     </template>
 
-    <AList
-      v-if="comments.length"
-      class="comment-list"
-      :header="`${comments.length} 条评论`"
-      item-layout="horizontal"
-      :data-source="comments"
-    >
+    <AList v-if="comments.length" class="comment-list" :header="`${comments.length} 条评论`" item-layout="horizontal"
+      :data-source="comments">
       <template #renderItem="{ item }">
         <AListItem>
-          <AComment
-            :author="item.username"
-            :avatar="item.avatar || 'https://prettyavatars.com/api/pixel-art/100'"
-            :content="item.content"
-            :datetime="formatDate(item.createdAt)"
-          >
+          <AComment :author="item.username" :avatar="item.avatar || 'https://prettyavatars.com/api/pixel-art/100'"
+            :content="item.content" :datetime="formatDate(item.createdAt)">
             <template #actions>
               <span @click="showReply(item.id)">回复</span>
             </template>
             <div v-if="replyingTo === item.id" class="reply-container">
-              <ReplyComponent
-                :reply-to-username="item.username"
-                @submit="(content) => handleSubmitReply(item.id, item.userId, content)"
-                @cancel="replyingTo = null"
-              />
+              <ReplyComponent :reply-to-username="item.username"
+                @submit="(content) => handleSubmitReply(item.id, item.userId, content)" @cancel="replyingTo = null" />
             </div>
             <!-- Recursively render children comments -->
             <div v-if="item.children && item.children.length">
-              <CommentComponent
-                :comments="item.children"
-                :solutionId="solutionId"
-                :show-comment-form="false"
-                @comment-submitted="emit('comment-submitted')"
-              />
+              <CommentComponent :comments="item.children" :solutionId="solutionId" :show-comment-form="false"
+                @comment-submitted="emit('comment-submitted')" />
             </div>
           </AComment>
         </AListItem>
@@ -67,7 +44,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, defineProps, defineEmits, computed } from 'vue';
+import { ref, defineProps, defineEmits } from 'vue';
 import {
   message,
   List as AList,
@@ -81,34 +58,28 @@ import {
 import ReplyComponent from './ReplyComponent.vue';
 import type { SolutionCommentVo } from '@/types/comment';
 import { createComment } from '@/api/comment';
-import { useAuthStore } from '@/stores/auth';
 
 // Define props and emits
 const props = withDefaults(defineProps<{
   comments: SolutionCommentVo[];
   solutionId: number;
-  /** Whether to show the new comment form */
   showCommentForm?: boolean;
 }>(), {
   showCommentForm: true
 });
 const emit = defineEmits(['comment-submitted']);
 
-// Component state
 const commentText = ref('');
 const submitting = ref(false);
 const replyingTo = ref<number | null>(null);
 
-// Using default avatar since user info is not in the auth store
 const userAvatar = 'https://prettyavatars.com/api/pixel-art/100';
 
-// Format date utility
 const formatDate = (dateString: string | null) => {
   if (!dateString) return '';
   return new Date(dateString).toLocaleString();
 };
 
-// Submit a new top-level comment
 const handleSubmitComment = async () => {
   if (!commentText.value) {
     message.warning('评论内容不能为空');
@@ -123,6 +94,7 @@ const handleSubmitComment = async () => {
     commentText.value = '';
     message.success('评论成功');
     emit('comment-submitted');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     message.error('评论失败');
   } finally {
@@ -130,12 +102,9 @@ const handleSubmitComment = async () => {
   }
 };
 
-// Show the reply input for a specific comment
 const showReply = (commentId: number) => {
   replyingTo.value = commentId;
 };
-
-// Submit a reply to a comment
 const handleSubmitReply = async (parentId: number, replyToUserId: number, content: string) => {
   try {
     await createComment({
@@ -149,7 +118,7 @@ const handleSubmitReply = async (parentId: number, replyToUserId: number, conten
     emit('comment-submitted');
   } catch (error) {
     message.error('回复失败');
-    throw error; // Re-throw to be handled by ReplyComponent
+    throw error;
   }
 };
 </script>

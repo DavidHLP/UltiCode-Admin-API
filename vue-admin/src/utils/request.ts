@@ -6,7 +6,7 @@ import type { Response } from '@/types/commons'
 // 创建一个 axios 实例
 const service = axios.create({
   baseURL: '/', // API 的基础 URL
-  timeout: 5000, // 请求超时时间（毫秒）
+  timeout: 50000, // 请求超时时间（毫秒）
 })
 
 // 请求拦截器

@@ -5,13 +5,8 @@
     </template>
     <template #content>
       <AFormItem>
-        <ATextarea
-          v-model:value="replyText"
-          :placeholder="`回复 @${replyToUsername}`"
-          :rows="rows"
-          :maxlength="500"
-          show-count
-        />
+        <ATextarea v-model:value="replyText" :placeholder="`回复 @${replyToUsername}`" :rows="rows" :maxlength="500"
+          show-count />
       </AFormItem>
       <AFormItem>
         <div class="reply-actions">
@@ -37,9 +32,8 @@ import {
   Button as AButton,
   message
 } from 'ant-design-vue';
-import { useAuthStore } from '@/stores/auth';
 
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   replyToUsername: string;
   rows?: number;
   showCancel?: boolean;
@@ -53,11 +47,9 @@ const emit = defineEmits<{
   (e: 'cancel'): void;
 }>();
 
-const authStore = useAuthStore();
 const replyText = ref('');
 const submitting = ref(false);
 
-// Using default avatar since user info is not in the auth store
 const userAvatar = 'https://prettyavatars.com/api/pixel-art/100';
 
 const handleSubmit = async () => {
@@ -70,6 +62,7 @@ const handleSubmit = async () => {
     submitting.value = true;
     await emit('submit', replyText.value);
     replyText.value = '';
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     message.error('回复失败，请重试');
   } finally {

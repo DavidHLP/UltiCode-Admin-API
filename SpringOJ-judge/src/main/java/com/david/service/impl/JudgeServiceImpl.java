@@ -1,29 +1,25 @@
 package com.david.service.impl;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
 
-import com.david.dto.SandboxExecuteRequest;
+import com.david.chain.JudgeChainManager;
+import com.david.constants.JudgeConstants;
+import com.david.dto.JudgeContext;
 import com.david.dto.SubmitCodeRequest;
-import com.david.interfaces.ProblemServiceFeignClient;
+import com.david.exception.JudgeException;
 import com.david.interfaces.SubmissionServiceFeignClient;
-import com.david.judge.CodeTemplate;
-import com.david.judge.Problem;
 import com.david.judge.Submission;
-import com.david.judge.TestCase;
 import com.david.judge.enums.JudgeStatus;
-import com.david.producer.SandboxProducer;
 import com.david.service.IJudgeService;
-import com.david.strategy.impl.JudgeStrategyFactory;
-import com.david.utils.ResponseResult;
+import com.david.utils.ResponseValidator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 判题服务实现类 - 最终优化版本，调用层级不超过2层
+ * 判题服务实现类 - 优雅重构版本，使用责任链模式处理判题流程
+ * 
+ * @author David
  */
 @Slf4j
 @Service
@@ -31,22 +27,38 @@ import lombok.extern.slf4j.Slf4j;
 public class JudgeServiceImpl implements IJudgeService {
 
 	private final SubmissionServiceFeignClient submissionServiceFeignClient;
-	private final ProblemServiceFeignClient problemServiceFeignClient;
-	private final SandboxProducer sandboxProducer;
-	private final JudgeStrategyFactory strategyFactory;
+	private final JudgeChainManager judgeChainManager;
 
 	@Override
 	public Long submitAndJudge(SubmitCodeRequest request, Long userId) {
-		// 1. 创建提交记录
-		Submission submission = createSubmission(request, userId);
-		// 2. 直接执行判题
-		executeJudge(submission);
-
-		return submission.getId();
+		log.info("开始处理判题请求: problemId={}, language={}, userId={}", 
+				request.getProblemId(), request.getLanguage(), userId);
+		
+		try {
+			// 1. 创建提交记录
+			Submission submission = createSubmission(request, userId);
+			
+			// 2. 使用责任链执行判题流程
+			executeJudgeWithChain(submission, userId);
+			
+			return submission.getId();
+			
+		} catch (JudgeException e) {
+			log.error("判题请求处理失败: {}", e.getMessage(), e);
+			// 如果有提交ID，更新错误状态
+			if (e.getSubmissionId() != null) {
+				updateSubmissionError(e.getSubmissionId(), e.getMessage(), e.getStatus());
+			}
+			throw e;
+		} catch (Exception e) {
+			log.error("判题请求处理失败: 系统错误", e);
+			throw new JudgeException("系统错误: " + e.getMessage(), e);
+		}
 	}
 
 	@Override
 	public Submission getSubmission(Long submissionId) {
+		log.debug("获取提交记录: submissionId={}", submissionId);
 		return getSubmissionSafely(submissionId);
 	}
 
@@ -54,143 +66,100 @@ public class JudgeServiceImpl implements IJudgeService {
 	 * 创建提交记录
 	 */
 	private Submission createSubmission(SubmitCodeRequest request, Long userId) {
-		Submission submission = Submission.builder().language(request.getLanguage()).sourceCode(request.getSourceCode())
-				.userId(userId).problemId(request.getProblemId()).status(JudgeStatus.PENDING).build();
+		log.debug("创建提交记录: problemId={}, language={}, userId={}", 
+				request.getProblemId(), request.getLanguage(), userId);
+		
+		Submission submission = Submission.builder()
+				.language(request.getLanguage())
+				.sourceCode(request.getSourceCode())
+				.userId(userId)
+				.problemId(request.getProblemId())
+				.status(JudgeStatus.PENDING)
+				.build();
 
-		ResponseResult<Submission> response = submissionServiceFeignClient.createSubmission(submission);
-		if (isResponseValid(response)) {
-			throw new RuntimeException("创建提交记录失败");
-		}
-		return response.getData();
+		var response = submissionServiceFeignClient.createSubmission(submission);
+		var createdSubmission = ResponseValidator.getValidatedData(
+				response, 
+				JudgeConstants.ErrorMessages.CREATE_SUBMISSION_FAILED
+		);
+		
+		log.info("提交记录创建成功: submissionId={}", createdSubmission.getId());
+		return createdSubmission;
 	}
 
 	/**
-	 * 执行判题 - 整合所有判题逻辑，减少调用层级
+	 * 使用责任链执行判题流程 - 优雅且可读的判题处理
 	 */
-	private void executeJudge(Submission submission) {
+	private void executeJudgeWithChain(Submission submission, Long userId) {
+		log.info("开始执行判题责任链: submissionId={}", submission.getId());
+		
+		// 构建判题上下文
+		JudgeContext context = JudgeContext.builder()
+				.submission(submission)
+				.userId(userId)
+				.build();
+		
 		try {
-			// 验证语言支持
-			if (!strategyFactory.isLanguageSupported(submission.getLanguage())) {
-				throw new RuntimeException("不支持的编程语言: " + submission.getLanguage());
-			}
-
-			// 更新状态为判题中
-			updateSubmissionStatus(submission.getId());
-
-			// 获取题目和测试用例
-			Problem problem = getProblemSafely(submission.getProblemId());
-			List<TestCase> testCases = getTestCasesSafely(problem.getId());
-
-			// 构建并定制沙箱请求
-			SandboxExecuteRequest sandboxRequest = buildSandboxRequest(submission, problem, testCases);
-			sandboxRequest = strategyFactory.getStrategy(submission.getLanguage()).customizeRequest(sandboxRequest);
-
-			// 发送到沙箱执行
-			sandboxProducer.executeInSandbox(sandboxRequest);
-
-			log.info("判题请求已发送到沙箱: submissionId={}, problemId={}, language={}", submission.getId(), problem.getId(),
-					submission.getLanguage());
-
+			// 执行责任链
+			judgeChainManager.executeJudgeChain(context);
+			
+			log.info("判题责任链执行完成: submissionId={}", submission.getId());
+			
+		} catch (JudgeException e) {
+			// 重新抛出判题异常，保持异常信息
+			throw e;
 		} catch (Exception e) {
-			log.error("判题失败: submissionId={}", submission.getId(), e);
-			updateSubmissionError(submission.getId(), e.getMessage());
+			// 包装其他异常为判题异常
+			throw new JudgeException(
+					"判题执行失败: " + e.getMessage(), 
+					e, 
+					JudgeStatus.SYSTEM_ERROR, 
+					submission.getId(), 
+					"EXECUTION_FAILED"
+			);
 		}
 	}
 
-	/**
-	 * 构建沙箱执行请求
-	 */
-	private SandboxExecuteRequest buildSandboxRequest(Submission submission, Problem problem,
-			List<TestCase> testCases) {
-		SandboxExecuteRequest request = new SandboxExecuteRequest();
-		request.setSourceCode(submission.getSourceCode());
-		request.setLanguage(submission.getLanguage());
-		request.setTimeLimit(problem.getTimeLimit());
-		request.setMemoryLimit(problem.getMemoryLimit());
-		request.setSubmissionId(submission.getId());
-		ResponseResult<CodeTemplate> responseResult = problemServiceFeignClient
-				.getCodeTemplateByProblemIdAndLanguage(problem.getId(), submission.getLanguage().getName());
-		if (!responseResult.getCode().equals(200)) {
-			throw new RuntimeException("题目缺少代码模板: " + problem.getId());
-		}
-		request.setMainWrapperTemplate(responseResult.getData().getMainWrapperTemplate());
 
-		// 提取测试用例输入
-		List<String> inputs = testCases.stream()
-				.map(TestCase::getInputs)
-				.map(inputsList -> inputsList.stream()
-						.map(input -> String.join("\n", input.getInput()))
-						.collect(Collectors.joining("\n")))
-				.toList();
-		request.setInputs(inputs);
-		request.setExpectedOutputs(testCases.stream().map(TestCase::getOutput).toList());
-
-		return request;
-	}
 
 	/**
 	 * 安全获取提交记录
 	 */
 	private Submission getSubmissionSafely(Long submissionId) {
-		ResponseResult<Submission> response = submissionServiceFeignClient.getSubmissionById(submissionId);
-		if (isResponseValid(response)) {
-			throw new RuntimeException("提交记录不存在: " + submissionId);
-		}
-		return response.getData();
+		var response = submissionServiceFeignClient.getSubmissionById(submissionId);
+		return ResponseValidator.getValidatedData(
+				response, 
+				String.format(JudgeConstants.ErrorMessages.SUBMISSION_NOT_FOUND, submissionId),
+				submissionId
+		);
 	}
 
-	/**
-	 * 安全获取题目信息
-	 */
-	private Problem getProblemSafely(Long problemId) {
-		ResponseResult<Problem> response = problemServiceFeignClient.getProblemById(problemId);
-		if (isResponseValid(response)) {
-			throw new RuntimeException("题目不存在: " + problemId);
-		}
-		return response.getData();
-	}
 
-	/**
-	 * 安全获取测试用例
-	 */
-	private List<TestCase> getTestCasesSafely(Long problemId) {
-		ResponseResult<List<TestCase>> response = problemServiceFeignClient.getTestCasesByProblemId(problemId);
-		if (isResponseValid(response) || response.getData().isEmpty()) {
-			throw new RuntimeException("题目缺少测试用例: " + problemId);
-		}
-		return response.getData();
-	}
 
-	/**
-	 * 更新提交状态
-	 */
-	private void updateSubmissionStatus(Long submissionId) {
-		Submission submission = getSubmissionSafely(submissionId);
-		submission.setStatus(JudgeStatus.JUDGING);
-		submissionServiceFeignClient.updateSubmission(submissionId, submission);
-	}
+
+
+
 
 	/**
 	 * 更新提交错误信息
 	 */
-	private void updateSubmissionError(Long submissionId, String errorMessage) {
+	private void updateSubmissionError(Long submissionId, String errorMessage, JudgeStatus status) {
 		try {
 			Submission submission = getSubmissionSafely(submissionId);
-			submission.setStatus(JudgeStatus.SYSTEM_ERROR);
+			submission.setStatus(status);
 			submission.setScore(0);
 			submission.setTimeUsed(0);
 			submission.setMemoryUsed(0);
 			submission.setCompileInfo(errorMessage);
 			submissionServiceFeignClient.updateSubmission(submissionId, submission);
+			
+			log.info("提交错误状态更新成功: submissionId={}, status={}, error={}", 
+					submissionId, status, errorMessage);
+					
 		} catch (Exception e) {
 			log.error("更新错误状态失败: submissionId={}", submissionId, e);
 		}
 	}
 
-	/**
-	 * 检查响应是否有效
-	 */
-	private boolean isResponseValid(ResponseResult<?> response) {
-		return response == null || response.getCode() != 200 || response.getData() == null;
-	}
+
 }
