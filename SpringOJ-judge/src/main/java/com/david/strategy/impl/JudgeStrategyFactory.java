@@ -1,4 +1,4 @@
-package com.david.strategy.code.impl;
+package com.david.strategy.impl;
 
 import java.util.List;
 import java.util.Map;
@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import com.david.judge.enums.LanguageType;
-import com.david.strategy.code.JudgeStrategy;
+import com.david.strategy.JudgeStrategy;
 
 /**
  * 简化的判题策略工厂

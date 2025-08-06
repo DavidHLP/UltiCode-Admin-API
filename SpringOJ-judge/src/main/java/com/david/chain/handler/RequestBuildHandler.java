@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.david.chain.AbstractJudgeChainHandler;
 import com.david.dto.JudgeContext;
 import com.david.dto.SandboxExecuteRequest;
-import com.david.strategy.code.impl.JudgeStrategyFactory;
+import com.david.strategy.impl.JudgeStrategyFactory;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
