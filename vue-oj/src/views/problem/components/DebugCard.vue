@@ -28,42 +28,46 @@
       </el-tabs>
     </div>
     <div class="main-content">
-      <TestCaseCard :test-cases="props.testCases" @add-test-case="addTestCase" v-show="mainTab === 'test-cases'" />
-      <ResultCaseCard :submission-result="submissionResult" v-show="mainTab === 'test-results'" />
+      <TestCaseCard
+        v-show="mainTab === 'test-cases'"
+        :test-cases="props.testCases"
+        @add-test-case="addTestCase"
+      />
+      <ResultCaseCard v-show="mainTab === 'test-results'" :submission-result="submissionResult" />
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, watch } from 'vue';
-import { DocumentChecked, DataAnalysis } from '@element-plus/icons-vue';
-import type { TestCase, Submission } from '../../../types/problem';
-import TestCaseCard from './DebugCard/TestCaseCard.vue';
-import ResultCaseCard from './DebugCard/ResultCaseCard.vue';
+<script lang="ts" setup>
+import { ref, watch } from 'vue'
+import { DataAnalysis, DocumentChecked } from '@element-plus/icons-vue'
+import type { Submission, TestCase } from '../../../types/problem'
+import TestCaseCard from './DebugCard/TestCaseCard.vue'
+import ResultCaseCard from './DebugCard/ResultCaseCard.vue'
 
 interface Props {
-  testCases: TestCase[];
-  submissionResult?: Submission | null;
+  testCases: TestCase[]
+  submissionResult?: Submission | null
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 const emit = defineEmits<{
-  (
-    e: 'addTestCase',
-    testCase: TestCase
-  ): void
-}>();
+  (e: 'addTestCase', testCase: TestCase): void
+}>()
 
-const mainTab = ref('test-cases');
+const mainTab = ref('test-cases')
 
 // 初始化第一个测试用例
-watch(() => props.testCases, (newCases) => {
-  console.log('newCases', newCases);
-  // 确保每个测试用例都有有效的 inputs 数组
-  if (newCases.some(tc => !tc.inputs || !Array.isArray(tc.inputs))) {
-    console.warn('Some test cases have invalid inputs format');
-  }
-}, { immediate: true, deep: true });
+watch(
+  () => props.testCases,
+  (newCases) => {
+    // 确保每个测试用例都有有效的 inputs 数组
+    if (newCases.some((tc) => !tc.inputs || !Array.isArray(tc.inputs))) {
+      console.warn('Some test cases have invalid inputs format')
+    }
+  },
+  { immediate: true, deep: true },
+)
 
 // 添加测试用例方法
 const addTestCase = () => {
@@ -72,15 +76,18 @@ const addTestCase = () => {
     inputs: [{ inputName: '', input: '' }],
     output: '',
     sample: true,
-    score: 0
-  });
-};
+    score: 0,
+  })
+}
 
-watch(() => props.submissionResult, (newVal) => {
-  if (newVal) {
-    mainTab.value = 'test-results';
-  }
-});
+watch(
+  () => props.submissionResult,
+  (newVal) => {
+    if (newVal) {
+      mainTab.value = 'test-results'
+    }
+  },
+)
 </script>
 
 <style scoped>

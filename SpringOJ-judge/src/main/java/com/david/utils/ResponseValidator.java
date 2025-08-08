@@ -1,7 +1,8 @@
 package com.david.utils;
 
-import com.david.constants.JudgeConstants;
 import com.david.exception.JudgeException;
+import com.david.utils.enums.ResponseCode;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -11,11 +12,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public final class ResponseValidator {
-    
+
     private ResponseValidator() {
         // 工具类，禁止实例化
     }
-    
+
     /**
      * 验证响应是否有效
      * 
@@ -23,10 +24,10 @@ public final class ResponseValidator {
      * @return true 如果响应有效，false 如果响应无效
      */
     public static boolean isValid(ResponseResult<?> response) {
-        return response != null 
-            && response.getCode() == JudgeConstants.ResponseCode.SUCCESS;
+        return response != null
+                && Objects.equals(response.getCode(), ResponseCode.RC200.getCode());
     }
-    
+
     /**
      * 验证响应是否有效且数据不为空
      * 
@@ -36,11 +37,11 @@ public final class ResponseValidator {
     public static boolean isValidWithData(ResponseResult<?> response) {
         return isValid(response) && response.getData() != null;
     }
-    
+
     /**
      * 验证响应并在无效时抛出异常（仅验证状态码）
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
      * @throws JudgeException 当响应无效时
      */
@@ -50,11 +51,11 @@ public final class ResponseValidator {
             throw new JudgeException(errorMessage);
         }
     }
-    
+
     /**
      * 验证响应并在无效或数据为空时抛出异常
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
      * @throws JudgeException 当响应无效或数据为空时
      */
@@ -64,11 +65,11 @@ public final class ResponseValidator {
             throw new JudgeException(errorMessage);
         }
     }
-    
+
     /**
      * 验证响应并在无效时抛出异常（带提交ID，仅验证状态码）
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
      * @param submissionId 提交ID
      * @throws JudgeException 当响应无效时
@@ -79,11 +80,11 @@ public final class ResponseValidator {
             throw new JudgeException(errorMessage, submissionId);
         }
     }
-    
+
     /**
      * 验证响应并在无效或数据为空时抛出异常（带提交ID）
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
      * @param submissionId 提交ID
      * @throws JudgeException 当响应无效或数据为空时
@@ -94,13 +95,13 @@ public final class ResponseValidator {
             throw new JudgeException(errorMessage, submissionId);
         }
     }
-    
+
     /**
      * 获取验证后的响应数据
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
-     * @param <T> 数据类型
+     * @param <T>          数据类型
      * @return 响应数据
      * @throws JudgeException 当响应无效或数据为空时
      */
@@ -108,14 +109,14 @@ public final class ResponseValidator {
         validateWithDataOrThrow(response, errorMessage);
         return response.getData();
     }
-    
+
     /**
      * 获取验证后的响应数据（带提交ID）
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
      * @param submissionId 提交ID
-     * @param <T> 数据类型
+     * @param <T>          数据类型
      * @return 响应数据
      * @throws JudgeException 当响应无效或数据为空时
      */
@@ -123,17 +124,17 @@ public final class ResponseValidator {
         validateWithDataOrThrow(response, errorMessage, submissionId);
         return response.getData();
     }
-    
+
     /**
      * 验证列表响应是否有效且非空
      * 
-     * @param response 响应对象
+     * @param response     响应对象
      * @param errorMessage 错误消息
      * @throws JudgeException 当响应无效或数据为空时
      */
     public static void validateListNotEmpty(ResponseResult<?> response, String errorMessage) {
         validateWithDataOrThrow(response, errorMessage);
-        
+
         if (response.getData() instanceof java.util.Collection<?> collection && collection.isEmpty()) {
             log.error("列表响应为空: {}", errorMessage);
             throw new JudgeException(errorMessage);

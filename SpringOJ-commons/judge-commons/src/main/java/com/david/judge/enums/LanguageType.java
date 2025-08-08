@@ -3,6 +3,7 @@ package com.david.judge.enums;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+
 import lombok.Getter;
 
 /**
@@ -11,21 +12,23 @@ import lombok.Getter;
 @Getter
 public enum LanguageType {
     JAVA("Java", ".java", "java"),
-    CPP("C++", ".cpp", "cpp"),
     PYTHON("Python", ".py", "python"),
+    CPP("C++", ".cpp", "cpp"),
+    C("C", ".c", "c"),
+    GO("Go", ".go", "go"),
     JAVASCRIPT("JavaScript", ".js", "javascript"),
-    GOLANG("Go", ".go", "go"),
-    RUST("Rust", ".rs", "rust");
+    TYPESCRIPT("TypeScript", ".ts", "typescript"),
+    RUST("Rust", ".rs", "rust"),
+    KOTLIN("Kotlin", ".kt", "kotlin"),
+    SCALA("Scala", ".scala", "scala"),
+    RUBY("Ruby", ".rb", "ruby"),
+    PHP("PHP", ".php", "php"),
+    CSHARP("C#", ".cs", "csharp");
 
     @EnumValue
     private final String name;
     private final String suffix;
     private final String code;
-
-    @JsonValue
-    public String getCode() {
-        return this.code;
-    }
 
     LanguageType(String name, String suffix, String code) {
         this.name = name;
@@ -41,6 +44,11 @@ public enum LanguageType {
             }
         }
         throw new IllegalArgumentException("不支持的编程语言: " + code);
+    }
+
+    @JsonValue
+    public String getCode() {
+        return this.code;
     }
 
     @Override

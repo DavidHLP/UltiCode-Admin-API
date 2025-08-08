@@ -3,7 +3,6 @@ package com.david.service.impl;
 import org.springframework.stereotype.Service;
 
 import com.david.chain.JudgeChainManager;
-import com.david.constants.JudgeConstants;
 import com.david.dto.JudgeContext;
 import com.david.dto.SubmitCodeRequest;
 import com.david.exception.JudgeException;
@@ -80,7 +79,7 @@ public class JudgeServiceImpl implements IJudgeService {
 		var response = submissionServiceFeignClient.createSubmission(submission);
 		var createdSubmission = ResponseValidator.getValidatedData(
 				response, 
-				JudgeConstants.ErrorMessages.CREATE_SUBMISSION_FAILED
+				"创建提交记录失败"
 		);
 		
 		log.info("提交记录创建成功: submissionId={}", createdSubmission.getId());
@@ -129,7 +128,7 @@ public class JudgeServiceImpl implements IJudgeService {
 		var response = submissionServiceFeignClient.getSubmissionById(submissionId);
 		return ResponseValidator.getValidatedData(
 				response, 
-				String.format(JudgeConstants.ErrorMessages.SUBMISSION_NOT_FOUND, submissionId),
+				String.format("提交不存在: %d", submissionId),
 				submissionId
 		);
 	}
