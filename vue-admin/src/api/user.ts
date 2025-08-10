@@ -1,23 +1,9 @@
 import request from '@/utils/request'
 import type { User } from '@/types/user'
-
-export function fetchUsers(): Promise<User[]> {
-  return request({
-    url: '/user/api',
-    method: 'get',
-  })
-}
-
-export function getUser(id: number): Promise<User> {
-  return request({
-    url: `/user/api/${id}`,
-    method: 'get',
-  })
-}
-
+import type { PageResult } from '@/types/commons'
 export function createUser(data: User): Promise<void> {
   return request({
-    url: '/user/api',
+    url: '/user/api/user',
     method: 'post',
     data,
   })
@@ -25,7 +11,7 @@ export function createUser(data: User): Promise<void> {
 
 export function updateUser(id: number, data: User): Promise<void> {
   return request({
-    url: `/user/api/${id}`,
+    url: `/user/api/user/${id}`,
     method: 'put',
     data,
   })
@@ -33,7 +19,15 @@ export function updateUser(id: number, data: User): Promise<void> {
 
 export function deleteUser(id: number): Promise<void> {
   return request({
-    url: `/user/api/${id}`,
+    url: `/user/api/user/${id}`,
     method: 'delete',
+  })
+}
+
+export function fetchUsersPage(params: { page: number; size: number; keyword?: string; roleId?: number }): Promise<PageResult<User>> {
+  return request({
+    url: '/user/api/user/page',
+    method: 'get',
+    params,
   })
 }

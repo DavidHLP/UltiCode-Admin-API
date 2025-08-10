@@ -1,8 +1,9 @@
 <template>
   <ManageComponent title="角色管理" :title-icon="Lock" add-button-text="添加角色" search-placeholder="搜索角色名称或备注..."
-    empty-text="暂无角色数据" :table-data="filteredRoles" :loading="loading" @add="handleAdd" @search="handleSearch"
+    empty-text="暂无角色数据" :table-data="roles" :loading="loading" @add="handleAdd" @search="handleSearch"
     @refresh="handleRefresh" @dialog-confirm="handleDialogConfirm" @dialog-cancel="handleDialogCancel"
-    ref="manageComponentRef">
+    :total="total" v-model:current-page="currentPage" v-model:page-size="pageSize"
+    @size-change="handleSizeChange" @current-change="handleCurrentChange" ref="manageComponentRef">
     <!-- 筛选器插槽 -->
     <template #filters>
       <el-select v-model="selectedStatus" placeholder="筛选状态" class="status-filter" clearable
@@ -89,8 +90,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { fetchRoles, createRole, updateRole, deleteRole } from '@/api/role.ts'
+import { ref, onMounted } from 'vue'
+import { fetchRolePage, createRole, updateRole, deleteRole } from '@/api/role.ts'
 import type { Role } from '@/types/role.ts'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
@@ -111,6 +112,9 @@ import ManageComponent from '@/components/management/ManageComponent.vue'
 // 响应式数据
 const roles = ref<Role[]>([])
 const loading = ref(false)
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // 搜索和筛选
 const searchQuery = ref('')
@@ -130,27 +134,7 @@ const roleRules: FormRules = {
   remark: [{ max: 200, message: '备注信息不能超过 200 个字符', trigger: 'blur' }],
 }
 
-// 计算属性
-const filteredRoles = computed(() => {
-  let result = roles.value
-
-  // 搜索过滤
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (role) =>
-        role.roleName.toLowerCase().includes(query) ||
-        (role.remark && role.remark.toLowerCase().includes(query)),
-    )
-  }
-
-  // 状态过滤
-  if (selectedStatus.value !== undefined) {
-    result = result.filter((role) => role.status === selectedStatus.value)
-  }
-
-  return result
-})
+// 计算属性移除：改为服务端分页
 
 // 工具方法
 const getRoleIcon = (roleName: string) => {
@@ -175,7 +159,9 @@ const getRoleIconClass = (roleName: string) => {
 
 // 搜索和筛选方法
 const handleStatusFilter = () => {
-  // 筛选逻辑已在计算属性中处理
+  // 重置到第一页并重新加载
+  currentPage.value = 1
+  void getPagedRoles()
 }
 
 // ManageComponent 事件处理
@@ -186,12 +172,14 @@ const handleAdd = () => {
 
 const handleSearch = (query: string) => {
   searchQuery.value = query
+  currentPage.value = 1
+  void getPagedRoles()
 }
 
 const handleRefresh = async () => {
   loading.value = true
   try {
-    await getRoles()
+    await getPagedRoles()
     ElMessage.success('数据刷新成功！')
   } catch {
     ElMessage.error('数据刷新失败')
@@ -210,7 +198,7 @@ const handleDialogConfirm = async () => {
       ElMessage.success('角色创建成功')
     }
     manageComponentRef.value?.closeDialog()
-    getRoles()
+    void getPagedRoles()
   } catch {
     ElMessage.error('保存角色失败')
   }
@@ -220,13 +208,23 @@ const handleDialogCancel = () => {
   // 对话框取消逻辑已在 ManageComponent 中处理
 }
 
-// 数据获取方法
-const getRoles = async () => {
+// 数据获取方法（服务端分页）
+const getPagedRoles = async () => {
   try {
-    roles.value = await fetchRoles()
+    loading.value = true
+    const res = await fetchRolePage({
+      page: currentPage.value,
+      size: pageSize.value,
+      keyword: searchQuery.value || undefined,
+      status: selectedStatus.value,
+    })
+    roles.value = res.records
+    total.value = res.total
   } catch (error) {
-    console.error('获取角色列表时出错:', error)
+    console.error('获取角色分页列表时出错:', error)
     ElMessage.error('获取角色列表失败')
+  } finally {
+    loading.value = false
   }
 }
 
@@ -238,7 +236,7 @@ const openEditDialog = (role: Role) => {
 const handleDelete = async (roleId: number) => {
   try {
     await deleteRole(roleId)
-    getRoles()
+    void getPagedRoles()
     ElMessage.success('角色删除成功')
   } catch (error) {
     console.error('删除角色时出错:', error)
@@ -247,8 +245,20 @@ const handleDelete = async (roleId: number) => {
 }
 
 onMounted(() => {
-  getRoles()
+  void getPagedRoles()
 })
+
+// 分页事件
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1
+  void getPagedRoles()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  void getPagedRoles()
+}
 </script>
 
 <style scoped lang="css">

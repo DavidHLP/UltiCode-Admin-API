@@ -27,17 +27,11 @@
             <div class="problem-detail-view">
               <el-tabs type="border-card">
                 <el-tab-pane label="测试用例管理">
-                  <template #label>
-                    <span @click="loadTestCases(props.row)">测试用例管理</span>
-                  </template>
                   <TestCaseView :test-cases="props.row.testCases" @add="openAddTestCaseDialog(props.row)"
                     @edit="(testCase) => openEditTestCaseDialog(props.row, testCase)"
                     @delete="(testCaseId) => handleDeleteTestCase(props.row, testCaseId)" />
                 </el-tab-pane>
                 <el-tab-pane label="代码模板管理">
-                  <template #label>
-                    <span @click="loadCodeTemplates(props.row)">代码模板管理</span>
-                  </template>
                   <CodeTemplateView :code-templates="props.row.codeTemplates" @add="openAddCodeTemplateDialog(props.row)"
                     @edit="(codeTemplate) => openEditCodeTemplateDialog(props.row, codeTemplate)"
                     @delete="(codeTemplateId) => handleDeleteCodeTemplate(props.row, codeTemplateId)" />
@@ -130,10 +124,16 @@
     <TestCaseForm :visible="addEditTestCaseDialogVisible" :is-edit="isEditTestCase" :test-case="currentTestCase"
       @update:visible="addEditTestCaseDialogVisible = $event" @save="handleTestCaseSave" />
 
-    <!-- 代码模板表单对话框 -->
-    <CodeTemplateForm :visible="addEditCodeTemplateDialogVisible" :is-edit="isEditCodeTemplate" :code-template="currentCodeTemplate"
-      :problem-id="activeProblemForCodeTemplates.id" @update:visible="addEditCodeTemplateDialogVisible = $event"
-      @save="handleCodeTemplateSave" />
+    <!-- 代码模板表单对话框（仅在有有效 problemId 时渲染） -->
+    <CodeTemplateForm
+      v-if="addEditCodeTemplateDialogVisible && activeProblemForCodeTemplates.id"
+      :visible="addEditCodeTemplateDialogVisible"
+      :is-edit="isEditCodeTemplate"
+      :code-template="currentCodeTemplate"
+      :problem-id="Number(activeProblemForCodeTemplates.id)"
+      @update:visible="addEditCodeTemplateDialogVisible = $event"
+      @save="handleCodeTemplateSave"
+    />
   </div>
 </template>
 
@@ -216,29 +216,7 @@ const getCategoryDescription = (category: string) => {
   return foundCategory ? foundCategory.description : category
 }
 
-const loadTestCases = async (problem: Problem) => {
-  if (!problem.testCases) {
-    try {
-      const testCases = await getTestCasesByProblemId(problem.id!)
-      problem.testCases = testCases
-    } catch (error) {
-      console.error('Error fetching test cases:', error)
-      ElMessage.error('获取测试用例失败')
-    }
-  }
-}
 
-const loadCodeTemplates = async (problem: Problem) => {
-  if (!problem.codeTemplates) {
-    try {
-      const codeTemplates = await getCodeTemplatesByProblemId(problem.id!)
-      problem.codeTemplates = codeTemplates
-    } catch (error) {
-      console.error('Error fetching code templates:', error)
-      ElMessage.error('获取代码模板失败')
-    }
-  }
-}
 
 const handleSearch = (query: string) => {
   searchQuery.value = query
@@ -264,8 +242,23 @@ const refreshData = async () => {
 const getProblems = async () => {
   loading.value = true
   try {
-    problems.value = await fetchProblems()
-    console.log(problems.value)
+    const baseProblems = await fetchProblems()
+    // 预取每个题目的测试用例与代码模板，取消懒加载
+    await Promise.all(
+      baseProblems.map(async (p) => {
+        try {
+          const [testCases, codeTemplates] = await Promise.all([
+            getTestCasesByProblemId(p.id!),
+            getCodeTemplatesByProblemId(p.id!),
+          ])
+          p.testCases = testCases
+          p.codeTemplates = codeTemplates
+        } catch (e) {
+          console.error('预加载题目详情失败: ', p.id, e)
+        }
+      })
+    )
+    problems.value = baseProblems
   } catch (error) {
     console.error('Error fetching problems:', error)
     ElMessage.error('获取题目列表失败')

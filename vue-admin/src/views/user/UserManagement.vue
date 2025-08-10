@@ -1,25 +1,59 @@
 <template>
-  <ManageComponent ref="manageComponentRef" title="用户管理" :title-icon="User" add-button-text="添加用户"
-    search-placeholder="搜索用户名或邮箱..." empty-text="暂无用户数据" :table-data="filteredUsers" :loading="loading" :saving="saving"
-    @add="openAddUserDialog" @search="handleSearch" @refresh="refreshData" @dialog-confirm="saveUser">
+  <ManageComponent
+    ref="manageComponentRef"
+    v-model:current-page="currentPage"
+    v-model:page-size="pageSize"
+    :loading="loading"
+    :saving="saving"
+    :table-data="filteredUsers"
+    :title-icon="User"
+    :total="total"
+    add-button-text="添加用户"
+    empty-text="暂无用户数据"
+    search-placeholder="搜索用户名或邮箱..."
+    title="用户管理"
+    @add="openAddUserDialog"
+    @refresh="refreshData"
+    @search="handleSearch"
+    @size-change="handlePageSizeChange"
+    @current-change="handleCurrentPageChange"
+    @dialog-confirm="saveUser"
+  >
     <!-- 自定义筛选器：角色筛选, 添加用户按钮 -->
     <template #filters>
-      <el-select v-model="selectedRole" placeholder="筛选角色" class="role-filter" clearable @change="handleRoleFilter">
-        <el-option v-for="role in allRoles" :key="role.id" :label="role.roleName" :value="role.id" />
+      <el-select
+        v-model="selectedRole"
+        class="role-filter"
+        clearable
+        placeholder="筛选角色"
+        @change="handleRoleFilter"
+      >
+        <el-option
+          v-for="role in allRoles"
+          :key="role.id"
+          :label="role.roleName"
+          :value="role.id"
+        />
       </el-select>
-      <el-button type="primary" @click="openAddUserDialog" :icon="Plus" size="default"
-        class="add-user-btn">添加用户</el-button>
+      <el-button
+        :icon="Plus"
+        class="add-user-btn"
+        size="default"
+        type="primary"
+        @click="openAddUserDialog"
+        >添加用户</el-button
+      >
     </template>
 
     <!-- 表格列定义 -->
     <template #table-columns>
-      <el-table-column prop="userId" label="ID" width="80" align="center">
+      <el-table-column align="center" label="ID" prop="userId" width="80">
         <template #default="scope">
-          <el-tag type="info" size="small" class="id-tag"> #{{ scope.row.userId }} </el-tag>
+          <el-tag class="id-tag" size="small" type="info"> #{{ scope.row.userId }} </el-tag>
         </template>
       </el-table-column>
 
-      <el-table-column prop="username" label="用户名" min-width="120">
+      <el-table-column label="用户名" min-width="120" prop="username">
         <template #default="scope">
           <div class="user-info">
             <el-avatar :size="32" class="user-avatar">
@@ -30,7 +64,7 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="email" label="邮箱" min-width="200">
+      <el-table-column label="邮箱" min-width="200" prop="email">
         <template #default="scope">
           <div class="email-cell">
             <el-icon class="email-icon">
@@ -63,9 +97,13 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="状态" width="100" align="center">
+      <el-table-column align="center" label="状态" width="100">
         <template #default="scope">
-          <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'" size="small" class="status-tag">
+          <el-tag
+            :type="scope.row.status === 1 ? 'success' : 'danger'"
+            class="status-tag"
+            size="small"
+          >
             <el-icon class="status-icon">
               <CircleCheck v-if="scope.row.status === 1" />
               <CircleClose v-else />
@@ -78,11 +116,20 @@
       <el-table-column label="角色" min-width="150">
         <template #default="scope">
           <div class="roles-cell">
-            <el-tag v-for="role in scope.row.roles" :key="role.id" :type="getRoleTagType(role.roleName)" size="small"
-              class="role-tag">
+            <el-tag
+              v-for="role in scope.row.roles"
+              :key="role.id"
+              :type="getRoleTagType(role.roleName)"
+              class="role-tag"
+              size="small"
+            >
               {{ role.roleName }}
             </el-tag>
-            <el-tag v-if="!scope.row.roles || scope.row.roles.length === 0" type="info" size="small">
+            <el-tag
+              v-if="!scope.row.roles || scope.row.roles.length === 0"
+              size="small"
+              type="info"
+            >
               无角色
             </el-tag>
           </div>
@@ -98,7 +145,7 @@
               </el-icon>
               <span>{{ formatDateTime(scope.row.lastLogin) || '从未登录' }}</span>
             </div>
-            <div class="login-ip" v-if="scope.row.lastLoginIp">
+            <div v-if="scope.row.lastLoginIp" class="login-ip">
               <el-icon class="ip-icon">
                 <Monitor />
               </el-icon>
@@ -119,15 +166,27 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="操作" width="200" align="center" fixed="right">
+      <el-table-column align="center" fixed="right" label="操作" width="200">
         <template #default="scope">
           <div class="action-buttons">
-            <el-button @click="openEditUserDialog(scope.row)" :icon="Edit" size="small" type="primary" plain
-              class="action-btn">
+            <el-button
+              :icon="Edit"
+              class="action-btn"
+              plain
+              size="small"
+              type="primary"
+              @click="openEditUserDialog(scope.row)"
+            >
               编辑
             </el-button>
-            <el-button @click="handleDeleteUser(scope.row.userId)" :icon="Delete" size="small" type="danger" plain
-              class="action-btn">
+            <el-button
+              :icon="Delete"
+              class="action-btn"
+              plain
+              size="small"
+              type="danger"
+              @click="handleDeleteUser(scope.row.userId)"
+            >
               删除
             </el-button>
           </div>
@@ -137,55 +196,99 @@
 
     <!-- 对话框表单 -->
     <template #dialog-form="{ isEdit }">
-      <el-form :model="currentUser" :rules="userRules" ref="userFormRef" label-width="80px" class="user-form">
+      <el-form
+        ref="userFormRef"
+        :model="currentUser"
+        :rules="userRules"
+        class="user-form"
+        label-width="80px"
+      >
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="currentUser.username" placeholder="请输入用户名" :prefix-icon="UserIcon" clearable />
+          <el-input
+            v-model="currentUser.username"
+            :prefix-icon="UserIcon"
+            clearable
+            placeholder="请输入用户名"
+          />
         </el-form-item>
 
         <el-form-item label="邮箱" prop="email">
-          <el-input v-model="currentUser.email" placeholder="请输入邮箱地址" :prefix-icon="Message" clearable />
+          <el-input
+            v-model="currentUser.email"
+            :prefix-icon="Message"
+            clearable
+            placeholder="请输入邮箱地址"
+          />
         </el-form-item>
 
         <el-form-item label="密码" prop="password">
-          <el-input v-model="currentUser.password" type="password" placeholder="请输入密码" :prefix-icon="Lock" show-password
-            clearable />
+          <el-input
+            v-model="currentUser.password"
+            :prefix-icon="Lock"
+            clearable
+            placeholder="请输入密码"
+            show-password
+            type="password"
+          />
           <div v-if="isEdit" class="password-tip">留空则不修改密码</div>
         </el-form-item>
 
         <el-form-item label="角色" prop="roles">
-          <el-select v-model="currentUserRoleIds" multiple placeholder="请选择用户角色" style="width: 100%" collapse-tags
-            collapse-tags-tooltip>
-            <el-option v-for="role in allRoles" :key="role.id" :label="role.roleName" :value="role.id" />
+          <el-select
+            v-model="currentUserRoleIds"
+            collapse-tags
+            collapse-tags-tooltip
+            multiple
+            placeholder="请选择用户角色"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="role in allRoles"
+              :key="role.id"
+              :label="role.roleName"
+              :value="role.id"
+            />
           </el-select>
+        </el-form-item>
+
+        <el-form-item label="状态" prop="status">
+          <el-switch
+            v-model="currentUser.status"
+            :active-value="1"
+            :inactive-value="0"
+            active-text="正常"
+            inactive-text="禁用"
+          />
         </el-form-item>
       </el-form>
     </template>
   </ManageComponent>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+<script lang="ts" setup>
+import { computed, onMounted, ref } from 'vue'
 import ManageComponent from '@/components/management/ManageComponent.vue'
-import { fetchUsers, createUser, updateUser, deleteUser } from '@/api/user.ts'
+import { createUser, deleteUser, fetchUsersPage, updateUser } from '@/api/user.ts'
+import type { PageResult } from '@/types/commons.ts'
 import { fetchRoles } from '@/api/role.ts'
 import type { User as UserData } from '@/types/user.ts'
 import type { Role } from '@/types/role.ts'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
-  Plus,
-  User,
-  Edit,
-  Delete,
-  Message,
-  UserFilled as UserIcon,
-  Lock,
-  Document,
-  Location,
+  Calendar,
   CircleCheck,
   CircleClose,
   Clock,
+  Delete,
+  Document,
+  Edit,
+  Location,
+  Lock,
+  Message,
   Monitor,
-  Calendar
+  Plus,
+  User,
+  UserFilled as UserIcon,
 } from '@element-plus/icons-vue'
 
 // ManageComponent 的引用
@@ -196,6 +299,9 @@ const users = ref<UserData[]>([])
 const allRoles = ref<Role[]>([])
 const loading = ref(false)
 const saving = ref(false)
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // 搜索和筛选
 const searchQuery = ref('')
@@ -217,31 +323,19 @@ const userRules: FormRules = {
     { required: true, message: '请输入邮箱地址', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
   ],
-  password: [
-    { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
-  ],
+  password: [{ min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 }
 
 // 计算属性
+// 仅在当前页内应用角色筛选，搜索交由后端分页处理，保持总数一致
 const filteredUsers = computed(() => {
   let result = users.value
-
-  // 搜索过滤
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (user) =>
-        user.username.toLowerCase().includes(query) || user.email.toLowerCase().includes(query),
-    )
-  }
-
-  // 角色过滤
   if (selectedRole.value) {
     result = result.filter(
       (user) => user.roles && user.roles.some((role) => role.id === selectedRole.value),
     )
   }
-
   return result
 })
 
@@ -258,7 +352,7 @@ const formatDateTime = (dateString: string | null) => {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   } catch (error) {
     console.error('格式化日期时发生错误:', error)
@@ -280,10 +374,14 @@ const getRoleTagType = (roleName: string) => {
 // 搜索和筛选方法
 const handleSearch = (query: string) => {
   searchQuery.value = query
+  currentPage.value = 1
+  getUsers()
 }
 
 const handleRoleFilter = () => {
-  // 筛选逻辑已在计算属性中处理, 无需操作
+  // 服务端按角色筛选：切换角色时重置到第1页并重新拉取
+  currentPage.value = 1
+  getUsers()
 }
 
 const refreshData = async () => {
@@ -303,7 +401,14 @@ const refreshData = async () => {
 const getUsers = async () => {
   loading.value = true
   try {
-    users.value = await fetchUsers()
+    const res: PageResult<UserData> = await fetchUsersPage({
+      page: currentPage.value,
+      size: pageSize.value,
+      keyword: searchQuery.value || undefined,
+      roleId: selectedRole.value || undefined,
+    })
+    users.value = res.records
+    total.value = res.total
   } catch (error) {
     console.error('获取用户数据时发生错误:', error)
     ElMessage.error('获取用户列表失败。')
@@ -392,6 +497,17 @@ const handleDeleteUser = async (userId: number) => {
     console.error('删除用户时发生错误:', error)
     ElMessage.error('删除用户失败。')
   }
+}
+
+const handlePageSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1
+  getUsers()
+}
+
+const handleCurrentPageChange = (val: number) => {
+  currentPage.value = val
+  getUsers()
 }
 
 onMounted(() => {

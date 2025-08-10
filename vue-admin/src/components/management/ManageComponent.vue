@@ -13,7 +13,18 @@
     </SearchComponent>
 
     <!-- 表格区域 -->
-    <TableComponent :data="tableData" :loading="loading" :empty-text="emptyText">
+    <TableComponent
+      :data="tableData"
+      :loading="loading"
+      :empty-text="emptyText"
+      :show-pagination="showPagination"
+      :total="total"
+      :page-sizes="pageSizes"
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+    >
       <!-- 表格列插槽 -->
       <slot name="table-columns"></slot>
     </TableComponent>
@@ -31,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, defineEmits, defineExpose, type Component } from 'vue'
+import { ref, defineProps, defineEmits, defineExpose, defineModel, type Component } from 'vue'
 import HeaderComponent from './components/HeaderComponent.vue'
 import SearchComponent from './components/SearchComponent.vue'
 import TableComponent from './components/TableComponent.vue'
@@ -47,11 +58,17 @@ interface Props {
   tableData: Record<string, unknown>[]
   loading?: boolean
   saving?: boolean
+  showPagination?: boolean
+  total?: number
+  pageSizes?: number[]
 }
 
 withDefaults(defineProps<Props>(), {
   loading: false,
-  saving: false
+  saving: false,
+  showPagination: true,
+  total: 0,
+  pageSizes: () => [10, 20, 50, 100]
 })
 
 // 定义 Emits
@@ -60,6 +77,8 @@ const emit = defineEmits<{
   refresh: []
   'dialog-confirm': []
   'dialog-cancel': []
+  'size-change': [value: number]
+  'current-change': [value: number]
 }>()
 
 // 响应式数据
@@ -68,6 +87,9 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const isEdit = ref(false)
 const currentItem = ref<Record<string, unknown>>({})
+// 分页 v-model
+const currentPage = defineModel<number>('currentPage', { default: 1 })
+const pageSize = defineModel<number>('pageSize', { default: 10 })
 
 // 方法
 const handleSearch = () => {
@@ -85,6 +107,14 @@ const handleDialogConfirm = () => {
 const handleDialogCancel = () => {
   dialogVisible.value = false
   emit('dialog-cancel')
+}
+
+const handleSizeChange = (val: number) => {
+  emit('size-change', val)
+}
+
+const handleCurrentChange = (val: number) => {
+  emit('current-change', val)
 }
 
 // 对外暴露的方法
@@ -118,3 +148,4 @@ defineExpose({
 <style>
 @import './index.css';
 </style>
+

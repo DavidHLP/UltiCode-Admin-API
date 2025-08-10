@@ -4,3 +4,10 @@ export interface Response<T = unknown> {
   data: T
   timestamp: string
 }
+export interface PageResult<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
+}
