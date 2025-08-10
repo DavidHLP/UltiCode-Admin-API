@@ -2,32 +2,35 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import * as authApi from '@/api/auth'
-import type { LoginRequest, User } from '@/types/auth'
+import type { LoginRequest, AuthUser } from '@/types/auth'
 
 // 从 localStorage 初始化 state
 const getInitialState = () => {
   const token = localStorage.getItem('token')
-  // const userString = localStorage.getItem('user')
-  // const user = userString ? (JSON.parse(userString) as User) : null
-  return { token, user: null }
+  const userString = localStorage.getItem('user')
+  const user = userString ? (JSON.parse(userString) as AuthUser) : null
+  return { token, user }
 }
 
 export const useAuthStore = defineStore('auth', () => {
   const { token: initialToken, user: initialUser } = getInitialState()
 
   const token = ref<string | null>(initialToken)
-  const user = ref<User | null>(initialUser)
+  const user = ref<AuthUser | null>(initialUser)
   const isLoading = ref(false)
   const router = useRouter()
 
   const isAuthenticated = computed(() => !!token.value)
-  const userRoles = computed(() => user.value?.roles || [])
+  const userRoles = computed<string[]>(() => {
+    const r = user.value?.role
+    return r ? [r.roleName] : []
+  })
 
   function setLoading(loading: boolean) {
     isLoading.value = loading
   }
 
-  function setAuthData(newToken: string, newUser: User) {
+  function setAuthData(newToken: string, newUser: AuthUser) {
     token.value = newToken
     user.value = newUser
     localStorage.setItem('token', newToken)
@@ -45,9 +48,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       setLoading(true)
       const response = await authApi.login(loginData)
-      setAuthData(response.token, response.user)
+      // 先暂存 token，确保后续请求（如 /me）会带上 Authorization 头
+      token.value = response.token
+      localStorage.setItem('token', response.token)
 
-      const targetPath = redirectPath || '/'
+      const user = await authApi.getUserInfo()
+      // 再统一存储 token + user（重复写入 token 可接受，保证一致的持久化入口）
+      setAuthData(response.token, user)
+
+      // 支持从路由 query 中读取 redirect 参数
+      const redirectFromQuery = router.currentRoute.value.query?.redirect as string | undefined
+      const targetPath = redirectPath || redirectFromQuery || '/'
       await router.push(targetPath)
 
       return { success: true, message: '登录成功' }

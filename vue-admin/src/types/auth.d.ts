@@ -19,3 +19,13 @@ export interface User {
   email?: string
   roles?: string[]
 }
+
+export interface AuthUser {
+  userId: number
+  username: string
+  email: string
+  role: {
+    id: number
+    roleName: string
+  }
+}

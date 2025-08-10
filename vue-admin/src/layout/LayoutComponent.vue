@@ -84,11 +84,11 @@
               </div>
               <template #dropdown>
                 <el-dropdown-menu class="user-menu">
-                  <el-dropdown-item class="user-menu-item">
+                  <el-dropdown-item class="user-menu-item" @click="goProfile">
                     <el-icon>
                       <User />
                     </el-icon>
-                    <span>个人信息</span>
+                    <span>个人中心</span>
                   </el-dropdown-item>
                   <el-dropdown-item class="user-menu-item">
                     <el-icon>
@@ -131,7 +131,6 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { logout } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 import {
   ArrowDown,
@@ -158,11 +157,17 @@ const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value
 }
 
+const goProfile = () => {
+  router.push('/profile')
+}
+
 // 页面名称映射
 const pageNameMap: Record<string, string> = {
   '/users': '用户管理',
   '/roles': '角色管理',
   '/problems': '题目管理',
+  '/solutions': '题解管理',
+  '/profile': '个人中心',
 }
 
 const currentPageName = computed(() => {
@@ -172,9 +177,7 @@ const currentPageName = computed(() => {
 // 退出登录处理
 const handleLogout = async () => {
   try {
-    await logout({ token: authStore.token! })
-    authStore.clearToken()
-    router.push('/login')
+    await authStore.logout()
     ElMessage.success('退出成功！')
   } catch (error) {
     console.error('Logout failed:', error)

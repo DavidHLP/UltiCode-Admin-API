@@ -4,6 +4,7 @@ import UserManagement from '@/views/user/UserManagement.vue'
 import RoleManagement from '@/views/role/RoleManagement.vue'
 import ProblemManagement from '@/views/problem/ProblemManagement.vue'
 import SolutionManagement from '@/views/solution/SolutionManagement.vue'
+import ProfileCenter from '@/views/profile/ProfileCenter.vue'
 import Login from '@/views/login/Login.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -41,6 +42,12 @@ export const router = createRouter({
           component: SolutionManagement,
         },
         {
+          path: 'profile',
+          name: 'profile',
+          component: ProfileCenter,
+          meta: { title: '个人中心' },
+        },
+        {
           path: '',
           redirect: '/users',
         },
@@ -56,9 +63,10 @@ router.beforeEach(async (to, from, next) => {
   authStore.setLoading(true)
 
   try {
-    // 如果要访问登录页面且已经登录，重定向到首页
+    // 如果要访问登录页面且已经登录，重定向到首页或原目标页
     if (to.name === 'login' && authStore.isAuthenticated) {
-      next({ path: '/' })
+      const redirectTarget = (to.query?.redirect as string | undefined) || '/'
+      next({ path: redirectTarget })
       return
     }
 
@@ -77,12 +85,20 @@ router.beforeEach(async (to, from, next) => {
       return
     }
 
+    // 角色权限校验（可选）：当路由声明了 meta.roles 时进行校验
+    const requiredRoles = (to.meta.roles as string[] | undefined) || []
+    if (requiredRoles.length > 0 && !requiredRoles.some((r) => authStore.hasRole(r))) {
+      // 权限不足，回到首页或其它安全页面
+      next({ path: '/' })
+      return
+    }
+
     // 如果有token，继续访问
     next()
   } catch (error) {
     console.error('路由守卫错误:', error)
     // 发生错误时清除token并重定向到登录页
-    authStore.clearToken()
+    authStore.clearAuthData()
     next({
       name: 'login',
       query: { redirect: to.fullPath },
@@ -93,10 +109,12 @@ router.beforeEach(async (to, from, next) => {
   }
 })
 
-// 路由后置守卫 - 清除加载状态
-router.afterEach(() => {
+// 路由后置守卫 - 清除加载状态并设置页面标题
+router.afterEach((to) => {
   const authStore = useAuthStore()
   authStore.setLoading(false)
+  const title = (to.meta?.title as string | undefined) || ''
+  document.title = `SpringOJ Admin${title ? ' - ' + title : ''}`
 })
 
 export default router
