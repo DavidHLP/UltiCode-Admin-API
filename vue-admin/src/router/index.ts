@@ -3,6 +3,7 @@ import Layout from '@/layout/LayoutComponent.vue'
 import UserManagement from '@/views/user/UserManagement.vue'
 import RoleManagement from '@/views/role/RoleManagement.vue'
 import ProblemManagement from '@/views/problem/ProblemManagement.vue'
+import ProblemEditor from '@/views/problem/ProblemEditor.vue'
 import SolutionManagement from '@/views/solution/SolutionManagement.vue'
 import ProfileCenter from '@/views/profile/ProfileCenter.vue'
 import Login from '@/views/login/Login.vue'
@@ -35,6 +36,18 @@ export const router = createRouter({
           path: 'problems',
           name: 'problems',
           component: ProblemManagement,
+        },
+        {
+          path: 'problems/new',
+          name: 'problem-new',
+          component: ProblemEditor,
+          meta: { title: '新建题目' },
+        },
+        {
+          path: 'problems/:id/edit',
+          name: 'problem-edit',
+          component: ProblemEditor,
+          meta: { title: '编辑题目' },
         },
         {
           path: 'solutions',

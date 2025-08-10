@@ -14,7 +14,7 @@ export interface Problem {
   description: string
   timeLimit: number
   memoryLimit: number
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
   category: string
   tags: string[]
   solvedCount: number

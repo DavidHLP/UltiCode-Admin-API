@@ -57,11 +57,11 @@ const fetchProblem = async () => {
 const difficultyType = computed(() => {
   if (!problem.value) return 'info';
   switch (problem.value.difficulty) {
-    case 'Easy':
+    case 'EASY':
       return 'success';
-    case 'Medium':
+    case 'MEDIUM':
       return 'warning';
-    case 'Hard':
+    case 'HARD':
       return 'danger';
     default:
       return 'info';
@@ -70,11 +70,11 @@ const difficultyType = computed(() => {
 
 const TransformDifficulty = (difficulty: string) => {
   switch (difficulty) {
-    case 'Easy':
+    case 'EASY':
       return '简单';
-    case 'Medium':
+    case 'MEDIUM':
       return '中等';
-    case 'Hard':
+    case 'HARD':
       return '困难';
     default:
       return '未知';

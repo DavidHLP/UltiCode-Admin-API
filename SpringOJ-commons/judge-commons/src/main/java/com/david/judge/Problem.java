@@ -58,7 +58,7 @@ public class Problem implements Serializable {
     private Integer memoryLimit;
 
     /**
-     * 题目难度，枚举类型，默认为'Easy'
+     * 题目难度，枚举类型，默认为'EASY'
      */
     private ProblemDifficulty difficulty;
 

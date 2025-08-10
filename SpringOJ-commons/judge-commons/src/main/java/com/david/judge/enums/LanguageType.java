@@ -39,7 +39,7 @@ public enum LanguageType {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static LanguageType fromString(String code) {
         for (LanguageType type : LanguageType.values()) {
-            if (type.code.equalsIgnoreCase(code) || type.name().equalsIgnoreCase(code)) {
+            if (type.code.equalsIgnoreCase(code) || type.name.equalsIgnoreCase(code)) {
                 return type;
             }
         }

@@ -154,14 +154,11 @@ const handlePaneResize = (data: { type: 'horizontal' | 'vertical'; sizes: number
 // 获取难度标签类型
 const getDifficultyType = (difficulty: string) => {
   switch (difficulty?.toLowerCase()) {
-    case 'easy':
-    case '简单':
+    case 'EASY':
       return 'success'
-    case 'medium':
-    case '中等':
+    case 'MEDIUM':
       return 'warning'
-    case 'hard':
-    case '困难':
+    case 'HARD':
       return 'danger'
     default:
       return 'info'

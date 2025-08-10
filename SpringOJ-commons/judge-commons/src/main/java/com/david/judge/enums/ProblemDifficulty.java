@@ -3,6 +3,7 @@ package com.david.judge.enums;
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+
 import lombok.Getter;
 
 /**
@@ -10,24 +11,15 @@ import lombok.Getter;
  */
 @Getter
 public enum ProblemDifficulty {
-	EASY("Easy", "简单", 1),
-	MEDIUM("Medium", "中等", 2),
-	HARD("Hard", "困难", 3);
+	EASY("EASY", "简单"), MEDIUM("MEDIUM", "中等"), HARD("HARD", "困难");
 
 	@EnumValue
 	private final String level;
 	private final String description;
-	private final int value;
 
-	@JsonValue
-	public String getLevel() {
-		return level;
-	}
-
-	ProblemDifficulty(String level, String description, int value) {
+	ProblemDifficulty(String level, String description) {
 		this.level = level;
 		this.description = description;
-		this.value = value;
 	}
 
 	@JsonCreator(mode = JsonCreator.Mode.DELEGATING)
@@ -38,6 +30,11 @@ public enum ProblemDifficulty {
 			}
 		}
 		throw new IllegalArgumentException("未知的题目难度: " + level);
+	}
+
+	@JsonValue
+	public String getLevel() {
+		return level;
 	}
 
 	@Override

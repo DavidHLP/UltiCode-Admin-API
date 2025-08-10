@@ -80,11 +80,11 @@ const router = useRouter()
 // 方法
 const getDifficultyType = (difficulty: string) => {
   switch (difficulty) {
-    case 'Easy':
+    case 'EASY':
       return 'success'
-    case 'Medium':
+    case 'MEDIUM':
       return 'warning'
-    case 'Hard':
+    case 'HARD':
       return 'danger'
     default:
       return 'info'
@@ -103,9 +103,9 @@ const formatNumber = (num: number) => {
 // 将英文难度转换为中文
 const getDifficultyChinese = (difficulty: string) => {
   const map: Record<string, string> = {
-    Easy: '简单',
-    Medium: '中等',
-    Hard: '困难',
+    EASY: '简单',
+    MEDIUM: '中等',
+    HARD: '困难',
   }
   return map[difficulty]
 }

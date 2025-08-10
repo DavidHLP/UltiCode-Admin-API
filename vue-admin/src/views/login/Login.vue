@@ -81,6 +81,8 @@ import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import type { LoginRequest } from '@/types/auth'
 import { User, Lock, Platform } from '@element-plus/icons-vue'
 
+defineOptions({ name: 'LoginView' })
+
 const authStore = useAuthStore()
 const loginFormRef = ref<FormInstance>()
 

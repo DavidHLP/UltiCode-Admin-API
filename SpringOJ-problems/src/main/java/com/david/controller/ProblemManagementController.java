@@ -5,11 +5,13 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.dto.CategoryDto;
 import com.david.judge.CodeTemplate;
 import com.david.judge.Problem;
 import com.david.judge.TestCase;
 import com.david.judge.enums.CategoryType;
+import com.david.judge.enums.ProblemDifficulty;
 import com.david.service.IPCodeTemplateService;
 import com.david.service.IProblemService;
 import com.david.service.ITestCaseService;
@@ -25,9 +27,17 @@ public class ProblemManagementController {
 	private final ITestCaseService testCaseService;
 	private final IPCodeTemplateService codeTemplateService;
 
-	@GetMapping
-	public ResponseResult<List<Problem>> getAllProblems() {
-		return ResponseResult.success("成功获取所有题目", problemService.list());
+	/**
+	 * 分页获取题目列表（管理端）
+	 */
+	@GetMapping("/page")
+	public ResponseResult<Page<Problem>> pageProblems(@RequestParam long page, @RequestParam long size,
+			@RequestParam(required = false) String keyword,
+			@RequestParam(required = false) ProblemDifficulty difficulty,
+			@RequestParam(required = false) CategoryType category, @RequestParam(required = false) Boolean isVisible) {
+		Page<Problem> p = new Page<>(page, size);
+		Page<Problem> result = problemService.pageProblems(p, keyword, difficulty, category, isVisible);
+		return ResponseResult.success("成功获取题目分页", result);
 	}
 
 	@GetMapping("/{id}")

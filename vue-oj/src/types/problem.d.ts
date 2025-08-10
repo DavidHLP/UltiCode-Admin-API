@@ -2,7 +2,7 @@ export interface Problem {
   id: number
   title: string
   description: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
   initialCode: { [language: string]: string }
   testCases: TestCase[]
 }
@@ -11,7 +11,7 @@ export interface ProblemVO {
   id: number
   title: string
   description: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
   initialCode: InitialCode[]
   testCases: TestCase[]
 }

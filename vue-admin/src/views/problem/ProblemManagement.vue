@@ -1,15 +1,17 @@
 <template>
   <div>
     <ManageComponent title="题目管理" :title-icon="Memo" add-button-text="添加题目" search-placeholder="搜索题目标题或标签..."
-      empty-text="暂无题目数据" :table-data="filteredProblems" :loading="loading" @add="openAddProblemDialog"
-      @search="handleSearch" @refresh="refreshData">
+      empty-text="暂无题目数据" :table-data="problems" :loading="loading" @add="openAddProblemDialog"
+      @search="handleSearch" @refresh="refreshData"
+      :total="total" v-model:current-page="currentPage" v-model:page-size="pageSize"
+      @size-change="handleSizeChange" @current-change="handleCurrentChange">
       <!-- 自定义筛选器 -->
       <template #filters>
         <el-select v-model="selectedDifficulty" placeholder="筛选难度" class="difficulty-filter" clearable
           @change="handleDifficultyFilter">
-          <el-option label="简单" value="Easy" />
-          <el-option label="中等" value="Medium" />
-          <el-option label="困难" value="Hard" />
+          <el-option label="简单" value="EASY" />
+          <el-option label="中等" value="MEDIUM" />
+          <el-option label="困难" value="HARD" />
         </el-select>
         <el-select v-model="selectedCategory" placeholder="筛选类别" class="category-filter" clearable
           @change="handleCategoryFilter">
@@ -64,7 +66,7 @@
         <el-table-column prop="difficulty" label="难度" width="120" align="center">
           <template #default="scope">
             <el-tag :type="getDifficultyTagType(scope.row.difficulty)" size="small">
-              {{ scope.row.difficulty }}
+              {{ getDifficultyChinese(scope.row.difficulty) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -116,9 +118,7 @@
       </template>
     </ManageComponent>
 
-    <!-- 题目表单对话框 -->
-    <ProblemForm :visible="dialogVisible" :is-edit="isEdit" :problem="currentProblem"
-      @update:visible="dialogVisible = $event" @save="handleProblemSave" />
+    <!-- 题目表单已迁移为独立页面，弹窗移除 -->
 
     <!-- 测试用例表单对话框 -->
     <TestCaseForm :visible="addEditTestCaseDialogVisible" :is-edit="isEditTestCase" :test-case="currentTestCase"
@@ -138,9 +138,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import ManageComponent from '@/components/management/ManageComponent.vue'
-import { fetchProblems, deleteProblem, fetchCategories, getTestCasesByProblemId, getCodeTemplatesByProblemId, deleteCodeTemplate } from '@/api/problem'
+import { fetchProblemPage, deleteProblem, fetchCategories, getTestCasesByProblemId, getCodeTemplatesByProblemId, deleteCodeTemplate } from '@/api/problem'
 import { deleteTestCase } from '@/api/testCase'
 import type { Problem, Category, CodeTemplate } from '@/types/problem'
 import type { TestCase } from '@/types/testCase'
@@ -148,22 +149,24 @@ import { ElMessage } from 'element-plus'
 import { Plus, Edit, Delete, Memo } from '@element-plus/icons-vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
-import ProblemForm from './components/ProblemForm.vue'
 import TestCaseForm from './components/TestCaseForm.vue'
 import TestCaseView from './components/TestCaseView.vue'
 import CodeTemplateForm from './components/CodeTemplateForm.vue'
 import CodeTemplateView from './components/CodeTemplateView.vue'
+import { getDifficultyTagType, getDifficultyChinese } from '@/utils/tag'
 
 const problems = ref<Problem[]>([])
+const router = useRouter()
 const loading = ref(false)
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 const searchQuery = ref('')
 const selectedDifficulty = ref<string | undefined>()
 const selectedCategory = ref<string | undefined>()
 const categories = ref<Category[]>([])
 
-const dialogVisible = ref(false)
-const isEdit = ref(false)
-const currentProblem = ref<Partial<Problem>>({})
+// 表单弹窗相关状态已移除，采用页面跳转
 
 const addEditTestCaseDialogVisible = ref(false)
 const isEditTestCase = ref(false)
@@ -175,41 +178,8 @@ const isEditCodeTemplate = ref(false)
 const currentCodeTemplate = ref<Partial<CodeTemplate>>({})
 const activeProblemForCodeTemplates = ref<Partial<Problem>>({})
 
-const filteredProblems = computed(() => {
-  let result = problems.value
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (problem) =>
-        problem.title.toLowerCase().includes(query) ||
-        (problem.tags && problem.tags.some((tag) => tag.toLowerCase().includes(query)))
-    )
-  }
-
-  if (selectedDifficulty.value) {
-    result = result.filter((problem) => problem.difficulty === selectedDifficulty.value)
-  }
-
-  if (selectedCategory.value) {
-    result = result.filter((problem) => problem.category === selectedCategory.value)
-  }
-
-  return result
-})
-
-const getDifficultyTagType = (difficulty: string) => {
-  switch (difficulty) {
-    case 'Easy':
-      return 'success'
-    case 'Medium':
-      return 'warning'
-    case 'Hard':
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
+// 服务端分页后移除本地过滤，直接依赖后端分页结果
+// 难度标签样式与中文展示统一复用 '@/utils/tag'
 
 const getCategoryDescription = (category: string) => {
   const foundCategory = categories.value.find((cat) => cat.category === category)
@@ -220,16 +190,24 @@ const getCategoryDescription = (category: string) => {
 
 const handleSearch = (query: string) => {
   searchQuery.value = query
+  currentPage.value = 1
+  void getPagedProblems()
 }
 
-const handleDifficultyFilter = () => { }
+const handleDifficultyFilter = () => {
+  currentPage.value = 1
+  void getPagedProblems()
+}
 
-const handleCategoryFilter = () => { }
+const handleCategoryFilter = () => {
+  currentPage.value = 1
+  void getPagedProblems()
+}
 
 const refreshData = async () => {
   loading.value = true
   try {
-    await getProblems()
+    await getPagedProblems()
     ElMessage.success('数据刷新成功！')
   } catch (error) {
     console.error('Error refreshing data:', error)
@@ -239,11 +217,19 @@ const refreshData = async () => {
   }
 }
 
-const getProblems = async () => {
+const getPagedProblems = async () => {
   loading.value = true
   try {
-    const baseProblems = await fetchProblems()
-    // 预取每个题目的测试用例与代码模板，取消懒加载
+    const pageRes = await fetchProblemPage({
+      page: currentPage.value,
+      size: pageSize.value,
+      keyword: searchQuery.value || undefined,
+      difficulty: selectedDifficulty.value,
+      category: selectedCategory.value,
+    })
+    const baseProblems = pageRes.records
+    total.value = pageRes.total
+    // 预取当前页每个题目的测试用例与代码模板
     await Promise.all(
       baseProblems.map(async (p) => {
         try {
@@ -277,31 +263,19 @@ const getCategories = async () => {
 }
 
 const openAddProblemDialog = () => {
-  isEdit.value = false
-  currentProblem.value = {
-    isVisible: true,
-    timeLimit: 1000,
-    memoryLimit: 128,
-    difficulty: 'Easy',
-    category: '',
-  }
-  dialogVisible.value = true
+  router.push({ name: 'problem-new' })
 }
 
 const openEditProblemDialog = (problem: Problem) => {
-  isEdit.value = true
-  currentProblem.value = { ...problem }
-  dialogVisible.value = true
+  router.push({ name: 'problem-edit', params: { id: problem.id } })
 }
 
-const handleProblemSave = () => {
-  getProblems()
-}
+// 表单保存回调由页面内处理；返回列表后可手动刷新
 
 const handleDeleteProblem = async (problemId: number) => {
   try {
     await deleteProblem(problemId)
-    getProblems()
+    void getPagedProblems()
     ElMessage.success('题目删除成功。')
   } catch (error) {
     console.error('Error deleting problem:', error)
@@ -386,9 +360,21 @@ const handleDeleteCodeTemplate = async (problem: Problem, codeTemplateId: number
 }
 
 onMounted(() => {
-  getProblems()
-  getCategories()
+  void getPagedProblems()
+  void getCategories()
 })
+
+// 分页事件
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1
+  void getPagedProblems()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  void getPagedProblems()
+}
 </script>
 
 <style scoped>

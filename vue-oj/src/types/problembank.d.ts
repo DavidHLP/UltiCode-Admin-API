@@ -11,8 +11,8 @@ export interface Problem {
 export interface ProblemBankQuery {
   page: number
   size: number
-  category?: '' | 'ALGORITHMS' | 'DATABASE' | 'SHELL' | '"MULTI_THREADING' | 'JAVASCRIPT' | 'PANDAS'
-  difficulty?: 'Easy' | 'Medium' | 'Hard' | ''
+  category?: '' | 'ALGORITHMS' | 'DATABASE' | 'SHELL' | 'MULTI_THREADING' | 'JAVASCRIPT' | 'PANDAS'
+  difficulty?: 'EASY' | 'MEDIUM' | 'HARD' | ''
   status?: 'completed' | 'attempted' | 'not-attempted' | ''
   tags?: string[]
   title?: string
@@ -34,7 +34,7 @@ export interface SubmissionCalendar {
 export interface Problem {
   id: number
   title: string
-  difficulty: 'Easy' | 'Medium' | 'Hard'
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
   passRate: number
   submissionCount: number
   status: 'completed' | 'attempted' | 'not-attempted'

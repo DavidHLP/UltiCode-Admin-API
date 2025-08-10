@@ -1,11 +1,28 @@
 import request from '@/utils/request'
+import { requestData } from '@/utils/request'
 import type { Problem, Category, CodeTemplate } from '@/types/problem'
+import type { PageResult } from '@/types/commons'
 import type { TestCase } from '@/types/testCase'
 
 export function fetchProblems(): Promise<Problem[]> {
   return request({
     url: '/problems/api/management',
     method: 'get',
+  })
+}
+
+export function fetchProblemPage(params: {
+  page: number
+  size: number
+  keyword?: string
+  difficulty?: string
+  category?: string
+  isVisible?: boolean
+}): Promise<PageResult<Problem>> {
+  return requestData<PageResult<Problem>>({
+    url: '/problems/api/management/page',
+    method: 'get',
+    params,
   })
 }
 

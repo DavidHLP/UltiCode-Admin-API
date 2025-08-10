@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, shallowRef, nextTick } from 'vue'
+import type { Ref } from 'vue'
 import { ElMessage, ElSelect, ElOption } from 'element-plus'
 import { Refresh, FullScreen } from '@element-plus/icons-vue'
 import * as monaco from 'monaco-editor'
@@ -105,7 +106,6 @@ const currentCodeTemplate = ref<Partial<CodeTemplate>>({})
 const saving = ref(false)
 const isFullscreen = ref(false)
 const fullscreenEditor = ref('')
-const formRef = ref<HTMLFormElement | null>(null)
 
 // 编辑器相关引用
 const solutionEditorRef = ref<HTMLElement | null>(null)
@@ -114,7 +114,7 @@ const solutionEditor = shallowRef<monaco.editor.IStandaloneCodeEditor | null>(nu
 const wrapperEditor = shallowRef<monaco.editor.IStandaloneCodeEditor | null>(null)
 
 // 初始化编辑器
-const initEditor = (editorRef: any, value: string, language: string) => {
+const initEditor = (editorRef: Ref<HTMLElement | null>, value: string, language: string) => {
   if (!editorRef.value) return null
 
   const editor = monaco.editor.create(editorRef.value, {
