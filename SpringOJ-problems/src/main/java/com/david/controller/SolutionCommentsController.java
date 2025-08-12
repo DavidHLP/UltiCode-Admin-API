@@ -1,17 +1,17 @@
 package com.david.controller;
 
-import java.util.List;
-
-import org.springframework.web.bind.annotation.*;
-
 import com.david.dto.SolutionCommentDto;
-import com.david.pojo.SolutionComments;
 import com.david.service.ISolutionCommentService;
+import com.david.solution.SolutionComments;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
 import com.david.vo.SolutionCommentVo;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/problems/api/solution-comments")

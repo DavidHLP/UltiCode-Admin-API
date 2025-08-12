@@ -97,7 +97,7 @@
 import { ref, watchEffect } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import type { TestCase, TestCaseInput, TestCaseOutput } from '@/types/testCase.ts'
-import { InputType, OutputType } from '@/types/testCase.ts'
+import { InputType, OutputType } from '@/types/testCase.d'
 import { createTestCase, updateTestCase } from '@/api/testCase.ts'
 import { Plus, Delete, Check, Close } from '@element-plus/icons-vue'
 

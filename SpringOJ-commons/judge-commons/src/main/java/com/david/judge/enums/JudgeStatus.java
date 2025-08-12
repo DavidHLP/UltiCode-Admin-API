@@ -11,19 +11,19 @@ import lombok.Getter;
  */
 @Getter
 public enum JudgeStatus {
-	PENDING("Pending", "等待判题"),
-	JUDGING("Judging", "判题中"),
-	ACCEPTED("Accepted", "答案正确"),
-	CONTINUE("Continue", "继续判题"),
-	WRONG_ANSWER("Wrong Answer", "答案错误"),
-	TIME_LIMIT_EXCEEDED("Time Limit Exceeded", "时间超限"),
-	MEMORY_LIMIT_EXCEEDED("Memory Limit Exceeded", "内存超限"),
-	OUTPUT_LIMIT_EXCEEDED("Output Limit Exceeded", "输出超限"),
-	RUNTIME_ERROR("Runtime Error", "运行时错误"),
-	COMPILE_ERROR("Compile Error", "编译错误"),
-	SYSTEM_ERROR("System Error", "系统错误"),
-	PRESENTATION_ERROR("Presentation Error", "格式错误"),
-	SECURITY_ERROR("Security Error", "安全错误");
+	PENDING("PENDING", "等待判题"),
+	JUDGING("JUDGING", "判题中"),
+	ACCEPTED("ACCEPTED", "答案正确"),
+	CONTINUE("CONTINUE", "继续判题"),
+	WRONG_ANSWER("WRONG_ANSWER", "答案错误"),
+	TIME_LIMIT_EXCEEDED("TIME_LIMIT_EXCEEDED", "时间超限"),
+	MEMORY_LIMIT_EXCEEDED("MEMORY_LIMIT_EXCEEDED", "内存超限"),
+	OUTPUT_LIMIT_EXCEEDED("OUTPUT_LIMIT_EXCEEDED", "输出超限"),
+	RUNTIME_ERROR("RUNTIME_ERROR", "运行时错误"),
+	COMPILE_ERROR("COMPILE_ERROR", "编译错误"),
+	SYSTEM_ERROR("SYSTEM_ERROR", "系统错误"),
+	PRESENTATION_ERROR("PRESENTATION_ERROR", "格式错误"),
+	SECURITY_ERROR("SECURITY_ERROR", "安全错误");
 
 
 	@EnumValue

@@ -1,13 +1,14 @@
 package com.david.mapper;
 
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.dto.ProblemBankQueryDto;
 import com.david.judge.Problem;
-import com.david.vo.ProblemBankItemVo;
+import com.david.judge.enums.CategoryType;
+import com.david.judge.enums.ProblemDifficulty;
+import com.david.utils.SolutionDto;
+
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
@@ -19,5 +20,13 @@ import com.david.vo.ProblemBankItemVo;
  */
 @Mapper
 public interface ProblemMapper extends BaseMapper<Problem> {
-    Page<ProblemBankItemVo> findProblemsForQuestionBank(Page<ProblemBankItemVo> page, @Param("query") ProblemBankQueryDto query, @Param("userId") Long userId);
+	SolutionDto selectSolutionFunctionNameAndOutputType(Long problemId);
+
+	Page<Problem> pageProblems(
+        Page<Problem> page,
+        @Param("keyword") String keyword,
+        @Param("difficulty") ProblemDifficulty difficulty,
+        @Param("category") CategoryType category,
+        @Param("isVisible") Boolean isVisible
+    );
 }

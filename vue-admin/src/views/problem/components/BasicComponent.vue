@@ -116,7 +116,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import type { Problem } from '@/types/problem'
-import { CATEGORIES } from '@/types/problem'
+import { CATEGORIES } from '@/types/problem.d'
 import { getDifficultyChinese, getDifficultyTagType } from '@/utils/tag'
 
 const props = defineProps<{

@@ -13,7 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ITestCaseInputServiceImpl extends ServiceImpl<TestCaseInputMapper, TestCaseInput> implements ITestCaseInputService {
+public class TestCaseInputServiceImpl extends ServiceImpl<TestCaseInputMapper, TestCaseInput> implements ITestCaseInputService {
 	private final TestCaseInputMapper testCaseInputMapper;
 	@Override
 	public Boolean deleteByTestCaseOutputId(Long testCaseOutputId) {

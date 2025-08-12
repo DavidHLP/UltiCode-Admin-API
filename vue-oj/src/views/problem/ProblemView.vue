@@ -43,7 +43,7 @@
 
     <!-- 代码编辑器插槽 -->
     <template #code>
-      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" @submit="handleSubmit" />
+      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" :problem-id="problem.id" @submit="handleSubmit" />
     </template>
 
     <!-- 调试面板插槽 -->
@@ -62,10 +62,13 @@ import ProblemLayout from './layout/ProblemLayout.vue'
 import QuestionCardRouter from './components/QuestionCard.vue'
 import CodeCard from './components/CodeCard.vue'
 import DebugCard from './components/DebugCard.vue'
-import { getProblemById, submitCode } from '@/api/problem'
+import { getProblemDetailVoById, submitCode } from '@/api/problem'
 import { getSubmissionById } from '@/api/submission'
-import type { Problem, Submission, ProblemVO } from '@/types/problem.d'
+import type { Problem, Submission, TestCase } from '@/types/problem'
+import type { ProblemDetailVo } from '@/types/problem.d'
 import { ElMessage } from 'element-plus'
+import { fetchTestCasesByProblemId } from '@/api/testCase'
+import type { TestCaseVo } from '@/types/testCase'
 
 const route = useRoute()
 const problem = ref<Problem | null>(null)
@@ -80,24 +83,66 @@ const layoutState = ref({
   topPaneSize: 60
 })
 
+// 将后端的 TestCaseVo 转换为前端 DebugCard 使用的 TestCase 模型
+const mapTestCaseVoToClient = (vo: TestCaseVo): TestCase => {
+  const inputs = Array.isArray(vo.testCaseInputs)
+    ? [...vo.testCaseInputs]
+        .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+        .map((inp) => ({ inputName: inp.testCaseName, input: inp.inputContent }))
+    : []
+
+  const output = vo.testCaseOutput?.output ?? ''
+  const sample = Boolean(vo.testCaseOutput?.isSample)
+  const score = Number(vo.testCaseOutput?.score ?? 0)
+
+  return {
+    id: Number(vo.id),
+    inputs,
+    output,
+    sample,
+    score,
+  }
+}
+
 const fetchProblem = async () => {
   const problemId = Number(route.params.id)
   if (isNaN(problemId)) return
 
   try {
-    const res = await getProblemById(problemId) as ProblemVO
-    const initialCodeMap = res.initialCode.reduce((acc, curr) => {
-      acc[curr.language] = curr.code
-      return acc
-    }, {} as { [key: string]: string })
+    const res = (await getProblemDetailVoById(problemId)) as ProblemDetailVo & {
+      // 兼容后端未下发时的可选字段
+      initialCode?: Array<{ language: string; code: string }>
+    }
 
+    const initialCodeMap = Array.isArray(res.initialCode)
+      ? res.initialCode.reduce((acc, curr) => {
+          acc[curr.language] = curr.code
+          return acc
+        }, {} as { [key: string]: string })
+      : {}
+
+    // 先渲染题目基本信息，测试用例随后单独拉取
     problem.value = {
       id: res.id,
       title: res.title,
       description: res.description,
       difficulty: res.difficulty,
       initialCode: initialCodeMap,
-      testCases: res.testCases,
+      testCases: [],
+    }
+
+    // 拉取测试用例并映射为前端模型
+    try {
+      const serverTestCases = (await fetchTestCasesByProblemId(problemId)) as TestCaseVo[]
+      const mapped: TestCase[] = Array.isArray(serverTestCases)
+        ? serverTestCases.map(mapTestCaseVoToClient)
+        : []
+      if (problem.value) {
+        problem.value.testCases = mapped
+      }
+    } catch (e) {
+      // 若后端返回404（无样例），静默为空数组
+      console.warn('Failed to fetch test cases or none exists:', e)
     }
   } catch (error) {
     console.error('Failed to fetch problem:', error)
@@ -151,19 +196,7 @@ const handlePaneResize = (data: { type: 'horizontal' | 'vertical'; sizes: number
   console.log('Pane resized:', data)
 }
 
-// 获取难度标签类型
-const getDifficultyType = (difficulty: string) => {
-  switch (difficulty?.toLowerCase()) {
-    case 'EASY':
-      return 'success'
-    case 'MEDIUM':
-      return 'warning'
-    case 'HARD':
-      return 'danger'
-    default:
-      return 'info'
-  }
-}
+
 
 // 处理提交代码
 const handleSubmitCode = async () => {

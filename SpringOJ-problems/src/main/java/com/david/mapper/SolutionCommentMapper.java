@@ -1,8 +1,9 @@
 package com.david.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.david.pojo.SolutionComments;
+import com.david.solution.SolutionComments;
 import com.david.vo.SolutionCommentVo;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

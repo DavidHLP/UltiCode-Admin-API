@@ -2,10 +2,12 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.mapper.SolutionCommentMapper;
-import com.david.pojo.SolutionComments;
 import com.david.service.ISolutionCommentService;
+import com.david.solution.SolutionComments;
 import com.david.vo.SolutionCommentVo;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -1,10 +1,11 @@
 package com.david.service;
 
-import java.util.List;
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.david.judge.Submission;
-import com.david.vo.SubmissionVo;
+import com.david.judge.enums.JudgeStatus;
+import com.david.vo.CalendarVo;
+
+import java.util.List;
 
 /**
  * <p>
@@ -16,5 +17,6 @@ import com.david.vo.SubmissionVo;
  */
 public interface ISubmissionService extends IService<Submission> {
 
-    List<SubmissionVo> getSubmissionsByProblemId(Long problemId);
+	List<JudgeStatus> getSubmissionsStatusByProblemId(Long problemId);
+	List<CalendarVo> getSubmissionCalendar(Long userId);
 }

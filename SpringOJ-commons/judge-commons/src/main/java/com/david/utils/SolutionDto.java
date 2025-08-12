@@ -1,4 +1,4 @@
-package com.david.vo;
+package com.david.utils;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,9 +7,9 @@ import lombok.NoArgsConstructor;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class CodeTemplateVo {
-	String code;
-	String language;
+@NoArgsConstructor
+public class SolutionDto {
+	String solutionFunctionName;
+	String outputType;
 }

@@ -10,10 +10,10 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
-import type { ProblemBankQuery } from '@/types/problembank.d.ts'
+import type { ProblemPageQuery } from '@/types/problem.d.ts'
 
 const emit = defineEmits<{
-  (e: 'category', category: ProblemBankQuery['category']): void
+  (e: 'category', category: ProblemPageQuery['category']): void
 }>()
 
 const activeTag = ref<string>('')
@@ -30,7 +30,7 @@ const tags = ref([
 
 const setActiveTag = (tagName: string) => {
   activeTag.value = tagName
-  emit('category', tagName as ProblemBankQuery['category'])
+  emit('category', tagName as ProblemPageQuery['category'])
 }
 </script>
 

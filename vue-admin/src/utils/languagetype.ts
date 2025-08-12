@@ -1,0 +1,15 @@
+export enum LanguageType {
+  JAVA,
+  PYTHON,
+  CPP,
+  C,
+  GO,
+  JAVASCRIPT,
+  TYPESCRIPT,
+  RUST,
+  KOTLIN,
+  SCALA,
+  RUBY,
+  PHP,
+  CSHARP,
+}

@@ -20,11 +20,11 @@ import { useRoute } from 'vue-router';
 import { MdPreview } from 'md-editor-v3';
 import { ElMessage } from 'element-plus';
 import 'md-editor-v3/lib/preview.css';
-import type { Problem } from '@/types/problem';
-import { getProblemById } from '@/api/problem';
+import type { ProblemDetailVo } from '@/types/problem';
+import { getProblemDetailVoById } from '@/api/problem';
 
 const route = useRoute();
-const problem = ref<Problem | null>(null);
+const problem = ref<ProblemDetailVo | null>(null);
 const loading = ref(true);
 
 // 获取题目详情
@@ -34,17 +34,12 @@ const fetchProblem = async () => {
 
   try {
     loading.value = true;
-    const res = await getProblemById(problemId);
+    const res = await getProblemDetailVoById(problemId);
     problem.value = {
       id: res.id,
       title: res.title,
       description: res.description,
       difficulty: res.difficulty,
-      initialCode: res.initialCode?.reduce((acc: any, curr: any) => {
-        acc[curr.language] = curr.code;
-        return acc;
-      }, {}),
-      testCases: res.testCases,
     };
   } catch (error) {
     console.error('Failed to fetch problem:', error);

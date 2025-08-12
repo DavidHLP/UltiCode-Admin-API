@@ -1,31 +1,27 @@
 <template>
   <div class="code-card-container">
     <div class="header-section">
-      <el-tabs v-model="selectedLanguage" class="code-tabs">
-        <el-tab-pane v-for="lang in availableLanguages" :key="lang" :name="lang">
-          <template #label>
-            <div class="tab-label">
-              <el-icon>
-                <Document />
-              </el-icon>
-              <span>{{ lang.charAt(0).toUpperCase() + lang.slice(1) }}</span>
-            </div>
-          </template>
-        </el-tab-pane>
-      </el-tabs>
-      <div class="editor-actions">
-        <el-button size="small" @click="resetCode">
-          <template #icon><el-icon>
-              <Refresh />
-            </el-icon></template>
-          重置
-        </el-button>
-        <el-button size="small">
-          <template #icon><el-icon>
-              <FullScreen />
-            </el-icon></template>
-          全屏
-        </el-button>
+      <div class="lang-select-row">
+        <div class="lang-label">
+          <el-icon>
+            <Document />
+          </el-icon>
+          <span>选择语言</span>
+        </div>
+        <el-select
+          v-model="selectedLanguage"
+          class="lang-select"
+          size="small"
+          placeholder="选择语言"
+          filterable
+        >
+          <el-option
+            v-for="lang in availableLanguages"
+            :key="lang"
+            :label="displayNameMap[lang] || lang"
+            :value="lang"
+          />
+        </el-select>
       </div>
     </div>
     <div class="main-content">
@@ -40,7 +36,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, shallowRef, computed } from 'vue';
 import * as monaco from 'monaco-editor';
-import { Document, Refresh, FullScreen } from '@element-plus/icons-vue';
+import { Document } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { toMonacoLanguage, LANGUAGE_OPTIONS } from '@/utils/languagetype';
+import { getCodeTemplate } from '@/api/problem';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
@@ -55,6 +54,7 @@ self.MonacoEnvironment = {
 
 const props = defineProps<{
   initialCode: { [language: string]: string };
+  problemId?: number;
 }>();
 
 const emit = defineEmits<{
@@ -64,15 +64,24 @@ const emit = defineEmits<{
 
 const monacoEditorRef = ref<HTMLDivElement | null>(null);
 const editor = shallowRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-const availableLanguages = computed(() => Object.keys(props.initialCode));
-const selectedLanguage = ref(availableLanguages.value[0] || 'JAVA');
+// 使用统一的语言选项，值为后端枚举名
+const availableLanguages = computed(() => LANGUAGE_OPTIONS.map(o => o.name));
+const displayNameMap = computed<Record<string, string>>(
+  () => Object.fromEntries(LANGUAGE_OPTIONS.map(o => [o.name, o.display]))
+);
+// 默认优先使用 initialCode 的首个语言
+const preferredLang = Object.keys(props.initialCode || {})[0] || 'JAVA';
+const selectedLanguage = ref(preferredLang);
 const cursorPosition = ref({ line: 1, column: 1 });
 
 onMounted(() => {
   if (monacoEditorRef.value) {
+    const initLang = selectedLanguage.value;
+    const monacoLang = toMonacoLanguage(initLang);
+    const initValue = props.initialCode[initLang] ?? '';
     editor.value = monaco.editor.create(monacoEditorRef.value, {
-      value: props.initialCode[selectedLanguage.value],
-      language: selectedLanguage.value,
+      value: initValue,
+      language: monacoLang,
       theme: 'vs',
       automaticLayout: true,
       minimap: {
@@ -88,6 +97,16 @@ onMounted(() => {
         column: e.position.column,
       };
     });
+    // 若初始无模板且提供了 problemId，则尝试拉取后端模板
+    if (!initValue && props.problemId) {
+      getCodeTemplate({ problemId: props.problemId, language: initLang })
+        .then((tpl) => {
+          if (editor.value) editor.value.setValue(tpl || '');
+        })
+        .catch(() => {
+          ElMessage.error('获取代码模板失败');
+        });
+    }
   }
 });
 
@@ -95,15 +114,43 @@ watch(selectedLanguage, (newLang) => {
   if (editor.value) {
     const model = editor.value.getModel();
     if (model) {
-      monaco.editor.setModelLanguage(model, newLang);
-      editor.value.setValue(props.initialCode[newLang]);
+      const monacoLang = toMonacoLanguage(newLang);
+      monaco.editor.setModelLanguage(model, monacoLang);
+      const localTpl = props.initialCode[newLang] ?? '';
+      if (localTpl) {
+        editor.value.setValue(localTpl);
+      } else if (props.problemId) {
+        getCodeTemplate({ problemId: props.problemId, language: newLang })
+          .then((tpl) => {
+            if (editor.value) editor.value.setValue(tpl || '');
+          })
+          .catch(() => {
+            ElMessage.error('获取代码模板失败');
+          });
+      } else {
+        editor.value.setValue('');
+      }
     }
   }
 });
 
 const resetCode = () => {
   if (editor.value) {
-    editor.value.setValue(props.initialCode[selectedLanguage.value]);
+    const lang = selectedLanguage.value;
+    const localTpl = props.initialCode[lang] ?? '';
+    if (localTpl) {
+      editor.value.setValue(localTpl);
+    } else if (props.problemId) {
+      getCodeTemplate({ problemId: props.problemId, language: lang })
+        .then((tpl) => {
+          if (editor.value) editor.value.setValue(tpl || '');
+        })
+        .catch(() => {
+          ElMessage.error('获取代码模板失败');
+        });
+    } else {
+      editor.value.setValue('');
+    }
   }
 };
 
@@ -138,64 +185,34 @@ defineExpose({ getCode, resetCode, submitCode });
   flex-shrink: 0;
   background: #ffffff;
   border-bottom: 1px solid #e4e7ed;
-  padding: 0;
+  padding: 8px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-right: 20px;
 }
 
-/* Tab 样式优化 */
-.code-tabs {
-  --el-tabs-header-height: 48px;
-  flex: 1;
+/* 语言选择行 */
+.lang-select-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.code-tabs :deep(.el-tabs__header) {
-  margin: 0;
-  border-bottom: 1px solid #e4e7ed;
-  background: #ffffff;
-}
-
-.code-tabs :deep(.el-tabs__nav-wrap) {
-  padding: 0 16px;
-}
-
-.code-tabs :deep(.el-tabs__item) {
-  height: 48px;
-  line-height: 48px;
-  padding: 0 16px;
-  color: #606266;
-  font-weight: 400;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-.code-tabs :deep(.el-tabs__item:hover) {
-  color: #409eff;
-}
-
-.code-tabs :deep(.el-tabs__item.is-active) {
-  color: #409eff;
-  font-weight: 500;
-}
-
-.code-tabs :deep(.el-tabs__active-bar) {
-  height: 2px;
-  background-color: #409eff;
-}
-
-/* Tab 标签内容样式 */
-.tab-label {
+.lang-label {
   display: flex;
   align-items: center;
   gap: 6px;
+  color: #606266;
   font-size: 14px;
-  transition: all 0.2s ease;
 }
 
-.tab-label .el-icon {
+.lang-label .el-icon {
   font-size: 16px;
+}
+
+.lang-select {
+  min-width: 180px;
 }
 
 /* Editor 操作按钮样式 */

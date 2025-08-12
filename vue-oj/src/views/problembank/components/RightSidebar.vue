@@ -53,8 +53,9 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { Refresh } from '@element-plus/icons-vue'
-import { getSubmissionCalendar } from '@/api/problembank'
-import type { SubmissionCalendar } from '@/types/problembank.d.ts'
+import { useAuthStore } from '@/stores/auth'
+import { getSubmissionCalendar } from '@/api/calculate'
+import type { SubmissionCalendar } from '@/types/calculate.d.ts'
 
 // 定义接口
 interface RecommendedQuestion {
@@ -86,7 +87,10 @@ onMounted(() => {
 
 const fetchSubmissionCalendar = async () => {
   try {
-    submissionData.value = await getSubmissionCalendar()
+    const authStore = useAuthStore()
+    const userId = authStore.user?.userId
+    const data = await getSubmissionCalendar(userId)
+    submissionData.value = data || []
   } catch (error) {
     console.error('获取提交日历失败', error)
   }
@@ -153,6 +157,8 @@ const formatSelectedDate = () => {
 
 const resetToToday = () => {
   calendarValue.value = new Date()
+  // 同步刷新当月提交数据
+  fetchSubmissionCalendar()
 }
 </script>
 

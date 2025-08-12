@@ -13,7 +13,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class ITestCaseOutputServiceImpl extends ServiceImpl<TestCaseOutputMapper, TestCaseOutput> implements ITestCaseOutputService {
+public class TestCaseOutputServiceImpl extends ServiceImpl<TestCaseOutputMapper, TestCaseOutput> implements ITestCaseOutputService {
 	private final TestCaseOutputMapper testCaseOutputMapper;
 	@Override
 	public List<TestCaseOutput> getByProblemId(Long problemId) {

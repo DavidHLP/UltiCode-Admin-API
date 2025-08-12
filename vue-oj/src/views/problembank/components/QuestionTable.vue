@@ -4,16 +4,6 @@
     <div v-infinite-scroll="loadMore" :infinite-scroll-disabled="loading || !hasMore">
       <el-table v-loading="loading" :data="questions" :show-header="false" class="simple-table" stripe
         style="width: 100%" @row-click="handleRowClick">
-        <!-- 状态列 -->
-        <el-table-column align="center" label="状态" prop="status" width="70">
-          <template #default="{ row }">
-            <div class="status-icon">
-              <span v-if="row.status === 'completed'" class="status-completed">✓</span>
-              <span v-else-if="row.status === 'attempted'" class="status-attempted">◑</span>
-              <span v-else class="status-not-attempted">-</span>
-            </div>
-          </template>
-        </el-table-column>
 
         <!-- 题目标题列 -->
         <el-table-column label="题目" min-width="200" prop="title">
@@ -44,14 +34,7 @@
         <!-- 通过率列 -->
         <el-table-column align="center" label="通过率" prop="passRate" width="100">
           <template #default="{ row }">
-            <span class="pass-rate">{{ row.passRate.toFixed(1) }}%</span>
-          </template>
-        </el-table-column>
-
-        <!-- 提交次数列 -->
-        <el-table-column align="center" label="提交" prop="submissionCount" width="100">
-          <template #default="{ row }">
-            <span class="submission-count">{{ formatNumber(row.submissionCount) }}</span>
+            <span class="pass-rate">{{ formatPassRate(row.passRate) }}</span>
           </template>
         </el-table-column>
       </el-table>
@@ -61,10 +44,10 @@
 
 <script lang="ts" setup>
 import { useRouter } from 'vue-router'
-import type { Problem } from '@/types/problembank.d.ts'
+import type { ProblemVo } from '@/types/problem.d.ts'
 
 defineProps<{
-  questions: Problem[]
+  questions: ProblemVo[]
   loading: boolean
   hasMore: boolean
 }>()
@@ -91,14 +74,7 @@ const getDifficultyType = (difficulty: string) => {
   }
 }
 
-const formatNumber = (num: number) => {
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万'
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + '千'
-  }
-  return num.toString()
-}
+const formatPassRate = (rate: number) => `${rate ?? 0}%`
 
 // 将英文难度转换为中文
 const getDifficultyChinese = (difficulty: string) => {
@@ -115,7 +91,7 @@ const loadMore = () => {
 }
 
 // 处理行点击事件
-const handleRowClick = (row: Problem) => {
+const handleRowClick = (row: ProblemVo) => {
   router.push(`/problem/${row.id}`)
 }
 </script>
@@ -144,36 +120,6 @@ const handleRowClick = (row: Problem) => {
   background-color: #fafafa;
 }
 
-/* 状态样式 */
-.status-icon {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 20px;
-  height: 20px;
-  margin: 0 auto;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-completed {
-  font-size: 15px;
-  color: #52c41a;
-  background-color: #ffffff;
-}
-
-.status-attempted {
-  font-size: 15px;
-  color: #faad14;
-  background-color: #ffffff;
-}
-
-.status-not-attempted {
-  color: #d9d9d9;
-  background-color: transparent;
-  font-size: 16px;
-}
 
 /* 题目样式 */
 .question-title {
@@ -198,10 +144,6 @@ const handleRowClick = (row: Problem) => {
 .pass-rate {
   color: #595959;
   font-weight: 500;
-}
-
-.submission-count {
-  color: #8c8c8c;
 }
 
 /* 加载提示 */

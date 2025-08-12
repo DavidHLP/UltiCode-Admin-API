@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 import { requestData } from '@/utils/request'
-import type { Problem } from '@/types/problem'
+import type { Problem } from '@/types/problem.d'
 import type { PageResult } from '@/types/commons'
 
 export function fetchProblems(): Promise<Problem[]> {

@@ -1,13 +1,15 @@
 package com.david.mapper;
 
-import java.util.List;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.david.judge.Submission;
+import com.david.judge.enums.JudgeStatus;
+import com.david.vo.CalendarVo;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.david.judge.Submission;
-import com.david.vo.SubmissionCalendarVo;
+import java.util.List;
 
 /**
  * <p>
@@ -19,7 +21,6 @@ import com.david.vo.SubmissionCalendarVo;
  */
 @Mapper
 public interface SubmissionMapper extends BaseMapper<Submission> {
-
-    List<SubmissionCalendarVo> getSubmissionCalendar(@Param("userId") Long userId);
-
+	List<JudgeStatus> getSubmissionsStatusByProblemId(@Param("problemId") Long problemId);
+	List<CalendarVo> getSubmissionCalendar(@Param("userId") Long userId);
 }

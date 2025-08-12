@@ -2,63 +2,42 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.david.mapper.ProblemMapper">
 
-    <resultMap id="QuestionBankItemDtoMap" type="com.david.vo.ProblemBankItemVo">
+    <resultMap id="ProblemResultMap" type="com.david.judge.Problem" autoMapping="true">
         <id property="id" column="id"/>
-        <result property="title" column="title"/>
-        <result property="difficulty" column="difficulty" javaType="com.david.judge.enums.ProblemDifficulty"/>
-        <result property="tags" column="tags" javaType="java.util.List" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
-        <result property="submissionCount" column="submissionCount"/>
-        <result property="passRate" column="passRate"/>
-        <result property="status" column="status" javaType="com.david.enums.ProblemStatus"/>
+        <result property="tags" column="tags" javaType="java.util.List"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
     </resultMap>
 
-    <select id="findProblemsForQuestionBank" resultMap="QuestionBankItemDtoMap">
+    <resultMap id="SolutionDtoResultMap" type="com.david.utils.SolutionDto" autoMapping="true">
+        <result property="solutionFunctionName" column="solution_function_name"/>
+        <result property="outputType" column="output_type"/>
+    </resultMap>
+
+    <select id="pageProblems" resultMap="ProblemResultMap">
         SELECT
-        p.id,
-        p.title,
-        p.difficulty,
-        p.tags,
-        p.submission_count AS submissionCount,
-        p.category,
-        (CASE WHEN p.submission_count > 0 THEN (p.solved_count * 100.0 / p.submission_count) ELSE 0 END) AS passRate,
-        (CASE
-        WHEN EXISTS (SELECT 1 FROM submissions s WHERE s.problem_id = p.id AND s.user_id = #{userId} AND s.status = 'Accepted') THEN 'COMPLETED'
-        WHEN EXISTS (SELECT 1 FROM submissions s WHERE s.problem_id = p.id AND s.user_id = #{userId}) THEN 'ATTEMPTED'
-        ELSE 'NOT_ATTEMPTED'
-        END) AS status
+        *
         FROM
-        problems p
+        problems
         <where>
-            <if test="query.title != null and query.title != ''">
-                AND (p.title LIKE CONCAT('%', #{query.title}, '%') OR p.id LIKE CONCAT('%', #{query.title}, '%'))
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
             </if>
-            <if test="query.difficulty != null">
-                AND p.difficulty = #{query.difficulty}
+            <if test="difficulty != null">
+                AND difficulty = #{difficulty}
             </if>
-            <if test="query.tags != null and query.tags.size() > 0">
-                <foreach collection="query.tags" item="tag" open="AND (" close=")" separator=" AND ">
-                    JSON_CONTAINS(p.tags, CAST(CONCAT('"', #{tag}, '"') AS JSON))
-                </foreach>
+            <if test="category != null">
+                AND category = #{category}
             </if>
-            <if test="query.category != null">
-                AND p.category = #{query.category}
-            </if>
-            <if test="query.status != null">
-                AND
-                <choose>
-                    <when test="query.status.name() == 'COMPLETED'">
-                        EXISTS (SELECT 1 FROM submissions s WHERE s.problem_id = p.id AND s.user_id = #{userId} AND s.status = 'Accepted')
-                    </when>
-                    <when test="query.status.name() == 'ATTEMPTED'">
-                        EXISTS (SELECT 1 FROM submissions s WHERE s.problem_id = p.id AND s.user_id = #{userId})
-                        AND NOT EXISTS (SELECT 1 FROM submissions s WHERE s.problem_id = p.id AND s.user_id = #{userId} AND s.status = 'Accepted')
-                    </when>
-                    <when test="query.status.name() == 'NOT_ATTEMPTED'">
-                        NOT EXISTS (SELECT 1 FROM submissions s WHERE s.problem_id = p.id AND s.user_id = #{userId})
-                    </when>
-                </choose>
+            <if test="isVisible != null">
+                AND is_visible = #{isVisible}
             </if>
         </where>
-        ORDER BY p.id ASC
+        ORDER BY id ASC
+    </select>
+    <select id="selectSolutionFunctionNameAndOutputType" resultMap="SolutionDtoResultMap">
+        select distinct solution_function_name, output_type
+        from problems
+                 left join test_cases_outputs on problems.id = test_cases_outputs.problem_id
+        where problem_id = #{problemId}
     </select>
 </mapper>

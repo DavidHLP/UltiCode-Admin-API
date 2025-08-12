@@ -15,28 +15,26 @@ import { onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import QuestionTable from './QuestionTable.vue'
 import BigTageFilter from './BigTageFilter.vue'
-import { getProblemBank } from '@/api/problembank.ts'
-import type { Problem, ProblemBankQuery } from '@/types/problembank.d.ts'
+import { getProblemPage } from '@/api/problem.ts'
+import type { ProblemVo, ProblemPageQuery } from '@/types/problem.d.ts'
 import QuestionSearch from './QuestionSearch.vue'
 
-const questionBankQuery = ref<ProblemBankQuery>({
+const questionBankQuery = ref<ProblemPageQuery>({
   page: 1,
   size: 10,
   category: '',
   difficulty: '',
-  status: '',
-  tags: [],
-  title: '',
-  sortBy: 'id',
+  keyword: '',
 })
 
 const questionHandleSearch = (title: string) => {
-  questionBankQuery.value.title = title || ''
+  // 后端参数为 keyword
+  questionBankQuery.value.keyword = title || ''
   questionBankQuery.value.page = 1
   fetchQuestions(false)
 }
 
-const categoryHandle = (category: ProblemBankQuery['category']) => {
+const categoryHandle = (category: ProblemPageQuery['category']) => {
   questionBankQuery.value.category = category || ''
   questionBankQuery.value.page = 1
   fetchQuestions(false)
@@ -52,7 +50,7 @@ const questionTableRef = ref<InstanceType<typeof QuestionTable>>()
 
 // 响应式数据
 const loading = ref(false)
-const questions = ref<Problem[]>([])
+const questions = ref<ProblemVo[]>([])
 
 const hasMore = ref(true)
 
@@ -68,7 +66,7 @@ const fetchQuestions = async (isLoadMore = false) => {
       questionBankQuery.value.page = 1
     }
 
-    const res = await getProblemBank(questionBankQuery.value)
+    const res = await getProblemPage(questionBankQuery.value)
     const newQuestions = res.records
 
     if (isLoadMore) {
@@ -98,16 +96,14 @@ onMounted(() => {
   fetchQuestions()
 })
 
+// 侦听查询条件变化（修复对 ref.value 直接 watch 的问题）
 watch(
-  questionBankQuery.value,
+  questionBankQuery,
   (newVal, oldVal) => {
     if (
       newVal.category !== oldVal.category ||
       newVal.difficulty !== oldVal.difficulty ||
-      newVal.status !== oldVal.status ||
-      newVal.tags !== oldVal.tags ||
-      newVal.title !== oldVal.title ||
-      newVal.sortBy !== oldVal.sortBy
+      newVal.keyword !== oldVal.keyword
     ) {
       fetchQuestions(false)
     }

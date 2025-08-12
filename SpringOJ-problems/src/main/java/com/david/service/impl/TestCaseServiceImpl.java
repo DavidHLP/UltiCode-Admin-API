@@ -4,6 +4,7 @@ import com.david.judge.TestCase;
 import com.david.judge.TestCaseOutput;
 import com.david.service.ITestCaseInputService;
 import com.david.service.ITestCaseOutputService;
+import com.david.vo.TestCaseVo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -55,7 +56,7 @@ public class TestCaseServiceImpl {
     @Transactional
     public Boolean delete(Long id) {
         if (!ITestCaseOutputService.removeById(id)) throw new RuntimeException("删除输出数据失败");
-	    testCaseInputService.deleteByTestCaseOutputId(id);
+        testCaseInputService.deleteByTestCaseOutputId(id);
         return true;
     }
 
@@ -67,12 +68,29 @@ public class TestCaseServiceImpl {
                     TestCase.builder()
                             .id(testCaseOutput.getId())
                             .problemId(problemId)
-		                    .testCaseOutput(testCaseOutput)
+                            .testCaseOutput(testCaseOutput)
                             .testCaseInput(
                                     testCaseInputService.selectByTestCaseOutputId(
                                             testCaseOutput.getId()))
                             .build());
         }
         return testCases;
+    }
+
+    public List<TestCaseVo> getTestCaseVoByProblemId(Long problemId) {
+        List<TestCaseOutput> testCaseInputs = ITestCaseOutputService.getByProblemId(problemId);
+        List<TestCaseVo> testCaseVos = new ArrayList<>();
+        for (TestCaseOutput testCaseOutput : testCaseInputs) {
+            testCaseVos.add(
+                    TestCaseVo.builder()
+                            .id(testCaseOutput.getId())
+                            .problemId(problemId)
+                            .testCaseOutput(testCaseOutput)
+                            .testCaseInputs(
+                                    testCaseInputService.selectByTestCaseOutputId(
+                                            testCaseOutput.getId()))
+                            .build());
+        }
+        return testCaseVos;
     }
 }

@@ -1,38 +1,37 @@
 package com.david.service.impl;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.judge.Submission;
+import com.david.judge.enums.JudgeStatus;
+import com.david.mapper.SubmissionMapper;
+import com.david.service.ISubmissionService;
+import com.david.vo.CalendarVo;
+
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.judge.Submission;
-import com.david.mapper.SubmissionMapper;
-import com.david.service.ISubmissionService;
-import com.david.vo.SubmissionVo;
+import java.util.List;
 
 /**
- * <p>
- *  提交记录服务实现类
- * </p>
+ * 提交记录服务实现类
  *
  * @author david
  * @since 2025-07-22
  */
 @Service
-public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submission> implements ISubmissionService {
+@RequiredArgsConstructor
+public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submission>
+        implements ISubmissionService {
+    private final SubmissionMapper submissionMapper;
 
     @Override
-    public List<SubmissionVo> getSubmissionsByProblemId(Long problemId) {
-        return this.lambdaQuery()
-                .eq(Submission::getProblemId, problemId)
-                .list()
-                .stream()
-                .map(submission -> {
-                    SubmissionVo dto = new SubmissionVo();
-                    org.springframework.beans.BeanUtils.copyProperties(submission, dto);
-                    return dto;
-                })
-                .collect(Collectors.toList());
+    public List<JudgeStatus> getSubmissionsStatusByProblemId(Long problemId) {
+        return submissionMapper.getSubmissionsStatusByProblemId(problemId);
+    }
+
+    @Override
+    public List<CalendarVo> getSubmissionCalendar(Long userId) {
+        return submissionMapper.getSubmissionCalendar(userId);
     }
 }
