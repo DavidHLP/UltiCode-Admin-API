@@ -1,152 +1,78 @@
 package com.david.service.impl;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.dto.InputDto;
 import com.david.judge.TestCase;
-import com.david.judge.TestCaseInput;
-import com.david.mapper.TestCaseMapper;
-import com.david.service.ITestCaseService;
-import com.david.vo.TestCaseVo;
+import com.david.judge.TestCaseOutput;
+import com.david.service.ITestCaseInputService;
+import com.david.service.ITestCaseOutputService;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * <p>
- * 测试用例服务实现类
- * </p>
- *
- * @author david
- * @since 2025-07-21
- */
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
-public class TestCaseServiceImpl extends ServiceImpl<TestCaseMapper, TestCase> implements ITestCaseService {
+public class TestCaseServiceImpl {
+    private final ITestCaseInputService testCaseInputService;
+    private final ITestCaseOutputService ITestCaseOutputService;
 
-	private final TestCaseInputServiceImpl testCaseInputService;
-	private final TestCaseMapper testCaseMapper;
+    @Transactional
+    public Boolean save(TestCase testCase) {
+        if (testCase == null
+                || testCase.getTestCaseOutput() == null
+                || testCase.getTestCaseInput() == null) {
+            throw new IllegalArgumentException("测试用例参数不完整");
+        }
 
-	@Override
-	public List<TestCaseVo> getTestCaseVoByProblemId(Long problemId) {
-		List<TestCase> testCases = getSampleTestCases(problemId);
-		if (testCases.isEmpty()) {
-			return Collections.emptyList();
-		}
+        // 补全输出的 problemId
+        if (testCase.getTestCaseOutput().getProblemId() == null) {
+            testCase.getTestCaseOutput().setProblemId(testCase.getProblemId());
+        }
 
-		Map<Long, List<TestCaseInput>> inputsByTestCaseId = getInputsByTestCaseIds(
-				testCases.stream().map(TestCase::getId).toList());
+        if (!ITestCaseOutputService.save(testCase.getTestCaseOutput())) {
+            throw new RuntimeException("保存输出数据失败");
+        }
+        Long outputId = testCase.getTestCaseOutput().getId();
+        testCase.getTestCaseInput().forEach(t -> t.setTestCaseOutputId(outputId));
+        if (!testCaseInputService.saveBatch(testCase.getTestCaseInput())) {
+            throw new RuntimeException("保存输入数据失败");
+        }
+        return true;
+    }
 
-		List<TestCaseVo> testCaseVos = testCases.stream().map(testCase -> buildTestCaseVo(testCase, inputsByTestCaseId))
-				.toList();
-		return testCaseVos;
-	}
+    @Transactional
+    public Boolean update(TestCase testCase) {
+        if (!ITestCaseOutputService.updateById(testCase.getTestCaseOutput()))
+            throw new RuntimeException("更新输出数据失败");
+        if (!testCaseInputService.updateBatchById(testCase.getTestCaseInput()))
+            throw new RuntimeException("更新输入数据失败");
+        return true;
+    }
 
-	@Override
-	public List<TestCase> getTestCasesByProblemId(Long problemId) {
-		List<TestCase> testCases = lambdaQuery().eq(TestCase::getProblemId, problemId).list();
+    @Transactional
+    public Boolean delete(Long id) {
+        if (!ITestCaseOutputService.removeById(id)) throw new RuntimeException("删除输出数据失败");
+	    testCaseInputService.deleteByTestCaseOutputId(id);
+        return true;
+    }
 
-		if (testCases.isEmpty()) {
-			return testCases;
-		}
-
-		Map<Long, List<TestCaseInput>> inputsByTestCaseId = getInputsByTestCaseIds(
-				testCases.stream().map(TestCase::getId).toList());
-
-		testCases.forEach(testCase -> testCase.setInputs(buildInputDtos(inputsByTestCaseId.get(testCase.getId()))));
-
-		return testCases;
-	}
-
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public boolean saveTestCase(TestCase testCase) {
-		// 保存测试用例
-		testCaseMapper.insert(testCase);
-
-		// 保存输入数据
-		if (!CollectionUtils.isEmpty(testCase.getInputs())) {
-			List<TestCaseInput> inputs = buildTestCaseInputs(testCase.getId(), testCase.getInputs());
-			testCaseInputService.saveBatch(inputs);
-		}
-
-		return true;
-	}
-
-	@Override
-	@Transactional(rollbackFor = Exception.class)
-	public boolean updateTestCase(TestCase testCase) {
-		// 更新测试用例
-		updateById(testCase);
-
-		// 删除旧地输入数据并保存新的
-		testCaseInputService.lambdaUpdate().eq(TestCaseInput::getTestCaseId, testCase.getId()).remove();
-
-		if (!CollectionUtils.isEmpty(testCase.getInputs())) {
-			List<TestCaseInput> inputs = buildTestCaseInputs(testCase.getId(), testCase.getInputs());
-			testCaseInputService.saveBatch(inputs);
-		}
-
-		return true;
-	}
-
-	/**
-	 * 获取示例测试用例
-	 */
-	private List<TestCase> getSampleTestCases(Long problemId) {
-		return lambdaQuery().eq(TestCase::getProblemId, problemId).eq(TestCase::getIsSample, true).list();
-	}
-
-	/**
-	 * 根据测试用例ID列表获取输入数据映射
-	 */
-	private Map<Long, List<TestCaseInput>> getInputsByTestCaseIds(List<Long> testCaseIds) {
-		if (testCaseIds.isEmpty()) {
-			return Collections.emptyMap();
-		}
-
-		return testCaseInputService.lambdaQuery().in(TestCaseInput::getTestCaseId, testCaseIds).list().stream()
-				.collect(Collectors.groupingBy(TestCaseInput::getTestCaseId));
-	}
-
-	/**
-	 * 构建TestCaseVo对象
-	 */
-	private TestCaseVo buildTestCaseVo(TestCase testCase, Map<Long, List<TestCaseInput>> inputsByTestCaseId) {
-		List<InputDto> inputs = buildInputDtos(inputsByTestCaseId.get(testCase.getId()));
-		return TestCaseVo.builder().inputs(inputs).output(testCase.getOutput()).build();
-	}
-
-	/**
-	 * 构建InputDto列表
-	 */
-	private List<InputDto> buildInputDtos(List<TestCaseInput> testCaseInputs) {
-		if (CollectionUtils.isEmpty(testCaseInputs)) {
-			return Collections.emptyList();
-		}
-
-		return testCaseInputs.stream().sorted(Comparator.comparing(TestCaseInput::getOrderIndex)).map(
-				input -> InputDto.builder().input(input.getInputContent()).inputName(input.getTestCaseName()).build())
-				.toList();
-	}
-
-	/**
-	 * 构建TestCaseInput列表
-	 */
-	private List<TestCaseInput> buildTestCaseInputs(Long testCaseId, List<InputDto> inputDtos) {
-		AtomicInteger index = new AtomicInteger(0);
-		return inputDtos.stream()
-				.map(input -> TestCaseInput.builder().testCaseId(testCaseId).inputContent(input.getInput())
-						.testCaseName(input.getInputName()).orderIndex(index.getAndIncrement()).build())
-				.toList();
-	}
+    public List<TestCase> getList(Long problemId) {
+        List<TestCaseOutput> testCaseInputs = ITestCaseOutputService.getByProblemId(problemId);
+        List<TestCase> testCases = new ArrayList<>();
+        for (TestCaseOutput testCaseOutput : testCaseInputs) {
+            testCases.add(
+                    TestCase.builder()
+                            .id(testCaseOutput.getId())
+                            .problemId(problemId)
+		                    .testCaseOutput(testCaseOutput)
+                            .testCaseInput(
+                                    testCaseInputService.selectByTestCaseOutputId(
+                                            testCaseOutput.getId()))
+                            .build());
+        }
+        return testCases;
+    }
 }

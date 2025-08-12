@@ -92,7 +92,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { fetchRolePage, createRole, updateRole, deleteRole } from '@/api/role.ts'
-import type { Role } from '@/types/role.ts'
+import type { Role } from '@/types/role'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
   Edit,

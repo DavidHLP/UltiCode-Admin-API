@@ -1,7 +1,6 @@
 package com.david.chain.handler;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -91,19 +90,21 @@ public class RequestBuildHandler extends AbstractJudgeChainHandler {
      * 提取测试用例输入
      */
     private List<String> extractTestCaseInputs(List<com.david.judge.TestCase> testCases) {
-        return testCases.stream()
-                .map(testCase -> testCase.getInputs().stream()
-                        .map(input -> String.join("\n", input.getInput()))
-                        .collect(Collectors.joining("\n")))
-                .toList();
+//        return testCases.stream()
+//                .map(testCase -> testCase.getInputs().stream()
+//                        .map(input -> String.join("\n", input.getInput()))
+//                        .collect(Collectors.joining("\n")))
+//                .toList();
+	    return null;
     }
     
     /**
      * 提取测试用例期望输出
      */
     private List<String> extractTestCaseOutputs(List<com.david.judge.TestCase> testCases) {
-        return testCases.stream()
-                .map(com.david.judge.TestCase::getOutput)
-                .toList();
+//        return testCases.stream()
+//                .map(com.david.judge.TestCase::getOutput)
+//                .toList();
+	    return null;
     }
 }

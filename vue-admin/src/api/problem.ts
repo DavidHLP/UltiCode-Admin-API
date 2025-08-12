@@ -1,12 +1,11 @@
 import request from '@/utils/request'
 import { requestData } from '@/utils/request'
-import type { Problem, Category, CodeTemplate } from '@/types/problem'
+import type { Problem } from '@/types/problem'
 import type { PageResult } from '@/types/commons'
-import type { TestCase } from '@/types/testCase'
 
 export function fetchProblems(): Promise<Problem[]> {
   return request({
-    url: '/problems/api/management',
+    url: '/problems/api/management/problem',
     method: 'get',
   })
 }
@@ -20,7 +19,7 @@ export function fetchProblemPage(params: {
   isVisible?: boolean
 }): Promise<PageResult<Problem>> {
   return requestData<PageResult<Problem>>({
-    url: '/problems/api/management/page',
+    url: '/problems/api/management/problem/page',
     method: 'get',
     params,
   })
@@ -28,14 +27,14 @@ export function fetchProblemPage(params: {
 
 export function getProblem(id: number): Promise<Problem> {
   return request({
-    url: `/problems/api/management/${id}`,
+    url: `/problems/api/management/problem/${id}`,
     method: 'get',
   })
 }
 
 export function createProblem(data: Problem): Promise<void> {
   return request({
-    url: '/problems/api/management',
+    url: '/problems/api/management/problem',
     method: 'post',
     data,
   })
@@ -43,7 +42,7 @@ export function createProblem(data: Problem): Promise<void> {
 
 export function updateProblem(data: Problem): Promise<void> {
   return request({
-    url: `/problems/api/management`,
+    url: `/problems/api/management/problem`,
     method: 'put',
     data,
   })
@@ -51,51 +50,7 @@ export function updateProblem(data: Problem): Promise<void> {
 
 export function deleteProblem(id: number): Promise<void> {
   return request({
-    url: `/problems/api/management/${id}`,
-    method: 'delete',
-  })
-}
-
-export function fetchCategories(): Promise<Category[]> {
-  return request({
-    url: '/problems/api/management/categories',
-    method: 'get',
-  })
-}
-
-export function getTestCasesByProblemId(problemId: number): Promise<TestCase[]> {
-  return request({
-    url: `/problems/api/management/testcases/problem/${problemId}`,
-    method: 'get',
-  })
-}
-
-export function getCodeTemplatesByProblemId(problemId: number): Promise<CodeTemplate[]> {
-  return request({
-    url: `/problems/api/management/codetemplates/problem/${problemId}`,
-    method: 'get',
-  })
-}
-
-export function createCodeTemplate(data: CodeTemplate): Promise<CodeTemplate> {
-  return request({
-    url: '/problems/api/management/codetemplates',
-    method: 'post',
-    data,
-  })
-}
-
-export function updateCodeTemplate(data: CodeTemplate): Promise<CodeTemplate> {
-  return request({
-    url: '/problems/api/management/codetemplates',
-    method: 'put',
-    data,
-  })
-}
-
-export function deleteCodeTemplate(id: number): Promise<void> {
-  return request({
-    url: `/problems/api/management/codetemplates/${id}`,
+    url: `/problems/api/management/problem/${id}`,
     method: 'delete',
   })
 }

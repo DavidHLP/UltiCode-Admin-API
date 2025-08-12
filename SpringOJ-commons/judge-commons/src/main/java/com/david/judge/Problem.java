@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.david.judge.enums.CategoryType;
 import com.david.judge.enums.ProblemDifficulty;
+import com.david.judge.enums.ProblemType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,16 @@ public class Problem implements Serializable {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
+	/**
+     * 题目类型，不能为空
+     */
+	private ProblemType problemType;
+
+	/**
+     * 题目解决方案函数名，不能为空
+     */
+	private String solutionFunctionName;
+
     /**
      * 题目标题，不能为空
      */
@@ -58,7 +69,7 @@ public class Problem implements Serializable {
     private Integer memoryLimit;
 
     /**
-     * 题目难度，枚举类型，默认为'EASY'
+     * 题目难度，枚举类型，默认为EASY'
      */
     private ProblemDifficulty difficulty;
 

@@ -1,9 +1,8 @@
 <template>
   <div>
     <ManageComponent title="题目管理" :title-icon="Memo" add-button-text="添加题目" search-placeholder="搜索题目标题或标签..."
-      empty-text="暂无题目数据" :table-data="problems" :loading="loading" @add="openAddProblemDialog"
-      @search="handleSearch" @refresh="refreshData"
-      :total="total" v-model:current-page="currentPage" v-model:page-size="pageSize"
+      empty-text="暂无题目数据" :table-data="problems" :loading="loading" @add="openAddProblemDialog" @search="handleSearch"
+      @refresh="refreshData" :total="total" v-model:current-page="currentPage" v-model:page-size="pageSize"
       @size-change="handleSizeChange" @current-change="handleCurrentChange">
       <!-- 自定义筛选器 -->
       <template #filters>
@@ -15,7 +14,7 @@
         </el-select>
         <el-select v-model="selectedCategory" placeholder="筛选类别" class="category-filter" clearable
           @change="handleCategoryFilter">
-          <el-option v-for="category in categories" :key="category.category" :label="category.description"
+          <el-option v-for="category in CATEGORIES" :key="category.category" :label="category.description"
             :value="category.category" />
         </el-select>
         <el-button type="primary" @click="openAddProblemDialog" :icon="Plus" size="default"
@@ -24,32 +23,6 @@
 
       <!-- 表格列定义 -->
       <template #table-columns>
-        <el-table-column type="expand">
-          <template #default="props">
-            <div class="problem-detail-view">
-              <el-tabs type="border-card">
-                <el-tab-pane label="测试用例管理">
-                  <TestCaseView :test-cases="props.row.testCases" @add="openAddTestCaseDialog(props.row)"
-                    @edit="(testCase) => openEditTestCaseDialog(props.row, testCase)"
-                    @delete="(testCaseId) => handleDeleteTestCase(props.row, testCaseId)" />
-                </el-tab-pane>
-                <el-tab-pane label="代码模板管理">
-                  <CodeTemplateView :code-templates="props.row.codeTemplates" @add="openAddCodeTemplateDialog(props.row)"
-                    @edit="(codeTemplate) => openEditCodeTemplateDialog(props.row, codeTemplate)"
-                    @delete="(codeTemplateId) => handleDeleteCodeTemplate(props.row, codeTemplateId)" />
-                </el-tab-pane>
-                <el-tab-pane label="题目详情">
-                  <div class="problem-content-display">
-                    <div v-if="props.row.description">
-                      <h4>题目描述</h4>
-                      <MdPreview :modelValue="props.row.description" />
-                    </div>
-                  </div>
-                </el-tab-pane>
-              </el-tabs>
-            </div>
-          </template>
-        </el-table-column>
 
         <el-table-column prop="id" label="ID" width="80" align="center">
           <template #default="scope">
@@ -117,23 +90,6 @@
         </el-table-column>
       </template>
     </ManageComponent>
-
-    <!-- 题目表单已迁移为独立页面，弹窗移除 -->
-
-    <!-- 测试用例表单对话框 -->
-    <TestCaseForm :visible="addEditTestCaseDialogVisible" :is-edit="isEditTestCase" :test-case="currentTestCase"
-      @update:visible="addEditTestCaseDialogVisible = $event" @save="handleTestCaseSave" />
-
-    <!-- 代码模板表单对话框（仅在有有效 problemId 时渲染） -->
-    <CodeTemplateForm
-      v-if="addEditCodeTemplateDialogVisible && activeProblemForCodeTemplates.id"
-      :visible="addEditCodeTemplateDialogVisible"
-      :is-edit="isEditCodeTemplate"
-      :code-template="currentCodeTemplate"
-      :problem-id="Number(activeProblemForCodeTemplates.id)"
-      @update:visible="addEditCodeTemplateDialogVisible = $event"
-      @save="handleCodeTemplateSave"
-    />
   </div>
 </template>
 
@@ -141,18 +97,11 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ManageComponent from '@/components/management/ManageComponent.vue'
-import { fetchProblemPage, deleteProblem, fetchCategories, getTestCasesByProblemId, getCodeTemplatesByProblemId, deleteCodeTemplate } from '@/api/problem'
-import { deleteTestCase } from '@/api/testCase'
-import type { Problem, Category, CodeTemplate } from '@/types/problem'
-import type { TestCase } from '@/types/testCase'
+import { fetchProblemPage, deleteProblem } from '@/api/problem'
+import type { Problem } from '@/types/problem.d'
+import { CATEGORIES } from '@/types/problem.d'
 import { ElMessage } from 'element-plus'
 import { Plus, Edit, Delete, Memo } from '@element-plus/icons-vue'
-import { MdPreview } from 'md-editor-v3'
-import 'md-editor-v3/lib/style.css'
-import TestCaseForm from './components/TestCaseForm.vue'
-import TestCaseView from './components/TestCaseView.vue'
-import CodeTemplateForm from './components/CodeTemplateForm.vue'
-import CodeTemplateView from './components/CodeTemplateView.vue'
 import { getDifficultyTagType, getDifficultyChinese } from '@/utils/tag'
 
 const problems = ref<Problem[]>([])
@@ -164,25 +113,9 @@ const pageSize = ref(10)
 const searchQuery = ref('')
 const selectedDifficulty = ref<string | undefined>()
 const selectedCategory = ref<string | undefined>()
-const categories = ref<Category[]>([])
-
-// 表单弹窗相关状态已移除，采用页面跳转
-
-const addEditTestCaseDialogVisible = ref(false)
-const isEditTestCase = ref(false)
-const currentTestCase = ref<Partial<TestCase>>({})
-const activeProblemForTestCases = ref<Partial<Problem>>({})
-
-const addEditCodeTemplateDialogVisible = ref(false)
-const isEditCodeTemplate = ref(false)
-const currentCodeTemplate = ref<Partial<CodeTemplate>>({})
-const activeProblemForCodeTemplates = ref<Partial<Problem>>({})
-
-// 服务端分页后移除本地过滤，直接依赖后端分页结果
-// 难度标签样式与中文展示统一复用 '@/utils/tag'
 
 const getCategoryDescription = (category: string) => {
-  const foundCategory = categories.value.find((cat) => cat.category === category)
+  const foundCategory = CATEGORIES.find((cat) => cat.category === category)
   return foundCategory ? foundCategory.description : category
 }
 
@@ -227,24 +160,8 @@ const getPagedProblems = async () => {
       difficulty: selectedDifficulty.value,
       category: selectedCategory.value,
     })
-    const baseProblems = pageRes.records
+    problems.value = pageRes.records
     total.value = pageRes.total
-    // 预取当前页每个题目的测试用例与代码模板
-    await Promise.all(
-      baseProblems.map(async (p) => {
-        try {
-          const [testCases, codeTemplates] = await Promise.all([
-            getTestCasesByProblemId(p.id!),
-            getCodeTemplatesByProblemId(p.id!),
-          ])
-          p.testCases = testCases
-          p.codeTemplates = codeTemplates
-        } catch (e) {
-          console.error('预加载题目详情失败: ', p.id, e)
-        }
-      })
-    )
-    problems.value = baseProblems
   } catch (error) {
     console.error('Error fetching problems:', error)
     ElMessage.error('获取题目列表失败')
@@ -253,14 +170,6 @@ const getPagedProblems = async () => {
   }
 }
 
-const getCategories = async () => {
-  try {
-    categories.value = await fetchCategories()
-  } catch (error) {
-    console.error('Error fetching categories:', error)
-    ElMessage.error('获取题目类别失败')
-  }
-}
 
 const openAddProblemDialog = () => {
   router.push({ name: 'problem-new' })
@@ -282,86 +191,10 @@ const handleDeleteProblem = async (problemId: number) => {
     ElMessage.error('删除题目失败。')
   }
 }
-
-const openAddTestCaseDialog = (problem: Problem) => {
-  isEditTestCase.value = false
-  activeProblemForTestCases.value = problem
-  currentTestCase.value = { problemId: problem.id, score: 10 }
-  addEditTestCaseDialogVisible.value = true
-}
-
-const openEditTestCaseDialog = (problem: Problem, testCase: TestCase) => {
-  isEditTestCase.value = true
-  activeProblemForTestCases.value = problem
-  currentTestCase.value = { ...testCase }
-  addEditTestCaseDialogVisible.value = true
-}
-
-const handleTestCaseSave = async () => {
-  const problemId = activeProblemForTestCases.value.id!;
-  const problemWithDetails = await getTestCasesByProblemId(problemId);
-  const targetProblem = problems.value.find((p) => p.id === problemId);
-  if (targetProblem) {
-    targetProblem.testCases = problemWithDetails;
-  }
-}
-
-const handleDeleteTestCase = async (problem: Problem, testCaseId: number) => {
-  try {
-    await deleteTestCase(testCaseId)
-    const updatedTestCases = await getTestCasesByProblemId(problem.id!)
-    const targetProblem = problems.value.find((p) => p.id === problem.id)
-    if (targetProblem) {
-      targetProblem.testCases = updatedTestCases
-    }
-    ElMessage.success('测试用例删除成功。')
-  } catch (error) {
-    console.error('Error deleting test case:', error)
-    ElMessage.error('删除测试用例失败。')
-  }
-}
-
-const openAddCodeTemplateDialog = (problem: Problem) => {
-  isEditCodeTemplate.value = false
-  activeProblemForCodeTemplates.value = problem
-  currentCodeTemplate.value = { problemId: problem.id }
-  addEditCodeTemplateDialogVisible.value = true
-}
-
-const openEditCodeTemplateDialog = (problem: Problem, codeTemplate: CodeTemplate) => {
-  isEditCodeTemplate.value = true
-  activeProblemForCodeTemplates.value = problem
-  currentCodeTemplate.value = { ...codeTemplate }
-  addEditCodeTemplateDialogVisible.value = true
-}
-
-const handleCodeTemplateSave = async () => {
-  const problemId = activeProblemForCodeTemplates.value.id!;
-  const problemWithDetails = await getCodeTemplatesByProblemId(problemId);
-  const targetProblem = problems.value.find((p) => p.id === problemId);
-  if (targetProblem) {
-    targetProblem.codeTemplates = problemWithDetails;
-  }
-}
-
-const handleDeleteCodeTemplate = async (problem: Problem, codeTemplateId: number) => {
-  try {
-    await deleteCodeTemplate(codeTemplateId)
-    const updatedCodeTemplates = await getCodeTemplatesByProblemId(problem.id!)
-    const targetProblem = problems.value.find((p) => p.id === problem.id)
-    if (targetProblem) {
-      targetProblem.codeTemplates = updatedCodeTemplates
-    }
-    ElMessage.success('代码模板删除成功。')
-  } catch (error) {
-    console.error('Error deleting code template:', error)
-    ElMessage.error('删除代码模板失败。')
-  }
-}
+// 测试用例与代码模板的增删改查已迁移至 ProblemEditor 页面
 
 onMounted(() => {
   void getPagedProblems()
-  void getCategories()
 })
 
 // 分页事件

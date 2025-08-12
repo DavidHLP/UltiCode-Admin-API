@@ -4,6 +4,7 @@ import java.io.Serial;
 import java.io.Serializable;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
@@ -13,7 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 测试用例输入实体类
+ * 测试用例的多个输入表实体类
  */
 @Data
 @Builder
@@ -34,20 +35,30 @@ public class TestCaseInput implements Serializable {
     /**
      * 关联的测试用例ID，外键
      */
-    private Long testCaseId;
+    @TableField("test_case_output_id")
+    private Long testCaseOutputId;
 
     /**
-     * 测试用例的名称
+     * 输入内容名称
      */
+    @TableField("test_case_name")
     private String testCaseName;
+
+    /**
+     * 输入类型
+     */
+    @TableField("input_type")
+    private String inputType;
 
     /**
      * 单个输入的内容
      */
+    @TableField("input_content")
     private String inputContent;
 
     /**
-     * 输入的顺序，从0开始
+     * 输入的顺序，从0开始，用于保证多次输入的先后次序
      */
+    @TableField("order_index")
     private Integer orderIndex;
 }

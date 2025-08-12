@@ -87,7 +87,7 @@
 import { computed, onMounted, ref } from 'vue'
 import ManageComponent from '@/components/management/ManageComponent.vue'
 import { deleteSolution, fetchSolutions } from '@/api/solution'
-import type { Solution } from '@/types/solution'
+import type { Solution } from '@/types/solution.d'
 import { ElMessage } from 'element-plus'
 import { Delete, Document, Edit } from '@element-plus/icons-vue'
 import SolutionForm from './components/SolutionForm.vue'

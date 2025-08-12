@@ -269,10 +269,10 @@
 import { computed, onMounted, ref } from 'vue'
 import ManageComponent from '@/components/management/ManageComponent.vue'
 import { createUser, deleteUser, fetchUsersPage, updateUser } from '@/api/user.ts'
-import type { PageResult } from '@/types/commons.ts'
+import type { PageResult } from '@/types/commons'
 import { fetchRoles } from '@/api/role.ts'
-import type { User as UserData } from '@/types/user.ts'
-import type { Role } from '@/types/role.ts'
+import type { User as UserData } from '@/types/user'
+import type { Role } from '@/types/role'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import {
   Calendar,

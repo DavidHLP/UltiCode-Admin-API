@@ -1,15 +1,25 @@
 package com.david.vo;
 
+
+
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.david.judge.enums.CategoryType;
+import com.david.judge.enums.ProblemDifficulty;
+import lombok.*;
+
 import java.util.List;
 
-import com.david.judge.Problem;
-
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class ProblemVo extends Problem {
-    private List<CodeTemplateVo> initialCode;
-    private List<TestCaseVo> testCases;
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class ProblemVo {
+	private Long id;
+	private String title;
+	private ProblemDifficulty difficulty;
+	private CategoryType category;
+	@TableField(typeHandler = JacksonTypeHandler.class)
+	private List<String> tags;
+	private Integer passRate;
 }

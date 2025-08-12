@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { ProblemVO } from '@/types/problem'
+import type { ProblemVO, ProblemQueryParams } from '@/types/problem'
 
 export const getProblemById = (id: number): Promise<ProblemVO> => {
   return request({
@@ -17,5 +17,13 @@ export const submitCode = (data: {
     url: '/judge/api/submit',
     method: 'post',
     data,
+  })
+}
+
+export const getProblemPage = (params: ProblemQueryParams): Promise<ProblemVO[]> => {
+  return request({
+    url: '/problems/api/list',
+    method: 'get',
+    params,
   })
 }

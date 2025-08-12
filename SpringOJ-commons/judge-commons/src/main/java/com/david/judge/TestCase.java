@@ -1,24 +1,21 @@
 package com.david.judge;
 
-import java.io.Serial;
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.List;
-
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import com.david.dto.InputDto;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serial;
+import java.io.Serializable;
+import java.util.List;
 
 /**
  * 测试用例实体类
  */
 @Data
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @TableName("test_cases")
@@ -30,7 +27,6 @@ public class TestCase implements Serializable {
     /**
      * 测试用例ID，主键，自动增长
      */
-    @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
@@ -38,30 +34,13 @@ public class TestCase implements Serializable {
      */
     private Long problemId;
 
-    /**
-     * 输入内容
-     */
-    @TableField(exist = false)
-    private List<InputDto> inputs;
+	/**
+	 * 该测试用例的输出
+	 */
+	private TestCaseOutput testCaseOutput;
 
-    /**
-     * 期望输出内容
-     */
-    private String output;
-
-    /**
-     * 该测试点的分值，默认为10
-     */
-    private Integer score;
-
-    /**
-     * 是否为样例测试用例，默认为FALSE
-     */
-    @TableField("is_sample")
-    private Boolean isSample;
-
-    /**
-     * 记录创建时间
-     */
-    private LocalDateTime createdAt;
+	/**
+	 * 该测试用例的输入集合
+	 */
+	private List<TestCaseInput> testCaseInput;
 }

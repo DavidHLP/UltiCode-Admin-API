@@ -1,15 +1,15 @@
 <template>
   <div class="page problem-editor">
     <header class="editor-toolbar">
-      <el-button text @click="goBack" :icon="Back">返回</el-button>
+      <el-button :icon="Back" text @click="goBack">返回</el-button>
       <div class="title-area">
         <span class="title">{{ pageTitle }}</span>
-        <el-tag v-if="isEdit" type="warning" size="small">编辑模式</el-tag>
-        <el-tag v-else type="success" size="small">新建模式</el-tag>
+        <el-tag v-if="isEdit" size="small" type="warning">编辑模式</el-tag>
+        <el-tag v-else size="small" type="success">新建模式</el-tag>
       </div>
       <div class="actions">
         <el-button @click="goBack">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveProblem">{{
+        <el-button :loading="saving" type="primary" @click="saveProblem">{{
           isEdit ? '更新' : '创建'
         }}</el-button>
       </div>
@@ -20,20 +20,38 @@
         ref="problemFormRef"
         :model="currentProblem"
         :rules="problemRules"
-        label-position="top"
         class="problem-form"
+        label-position="top"
       >
         <el-tabs v-model="activeTab">
           <el-tab-pane label="基本信息" name="basic">
             <BasicComponent
+              :categories="categories"
               :current-problem="currentProblem"
               :current-problem-tags="currentProblemTags"
-              :categories="categories"
+              @update:current-problem="(v) => Object.assign(currentProblem, v)"
               @update:current-problem-tags="(v) => (currentProblemTags = v)"
             />
           </el-tab-pane>
           <el-tab-pane label="题目详细" name="info">
-            <DetailedQuestions :current-problem="currentProblem" :theme="theme" />
+            <DetailedQuestions
+              :current-problem="currentProblem"
+              :theme="theme"
+              @update:current-problem="(v) => Object.assign(currentProblem, v)"
+            />
+          </el-tab-pane>
+          <el-tab-pane label="测试用例" name="testcases">
+            <template #default>
+              <div v-if="isEdit">
+                <TestcaseComponent />
+              </div>
+              <el-alert
+                v-else
+                show-icon
+                title="请先创建并保存题目，然后即可管理测试用例。"
+                type="info"
+              />
+            </template>
           </el-tab-pane>
         </el-tabs>
       </el-form>
@@ -41,16 +59,17 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue'
-import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+<script lang="ts" setup>
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {onBeforeRouteLeave, useRoute, useRouter} from 'vue-router'
+import {ElMessage, ElMessageBox, type FormInstance, type FormRules} from 'element-plus'
 import BasicComponent from './components/BasicComponent.vue'
 import DetailedQuestions from './components/DetailedQuestions.vue'
-import { Back } from '@element-plus/icons-vue'
+import TestcaseComponent from './components/TestcaseComponent.vue'
+import {Back} from '@element-plus/icons-vue'
 
-import type { Problem, Category } from '@/types/problem'
-import { getProblem, createProblem, updateProblem, fetchCategories } from '@/api/problem'
+import type {Category, Problem} from '@/types/problem.d'
+import {createProblem, getProblem, updateProblem} from '@/api/problem'
 
 const route = useRoute()
 const router = useRouter()
@@ -76,8 +95,17 @@ const currentProblem = ref<Partial<Problem>>({
   difficulty: 'EASY',
   category: '',
   tags: [],
+  solutionFunctionName: '',
+  problemType: 'ACM',
+})
+
+// 记住最近的标签页
+watch(activeTab, (v) => {
+  localStorage.setItem('problemEditor.activeTab', String(v))
 })
 const currentProblemTags = ref<string[]>([])
+
+const detailsLoading = ref(false)
 
 // Markdown 自适应高度逻辑已下放至 DetailedQuestions 组件
 
@@ -100,18 +128,14 @@ watch(
 const problemRules: FormRules = {
   title: [{ required: true, message: '请输入题目标题', trigger: 'blur' }],
   description: [{ required: true, message: '请输入题目描述', trigger: 'blur' }],
+  solutionFunctionName: [
+    { required: true, message: '请输入运行方法名称', trigger: 'blur' },
+    { min: 1, max: 100, message: '方法名长度应在 1-100 字符内', trigger: 'blur' },
+  ],
+  problemType: [{ required: true, message: '请选择题目类型', trigger: 'change' }],
   timeLimit: [{ required: true, message: '请输入时间限制', trigger: 'blur' }],
   memoryLimit: [{ required: true, message: '请输入内存限制', trigger: 'blur' }],
   difficulty: [{ required: true, message: '请选择难度', trigger: 'change' }],
-}
-
-const loadCategories = async () => {
-  try {
-    categories.value = await fetchCategories()
-  } catch (e) {
-    console.error('获取类别失败', e)
-    ElMessage.error('获取题目类别失败')
-  }
 }
 
 const loadProblemIfEdit = async () => {
@@ -125,6 +149,20 @@ const loadProblemIfEdit = async () => {
   } catch (e) {
     console.error('获取题目详情失败', e)
     ElMessage.error('获取题目详情失败')
+  }
+}
+
+const loadDetails = async () => {
+  if (!isEdit.value) return
+  const id = Number(route.params.id)
+  if (!Number.isFinite(id)) return
+  try {
+    detailsLoading.value = true
+  } catch (e) {
+    console.error('获取测试用例/代码模板失败', e)
+    ElMessage.error('加载测试用例或代码模板失败')
+  } finally {
+    detailsLoading.value = false
   }
 }
 
@@ -180,6 +218,9 @@ onMounted(async () => {
     }
   }
   window.addEventListener('keydown', onKeydown)
+  onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onKeydown)
+  })
 
   // 同步系统主题到编辑器
   const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
@@ -210,12 +251,20 @@ onMounted(async () => {
     }
   }
 
-  await Promise.all([loadCategories(), loadProblemIfEdit()])
-  markSnapshot()
+  // 读取最近使用的标签页
+  // 优先使用路由查询参数 tab，其次使用本地缓存
+  const validTabs = new Set(['basic', 'info', 'testcases'])
+  const queryTab = String(route.query.tab || '')
+  const savedTab = localStorage.getItem('problemEditor.activeTab') || ''
+  if (queryTab && validTabs.has(queryTab)) {
+    activeTab.value = queryTab
+  } else if (savedTab && validTabs.has(savedTab)) {
+    activeTab.value = savedTab
+  }
 
-  onBeforeUnmount(() => {
-    window.removeEventListener('keydown', onKeydown)
-  })
+  await Promise.all([loadProblemIfEdit()])
+  await loadDetails()
+  markSnapshot()
 })
 
 onBeforeRouteLeave((to, from, next) => {
@@ -224,6 +273,16 @@ onBeforeRouteLeave((to, from, next) => {
     .then(() => next())
     .catch(() => next(false))
 })
+
+// 监听路由参数变化，允许从外部跳转时切换标签
+watch(
+  () => route.query.tab,
+  (v) => {
+    const validTabs = new Set(['basic', 'info', 'testcases'])
+    const tab = String(v || '')
+    if (tab && validTabs.has(tab)) activeTab.value = tab
+  },
+)
 </script>
 
 <style scoped>
