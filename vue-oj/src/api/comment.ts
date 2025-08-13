@@ -1,19 +1,11 @@
 import request from '@/utils/request'
-import type { SolutionCommentDto, SolutionCommentVo } from '@/types/comment'
 
-// 创建评论
-export function createComment(data: SolutionCommentDto): Promise<SolutionCommentVo> {
-  return request({
-    url: '/problems/api/solution-comments',
-    method: 'post',
-    data,
-  })
-}
-
-// 获取指定题解的评论列表
-export function getCommentsBySolutionId(solutionId: number): Promise<SolutionCommentVo[]> {
-  return request({
-    url: `/problems/api/solution-comments/solution/${solutionId}`,
-    method: 'get',
-  })
+// 创建评论（后端：/problems/api/view/solution/comment）
+export function createComment(data: {
+  solutionId: number
+  content: string
+  parentId?: number
+  replyToUserId?: number
+}): Promise<void> {
+  return request.post('/problems/api/view/solution/comment', data)
 }

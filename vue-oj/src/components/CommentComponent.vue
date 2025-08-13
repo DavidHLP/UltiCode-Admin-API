@@ -56,7 +56,7 @@ import {
   Button as AButton
 } from 'ant-design-vue';
 import ReplyComponent from './ReplyComponent.vue';
-import type { SolutionCommentVo } from '@/types/comment';
+import type { SolutionCommentVo } from '@/types/solution';
 import { createComment } from '@/api/comment';
 
 // Define props and emits
@@ -75,8 +75,8 @@ const replyingTo = ref<number | null>(null);
 
 const userAvatar = 'https://prettyavatars.com/api/pixel-art/100';
 
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return '';
+const formatDate = (dateString?: string | null) => {
+  if (!dateString) return ''
   return new Date(dateString).toLocaleString();
 };
 

@@ -1,4 +1,38 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.david.mapper.SolutionMapper">
+    <resultMap id="SolutionCardVoResultMap" type="com.david.vo.SolutionCardVo">
+        <id property="id" column="id"/>
+        <result property="problemId" column="problem_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="tags" column="tags" javaType="java.util.List"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result property="contentView" column="content_view"/>
+        <result property="title" column="title"/>
+        <result property="language" column="language"/>
+        <result property="upvotes" column="upvotes"/>
+        <result property="downvotes" column="downvotes"/>
+        <result property="views" column="views"/>
+        <result property="comments" column="comments"/>
+    </resultMap>
+    <select id="pageSolutionsCardVos" resultMap="SolutionCardVoResultMap">
+        SELECT
+        *
+        FROM
+        solutions
+        <where>
+            <if test="problemId != null">
+                AND problem_id = #{problemId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND content LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND language LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+    </select>
 </mapper>

@@ -12,12 +12,11 @@
               <el-avatar :size="32" :src="solution.authorAvatar" />
               <span class="author-username">{{ solution.authorUsername }}</span>
             </div>
-            <span class="post-time">{{ formatDate(solution.createdAt) }}</span>
           </header>
 
           <main class="card-content">
             <h3 class="solution-title">{{ solution.title }}</h3>
-            <p class="solution-problem">{{ solution.problem }}</p>
+            <p class="solution-snippet">{{ solution.contentView }}</p>
             <div class="solution-tags">
               <el-space wrap>
                 <el-tag v-for="tag in solution.tags" :key="tag" type="info" size="small">{{ tag }}</el-tag>
@@ -58,7 +57,7 @@ import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { CaretTop as ElIconCaretTop, View as ElIconView } from '@element-plus/icons-vue'
 import { getSolutionsByProblemId } from '@/api/solution';
-import type { SolutionCardVo } from '@/types/problem';
+import type { SolutionCardVo } from '@/types/solution';
 
 // 定义 props
 interface Props {
@@ -98,8 +97,7 @@ const fetchSolutions = async (isNewSearch = false) => {
       problemId,
       page: currentPage.value,
       size: pageSize.value,
-      title: props.searchQuery,
-      sort: props.currentSort,
+      keyword: props.searchQuery,
     });
 
     if (res && res.records && res.records.length > 0) {
@@ -165,12 +163,6 @@ onMounted(() => {
 const handleRowClick = (solution: SolutionCardVo) => {
   emit('solution-click', solution)
 }
-
-const formatDate = (dateString: string) => {
-  if (!dateString) return ''
-  const date = new Date(dateString)
-  return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`
-}
 </script>
 
 <style scoped>
@@ -223,11 +215,6 @@ const formatDate = (dateString: string) => {
   color: #333;
 }
 
-.post-time {
-  font-size: 13px;
-  color: #999;
-}
-
 /* 卡片内容 */
 .solution-title {
   font-size: 16px;
@@ -236,7 +223,7 @@ const formatDate = (dateString: string) => {
   margin: 0 0 8px 0;
 }
 
-.solution-problem {
+.solution-snippet {
   font-size: 14px;
   color: #555;
   margin: 0 0 12px 0;

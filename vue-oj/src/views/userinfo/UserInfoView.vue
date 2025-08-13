@@ -390,8 +390,7 @@ const loadMySolutions = async () => {
       problemId: Number(solutionsFilter.problemId),
       page: solutionsPage.value,
       size: solutionsSize.value,
-      title: solutionsFilter.keyword || '',
-      sort: 'hot',
+      keyword: solutionsFilter.keyword || '',
     })
     solutionsTotal.value = page.total || 0
     mySolutions.value = (page.records || []).map((r) => ({

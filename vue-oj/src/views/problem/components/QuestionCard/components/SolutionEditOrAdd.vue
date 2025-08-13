@@ -34,6 +34,20 @@
         </el-select>
       </el-form-item>
 
+      <el-form-item prop="tags">
+        <el-select
+          v-model="form.tags"
+          multiple
+          filterable
+          allow-create
+          default-first-option
+          placeholder="请选择或输入标签"
+          class="tags-select"
+        >
+          <!-- 可选：预置常用标签；如无需预置，可留空 -->
+        </el-select>
+      </el-form-item>
+
       <el-form-item prop="content" class="editor-item">
         <MdEditor
           v-model="form.content"
@@ -66,7 +80,7 @@ import { ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElMessage } 
 import { MdEditor } from 'md-editor-v3';
 import 'md-editor-v3/lib/style.css';
 import type { FormInstance, FormRules } from 'element-plus';
-import type { Solution } from '@/types/solution';
+import type { SolutionEditVo } from '@/types/solution';
 import { addSolution, updateSolution, getSolutionById } from '@/api/solution';
 
 const route = useRoute();
@@ -83,7 +97,9 @@ const form = reactive({
   title: '',
   content: '',
   language: 'javascript',
-  problemId: undefined as number | undefined
+  problemId: undefined as number | undefined,
+  tags: [] as string[],
+  status: 'PENDING' as 'PENDING' | 'APPROVED' | 'REJECTED',
 });
 
 const rules: FormRules = {
@@ -98,6 +114,21 @@ const rules: FormRules = {
   language: [
     { required: true, message: '请选择编程语言', trigger: 'change' },
   ],
+  tags: [
+    {
+      validator: (_rule, value: unknown, callback) => {
+        if (!Array.isArray(value) || value.length === 0) {
+          callback(new Error('请选择至少一个标签'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change',
+    },
+  ],
+  status: [
+    { required: true, message: '请选择题解状态', trigger: 'change' },
+  ],
 };
 
 // 获取题解详情
@@ -111,6 +142,9 @@ const fetchSolution = async (id: number) => {
       form.content = data.content;
       form.language = data.language || 'javascript';
       form.problemId = data.problemId;
+      // 预填 tags/status（后端详情返回 tags 为 string[]）
+      form.tags = Array.isArray(data.tags) ? data.tags : [];
+      form.status = (data.status as typeof form.status) || 'PENDING';
     }
   } catch (error) {
     console.error('获取题解详情失败:', error);
@@ -142,6 +176,8 @@ watch(
       form.title = '';
       form.content = '';
       form.language = 'javascript';
+      form.tags = [];
+      form.status = 'PENDING';
     }
   },
   { immediate: true }
@@ -164,13 +200,16 @@ const handleSubmit = async () => {
     loading.value = true;
 
     if (isEdit.value && form.id) {
-      // 调用更新题解的 API
-      await updateSolution(form.id, {
+      // 调用更新题解的 API（后端 PUT /problems/api/view/solution，需要携带 id）
+      await updateSolution({
+        id: form.id as number,
         title: form.title,
         content: form.content,
         language: form.language,
         problemId: form.problemId,
-      } as Solution);
+        tags: form.tags,
+        status: form.status,
+      } as Partial<SolutionEditVo> & { id: number });
       ElMessage.success('题解更新成功');
     } else if (form.problemId) {
       // 调用添加题解的 API
@@ -179,7 +218,9 @@ const handleSubmit = async () => {
         content: form.content,
         language: form.language,
         problemId: form.problemId,
-      } as Solution);
+        tags: form.tags,
+        status: form.status,
+      } as SolutionEditVo);
       ElMessage.success('题解添加成功');
     } else {
       throw new Error('缺少题目ID');

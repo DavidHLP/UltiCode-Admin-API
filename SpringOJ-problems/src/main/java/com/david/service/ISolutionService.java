@@ -1,7 +1,10 @@
 package com.david.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.david.solution.Solution;
+import com.david.vo.SolutionCardVo;
+import com.david.vo.SolutionDetailVo;
 
 /**
  * <p>
@@ -12,4 +15,7 @@ import com.david.solution.Solution;
  * @since 2025-07-28
  */
 public interface ISolutionService extends IService<Solution> {
+	SolutionDetailVo getSolutionDetailVoBy(Long solutionId);
+
+	Page<SolutionCardVo> pageSolutionCardVos(Page<SolutionCardVo> p, Long problemId, String keyword);
 }

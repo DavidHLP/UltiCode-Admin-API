@@ -57,9 +57,8 @@ import { Back as ElIconBack, CaretTop as ElIconCaretTop, CaretBottom as ElIconCa
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
 import { getSolutionById } from '@/api/solution'
-import { getCommentsBySolutionId } from '@/api/comment'
-import type { SolutionVo } from '@/types/problem'
-import type { SolutionCommentVo } from '@/types/comment'
+import type { SolutionVo } from '@/types/solution'
+import type { SolutionCommentVo } from '@/types/solution'
 import { config } from 'md-editor-v3'
 import { lineNumbers } from '@codemirror/view'
 import CommentComponent from '@/components/CommentComponent.vue'
@@ -89,7 +88,7 @@ const fetchSolution = async (id: number) => {
     const data = await getSolutionById(id)
     if (data) {
       solution.value = data
-      fetchComments()
+      comments.value = data.solutionComments || []
     } else {
       ElMessage.warning('未找到该题解')
       router.push({ name: 'solution-list' })
@@ -107,7 +106,9 @@ const fetchSolution = async (id: number) => {
 const fetchComments = async () => {
   if (solution.value) {
     try {
-      comments.value = await getCommentsBySolutionId(solution.value.id);
+      const data = await getSolutionById(solution.value.id)
+      solution.value = data
+      comments.value = data.solutionComments || []
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('获取评论失败:', error)
@@ -127,7 +128,8 @@ watch(
   { immediate: true }
 )
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
+  if (!dateString) return ''
   return new Date(dateString).toLocaleString()
 }
 

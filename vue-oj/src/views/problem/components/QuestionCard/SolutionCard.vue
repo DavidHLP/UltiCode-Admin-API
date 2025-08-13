@@ -10,8 +10,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { voteSolution } from '@/api/solution'
-import type { SolutionVo } from '@/types/problem'
+import type { SolutionVo } from '@/types/solution'
 
 const route = useRoute()
 
@@ -20,8 +19,11 @@ const problemId = computed(() => Number(route.params.id))
 // 处理投票
 const handleVote = async (solution: SolutionVo, type: 'up' | 'down') => {
   try {
-    // 调用投票API
-    await voteSolution(solution.id, type)
+    // 引用参数以避免 ESLint 未使用告警
+    void solution
+    void type
+    // 后端暂未提供投票接口，此处仅做前端提示
+    ElMessage.info('投票功能暂未开放，敬请期待')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('投票失败:', error)

@@ -29,7 +29,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
         implements IProblemService {
     private final ProblemMapper problemMapper;
     private final CalculationServiceImpl calculationService;
-	private final CodeUtils codeUtils;
+    private final CodeUtils codeUtils;
 
     @Override
     public Page<Problem> pageProblems(
@@ -83,12 +83,14 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
                 .build();
     }
 
-	@Override
-	public String getCodeTemplate(Long problemId, LanguageType language) {
-		SolutionDto solutionDto  = problemMapper.selectSolutionFunctionNameAndOutputType(problemId);
-		if (solutionDto == null || solutionDto.getSolutionFunctionName() == null || solutionDto.getOutputType() == null){
-			throw new IllegalArgumentException("题目不存在或题目未设置函数名和返回值类型");
-		}
-		return codeUtils.generateSolutionClass(language, solutionDto);
-	}
+    @Override
+    public String getCodeTemplate(Long problemId, LanguageType language) {
+        SolutionDto solutionDto = problemMapper.selectSolutionFunctionNameAndOutputType(problemId);
+        if (solutionDto == null
+                || solutionDto.getSolutionFunctionName() == null
+                || solutionDto.getOutputType() == null) {
+            throw new IllegalArgumentException("题目不存在或题目未设置函数名和返回值类型");
+        }
+        return codeUtils.generateSolutionClass(language, solutionDto);
+    }
 }

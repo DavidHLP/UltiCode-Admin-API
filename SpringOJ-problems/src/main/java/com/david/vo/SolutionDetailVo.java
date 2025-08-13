@@ -1,7 +1,5 @@
 package com.david.vo;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +12,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class SolutionCardVo {
+public class SolutionDetailVo {
 	private Long id;
 
 	private Long problemId;
@@ -25,10 +23,7 @@ public class SolutionCardVo {
 
 	private String authorAvatar;
 
-	@TableField(typeHandler = JacksonTypeHandler.class)
-	private List<String> tags;
-
-	private String contentView;
+	private String content;
 
 	private String title;
 
@@ -41,4 +36,6 @@ public class SolutionCardVo {
 	private Integer comments;
 
 	private Integer views;
+
+	private List<SolutionCommentVo> solutionComments;
 }

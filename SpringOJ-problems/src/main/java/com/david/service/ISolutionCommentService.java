@@ -7,5 +7,5 @@ import com.david.vo.SolutionCommentVo;
 import java.util.List;
 
 public interface ISolutionCommentService extends IService<SolutionComments> {
-	List<SolutionCommentVo> getCommentsBySolutionId(Long solutionId);
+	List<SolutionCommentVo> getSolutionCommentVos(Long solutionId);
 }

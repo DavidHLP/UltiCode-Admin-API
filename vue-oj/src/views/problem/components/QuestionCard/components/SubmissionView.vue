@@ -33,7 +33,7 @@
 
     <el-tabs v-model="activeTab" class="submission-tabs">
       <el-tab-pane label="代码" name="code">
-        <CodeComponent :code="submission.sourceCode" :language="submission.language" />
+        <CodeComponent :code="submission.sourceCode || ''" :language="submission.language" />
       </el-tab-pane>
       <el-tab-pane v-if="submission.compileInfo" label="编译信息" name="compile">
         <ErrorCodeComponent :message="submission.compileInfo" type="compile" />
@@ -78,7 +78,8 @@ const getStatusTagType = (status: string) => {
   }
 }
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString?: string) => {
+  if (!dateString) return '-'
   return new Date(dateString).toLocaleString()
 }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { FormRules, FormItemRule } from 'element-plus'
 import type { AuthUser } from '@/types/auth'
 import { getUserInfo, login, register, sendVerificationCode } from '@/api/auth'
 
@@ -65,23 +66,27 @@ export const createAuthValidationRules = () => {
     }
   }
 
+  const loginRules: FormRules = {
+    username: [{ required: true, trigger: 'blur', validator: validateUsername } as FormItemRule],
+    password: [{ required: true, trigger: 'blur', validator: validatePassword } as FormItemRule],
+  }
+
+  const getRegisterRules = (registerForm: RegisterForm): FormRules => ({
+    username: [{ required: true, trigger: 'blur', validator: validateUsername } as FormItemRule],
+    email: [
+      { required: true, message: '请输入邮箱地址', trigger: 'blur' } as FormItemRule,
+      { type: 'email' as const, message: '请输入有效的邮箱地址', trigger: ['blur', 'change'] } as FormItemRule,
+    ],
+    password: [{ required: true, trigger: 'blur', validator: validatePassword } as FormItemRule],
+    confirmPassword: [
+      { required: true, trigger: 'blur', validator: validateConfirmPassword(registerForm) } as FormItemRule,
+    ],
+    code: [{ required: true, message: '请输入验证码', trigger: 'blur' } as FormItemRule],
+  })
+
   return {
-    loginRules: {
-      username: [{ required: true, trigger: 'blur', validator: validateUsername }],
-      password: [{ required: true, trigger: 'blur', validator: validatePassword }],
-    },
-    getRegisterRules: (registerForm: RegisterForm) => ({
-      username: [{ required: true, trigger: 'blur', validator: validateUsername }],
-      email: [
-        { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-        { type: 'email', message: '请输入有效的邮箱地址', trigger: ['blur', 'change'] },
-      ],
-      password: [{ required: true, trigger: 'blur', validator: validatePassword }],
-      confirmPassword: [
-        { required: true, trigger: 'blur', validator: validateConfirmPassword(registerForm) },
-      ],
-      code: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
-    }),
+    loginRules,
+    getRegisterRules,
   }
 }
 

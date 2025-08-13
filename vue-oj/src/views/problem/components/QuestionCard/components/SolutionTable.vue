@@ -21,7 +21,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import HeaderComponent from './SolutionTableComponent/HeaderComponent.vue'
 import MainComponent from './SolutionTableComponent/MainComponent.vue'
-import type { SolutionCardVo } from '@/types/problem';
+import type { SolutionCardVo } from '@/types/solution';
 
 const router = useRouter()
 

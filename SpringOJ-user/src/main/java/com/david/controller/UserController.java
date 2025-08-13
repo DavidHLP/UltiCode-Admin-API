@@ -1,13 +1,15 @@
 package com.david.controller;
 
-import org.springframework.web.bind.annotation.*;
-
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.entity.user.User;
 import com.david.service.IUserService;
 import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/user/api/user")
@@ -73,4 +75,22 @@ public class UserController {
         }
         return ResponseResult.fail(500, "用户删除失败");
     }
+
+	@GetMapping("/ids")
+	public ResponseResult<List<User>> getUserByIds(@RequestParam List<Long> ids) {
+		List<User> users = userService.listByIds(ids);
+		if (users.isEmpty()) {
+			return ResponseResult.fail(404, "用户不存在");
+		}
+		return ResponseResult.success("获取用户信息成功", users);
+	}
+
+	@GetMapping("/id")
+	public ResponseResult<User> getUserById(@RequestParam Long id) {
+		User user = userService.getById(id);
+		if (user == null){
+			return ResponseResult.fail(404, "用户不存在");
+		}
+		return ResponseResult.success("获取用户信息成功", user);
+	}
 }

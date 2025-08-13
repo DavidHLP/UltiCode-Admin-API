@@ -1,14 +1,13 @@
 import request from '@/utils/request'
-import type { SolutionCardVo, SolutionVo } from '@/types/problem'
-import type { Solution } from '@/types/solution'
+import type { SolutionCardVo, SolutionVo } from '@/types/solution'
+import type { SolutionEditVo } from '@/types/solution'
 import type { Page } from '@/types/commons'
 
 export interface SolutionQueryParams {
   problemId: number
   page?: number
   size?: number
-  title?: string
-  sort?: 'hot' | 'new'
+  keyword?: string
 }
 
 /**
@@ -19,13 +18,12 @@ export interface SolutionQueryParams {
 export const getSolutionsByProblemId = (
   params: SolutionQueryParams,
 ): Promise<Page<SolutionCardVo>> => {
-  return request.get('/solutions/api/view/problem', {
+  return request.get('/problems/api/view/solution/page', {
     params: {
-      problemId: params.problemId,
       page: params.page || 1,
       size: params.size || 10,
-      title: params.title || '',
-      sort: params.sort || 'hot',
+      problemId: params.problemId,
+      keyword: params.keyword || '',
     },
   })
 }
@@ -36,18 +34,9 @@ export const getSolutionsByProblemId = (
  * @returns 题解详情
  */
 export const getSolutionById = (solutionId: number): Promise<SolutionVo> => {
-  return request.get('/solutions/api/view/', {
-    params: { id: solutionId },
+  return request.get('/problems/api/view/solution', {
+    params: { solutionId },
   })
-}
-
-/**
- * 点赞/点踩题解
- * @param solutionId 题解ID
- * @param type 投票类型：'up' 或 'down'
- */
-export const voteSolution = (solutionId: number, type: 'up' | 'down'): Promise<void> => {
-  return request.post(`/solutions/api/view/vote/${solutionId}/${type}`)
 }
 
 /**
@@ -55,16 +44,17 @@ export const voteSolution = (solutionId: number, type: 'up' | 'down'): Promise<v
  * @param solution 题解数据
  * @returns 新增的题解ID
  */
-export const addSolution = (solution: Solution): Promise<number> => {
-  return request.post('/solutions/api/view/', solution)
+export const addSolution = (solution: SolutionEditVo): Promise<void> => {
+  return request.post('/problems/api/view/solution', solution)
 }
 
 /**
  * 更新题解
- * @param id 题解ID
  * @param solution 题解数据
  * @returns 更新是否成功
  */
-export const updateSolution = (id: number, solution: Partial<Solution>): Promise<boolean> => {
-  return request.put(`/solutions/api/view/${id}`, solution)
+export const updateSolution = (
+  solution: Partial<SolutionEditVo> & { id: number },
+): Promise<void> => {
+  return request.put('/problems/api/view/solution', solution)
 }
