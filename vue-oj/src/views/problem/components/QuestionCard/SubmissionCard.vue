@@ -1,5 +1,19 @@
 <template>
   <div class="submission-card">
+    <HeaderComponent :icon="Document" title="提交记录">
+      <template #right>
+        <el-space size="small" wrap>
+          <el-button text size="small" @click="fetchSubmissions">
+            <el-icon><RefreshRight /></el-icon>
+            <span style="margin-left: 4px">刷新</span>
+          </el-button>
+          <el-button v-if="currentSubmission" text size="small" @click="currentSubmission = null">
+            <el-icon><Back /></el-icon>
+            <span style="margin-left: 4px">返回列表</span>
+          </el-button>
+        </el-space>
+      </template>
+    </HeaderComponent>
     <div v-loading="loading" class="submission-container">
       <template v-if="!currentSubmission">
         <el-empty v-if="submissions.length === 0 && !loading" description="暂无提交记录" />
@@ -18,6 +32,8 @@ import { getSubmissionsByProblemId } from '@/api/submission'
 import type { Submission } from '@/types/problem'
 import SubmissionTable from './components/SubmissionTable.vue'
 import SubmissionView from './components/SubmissionView.vue'
+import HeaderComponent from '../components/HeaderComponent.vue'
+import { Document, RefreshRight, Back } from '@element-plus/icons-vue'
 
 const route = useRoute()
 

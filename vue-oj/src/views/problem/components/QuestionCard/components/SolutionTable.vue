@@ -45,7 +45,6 @@ defineExpose({
 // 状态管理
 const searchQuery = ref('')
 const currentSort = ref<'hot' | 'new'>('hot')
-const showEditDialog = ref(false)
 
 // 处理搜索变化
 const handleSearchChange = (query: string) => {
@@ -75,11 +74,6 @@ const handleAddSolution = () => {
 
 const mainComponentRef = ref()
 
-// 处理题解提交（已弃用，保留以兼容旧代码）
-const handleSolutionSubmit = () => {
-  // 不再使用此方法，所有逻辑已在 handleSolutionAdded 中处理
-  console.log('题解提交成功')
-}
 </script>
 
 <style scoped>

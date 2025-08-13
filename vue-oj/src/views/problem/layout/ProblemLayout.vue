@@ -191,8 +191,8 @@ onUnmounted(() => {
 
 <style scoped>
 .problem-layout {
-  height: 97vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  height: 100vh;
+  background: #f5f7fa;
   overflow: hidden;
   position: relative;
   display: flex;
@@ -202,10 +202,8 @@ onUnmounted(() => {
 /* Header 样式 */
 .problem-header {
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+  border-bottom: 1px solid #ebeef5;
   z-index: 100;
 }
 
@@ -213,8 +211,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 16px;
-  min-height: 40px;
+  padding: 8px 16px;
+  min-height: 48px;
 }
 
 .header-left,
@@ -242,23 +240,18 @@ onUnmounted(() => {
 
 .problem-container {
   flex: 1;
-  padding: 12px;
+  padding: 8px;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .problem-splitpanes {
   height: 100%;
-  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .workspace-splitpanes {
   height: 100%;
-  border-radius: 0 8px 8px 0;
   overflow: hidden;
 }
 
@@ -276,111 +269,32 @@ onUnmounted(() => {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  border-radius: inherit;
+  background: #ffffff;
 }
 
-.question-pane .pane-content {
-  border-radius: 8px 0 0 8px;
-}
-
-.code-pane .pane-content {
-  border-radius: 0 8px 0 0;
-}
-
-.debug-pane .pane-content {
-  border-radius: 0 0 8px 0;
-}
-
-/* 优雅的分割线样式 */
+/* 分割线样式（简化） */
 :deep(.splitpanes__splitter) {
-  background: rgba(255, 255, 255, 0.8) !important;
+  background: #ebeef5 !important;
   border: none !important;
-  position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  z-index: 10;
-}
-
-:deep(.splitpanes__splitter::before) {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: linear-gradient(45deg, #667eea, #764ba2);
-  border-radius: 2px;
-  opacity: 0.6;
-  transition: all 0.3s ease;
-}
-
-:deep(.splitpanes__splitter::after) {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  opacity: 0;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
 /* 垂直分割线 */
 :deep(.splitpanes--vertical > .splitpanes__splitter) {
-  width: 8px !important;
+  width: 6px !important;
   cursor: col-resize;
-}
-
-:deep(.splitpanes--vertical > .splitpanes__splitter::before) {
-  width: 2px;
-  height: 24px;
-}
-
-:deep(.splitpanes--vertical > .splitpanes__splitter::after) {
-  width: 16px;
-  height: 16px;
 }
 
 /* 水平分割线 */
 :deep(.splitpanes--horizontal > .splitpanes__splitter) {
-  height: 8px !important;
+  height: 6px !important;
   cursor: row-resize;
 }
 
-:deep(.splitpanes--horizontal > .splitpanes__splitter::before) {
-  width: 24px;
-  height: 2px;
-}
-
-:deep(.splitpanes--horizontal > .splitpanes__splitter::after) {
-  width: 16px;
-  height: 16px;
-}
-
-/* 悬停效果 */
-:deep(.splitpanes__splitter:hover) {
-  background: rgba(255, 255, 255, 0.95) !important;
-}
-
-:deep(.splitpanes__splitter:hover::before) {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.2);
-}
-
-:deep(.splitpanes__splitter:hover::after) {
-  opacity: 0.3;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-/* 激活状态 */
+/* 悬停与激活 */
+:deep(.splitpanes__splitter:hover),
 :deep(.splitpanes__splitter:active) {
-  background: rgba(255, 255, 255, 1) !important;
-}
-
-:deep(.splitpanes__splitter:active::before) {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1.5);
-  background: linear-gradient(45deg, #4facfe, #00f2fe);
+  background: #dcdfe6 !important;
 }
 
 /* 响应式设计 */
@@ -388,15 +302,10 @@ onUnmounted(() => {
   .problem-container {
     padding: 8px;
   }
-
-  :deep(.splitpanes__splitter) {
-    backdrop-filter: blur(5px);
-  }
 }
-
 @media (max-width: 768px) {
   .problem-layout {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    background: #f5f7fa;
   }
 
   .problem-header {
@@ -428,82 +337,10 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .default-header {
-    padding: 2px 8px;
-    min-height: 32px;
-  }
-
-  .header-left,
-  .header-center,
-  .header-right {
-    gap: 4px;
-  }
-
-  .problem-container {
-    padding: 2px;
-  }
-
-  .problem-splitpanes {
-    border-radius: 6px;
-  }
-
-  /* 小屏幕分割线 */
-  :deep(.splitpanes--vertical > .splitpanes__splitter) {
-    width: 4px !important;
-  }
-
-  :deep(.splitpanes--horizontal > .splitpanes__splitter) {
-    height: 4px !important;
-  }
-
-  :deep(.splitpanes__splitter::before) {
-    opacity: 0.8;
-  }
-}
-
-/* 暗色主题支持 */
-@media (prefers-color-scheme: dark) {
-  .problem-layout {
-    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-  }
-
-  .problem-header {
-    background: rgba(26, 32, 44, 0.95);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .problem-splitpanes {
-    background: rgba(0, 0, 0, 0.1);
-  }
-
-  :deep(.splitpanes__splitter) {
-    background: rgba(0, 0, 0, 0.3) !important;
-  }
-
-  :deep(.splitpanes__splitter:hover) {
-    background: rgba(0, 0, 0, 0.5) !important;
-  }
-}
-
-/* 高对比度模式支持 */
-@media (prefers-contrast: high) {
-  :deep(.splitpanes__splitter) {
-    background: #000 !important;
-  }
-
-  :deep(.splitpanes__splitter::before) {
-    background: #fff;
-    opacity: 1;
-  }
-}
-
-/* 减少动画模式 */
-@media (prefers-reduced-motion: reduce) {
-
-  :deep(.splitpanes__splitter),
-  :deep(.splitpanes__splitter::before),
-  :deep(.splitpanes__splitter::after) {
-    transition: none;
-  }
+  .default-header { padding: 4px 12px; min-height: 40px; }
+  .header-left, .header-center, .header-right { gap: 4px; }
+  .problem-container { padding: 4px; }
+  :deep(.splitpanes--vertical > .splitpanes__splitter) { width: 4px !important; }
+  :deep(.splitpanes--horizontal > .splitpanes__splitter) { height: 4px !important; }
 }
 </style>

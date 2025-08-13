@@ -1,32 +1,23 @@
 <template>
   <div class="debug-card-container">
-    <div class="header-section">
-      <el-tabs v-model="mainTab" class="debug-tabs">
-        <!-- 测试用例标签页 -->
-        <el-tab-pane name="test-cases">
-          <template #label>
-            <div class="tab-label">
-              <el-icon>
-                <DocumentChecked />
-              </el-icon>
-              <span>测试用例</span>
-            </div>
-          </template>
-        </el-tab-pane>
-
-        <!-- 测试结果标签页 -->
-        <el-tab-pane name="test-results">
-          <template #label>
-            <div class="tab-label">
-              <el-icon>
-                <DataAnalysis />
-              </el-icon>
-              <span>测试结果</span>
-            </div>
-          </template>
-        </el-tab-pane>
-      </el-tabs>
-    </div>
+    <HeaderComponent :icon="DataAnalysis" title="调试">
+      <template #right>
+        <el-button-group>
+          <el-button :type="mainTab === 'test-cases' ? 'primary' : undefined" text @click="mainTab = 'test-cases'">
+            <el-icon>
+              <DocumentChecked />
+            </el-icon>
+            <span style="margin-left: 4px">测试用例</span>
+          </el-button>
+          <el-button :type="mainTab === 'test-results' ? 'primary' : undefined" text @click="mainTab = 'test-results'">
+            <el-icon>
+              <DataAnalysis />
+            </el-icon>
+            <span style="margin-left: 4px">测试结果</span>
+          </el-button>
+        </el-button-group>
+      </template>
+    </HeaderComponent>
     <div class="main-content">
       <TestCaseCard
         v-show="mainTab === 'test-cases'"
@@ -44,6 +35,7 @@ import { DataAnalysis, DocumentChecked } from '@element-plus/icons-vue'
 import type { Submission, TestCase } from '../../../types/problem'
 import TestCaseCard from './DebugCard/TestCaseCard.vue'
 import ResultCaseCard from './DebugCard/ResultCaseCard.vue'
+import HeaderComponent from './components/HeaderComponent.vue'
 
 interface Props {
   testCases: TestCase[]
@@ -100,64 +92,7 @@ watch(
 }
 
 /* Header 区域样式 */
-.header-section {
-  flex-shrink: 0;
-  background: #ffffff;
-  border-bottom: 1px solid #e4e7ed;
-  padding: 0;
-}
-
-/* Tab 样式优化 */
-.debug-tabs {
-  --el-tabs-header-height: 48px;
-}
-
-.debug-tabs :deep(.el-tabs__header) {
-  margin: 0;
-  border-bottom: 1px solid #e4e7ed;
-  background: #ffffff;
-}
-
-.debug-tabs :deep(.el-tabs__nav-wrap) {
-  padding: 0 16px;
-}
-
-.debug-tabs :deep(.el-tabs__item) {
-  height: 48px;
-  line-height: 48px;
-  padding: 0 16px;
-  color: #606266;
-  font-weight: 400;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-.debug-tabs :deep(.el-tabs__item:hover) {
-  color: #409eff;
-}
-
-.debug-tabs :deep(.el-tabs__item.is-active) {
-  color: #409eff;
-  font-weight: 500;
-}
-
-.debug-tabs :deep(.el-tabs__active-bar) {
-  height: 2px;
-  background-color: #409eff;
-}
-
-/* Tab 标签内容样式 */
-.tab-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.tab-label .el-icon {
-  font-size: 16px;
-}
+/* 使用统一 HeaderComponent 样式，无需本地 header-section */
 
 /* Main 内容区域 */
 .main-content {
@@ -167,24 +102,5 @@ watch(
   min-height: 0;
 }
 
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .debug-tabs :deep(.el-tabs__nav-wrap) {
-    padding: 0 12px;
-  }
-
-  .debug-tabs :deep(.el-tabs__item) {
-    padding: 0 12px;
-    font-size: 13px;
-  }
-
-  .tab-label {
-    gap: 4px;
-    font-size: 13px;
-  }
-
-  .tab-label .el-icon {
-    font-size: 14px;
-  }
-}
+/* 响应式：HeaderComponent 已内置适配，这里无需额外样式 */
 </style>

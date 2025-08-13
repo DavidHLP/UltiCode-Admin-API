@@ -32,7 +32,21 @@
 
     <template #header-right>
       <div class="header-actions">
-        <!-- TODO 待开发 -->
+        <el-space size="small" alignment="center">
+          <el-tooltip content="运行样例" placement="bottom">
+            <el-button text :loading="isRunning" @click="handleRun">
+              <el-icon><VideoPlay /></el-icon>
+              <span class="btn-text">运行</span>
+            </el-button>
+          </el-tooltip>
+
+          <el-tooltip content="重置代码" placement="bottom">
+            <el-button text :disabled="isSubmitting || isRunning" @click="handleRetry">
+              <el-icon><RefreshLeft /></el-icon>
+              <span class="btn-text">重试</span>
+            </el-button>
+          </el-tooltip>
+        </el-space>
       </div>
     </template>
 
@@ -54,9 +68,10 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, type Ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, Right } from '@element-plus/icons-vue'
+import { VideoPlay, RefreshLeft } from '@element-plus/icons-vue'
 import SubmitIcon from '@/assets/icon/SubmitIcon.vue'
 import ProblemLayout from './layout/ProblemLayout.vue'
 import QuestionCardRouter from './components/QuestionCard.vue'
@@ -76,6 +91,7 @@ const codeCardRef = ref<InstanceType<typeof CodeCard> | null>(null)
 const submissionResult = ref<Submission | null>(null)
 const problemLayoutRef = ref<InstanceType<typeof ProblemLayout> | null>(null)
 const isSubmitting = ref(false)
+const isRunning = ref(false)
 
 // 布局相关状态
 const layoutState = ref({
@@ -223,6 +239,46 @@ const handleSubmitCode = async () => {
 onMounted(() => {
   fetchProblem()
 })
+
+// 运行样例：触发提交并展开调试区
+const handleRun = async () => {
+  if (!codeCardRef.value || !problem.value) {
+    ElMessage.warning('请等待页面加载完成')
+    return
+  }
+  try {
+    isRunning.value = true
+    // 触发一次提交以运行样例（兼容当前提交流程）
+    codeCardRef.value.submitCode()
+    // 展开下方调试面板，便于查看结果
+    const topRef = (problemLayoutRef.value as unknown as { topPaneSize: Ref<number> } | undefined)?.topPaneSize
+    if (topRef && typeof topRef.value === 'number') {
+      topRef.value = 45
+    }
+    ElMessage.success('已触发运行，稍后显示结果')
+  } catch (e) {
+    console.error('Run failed:', e)
+    ElMessage.error('运行失败，请重试')
+  } finally {
+    setTimeout(() => (isRunning.value = false), 800)
+  }
+}
+
+// 重试：重置代码并清空结果
+const handleRetry = () => {
+  if (!codeCardRef.value) {
+    ElMessage.warning('编辑器尚未就绪')
+    return
+  }
+  try {
+    codeCardRef.value.resetCode()
+    submissionResult.value = null
+    ElMessage.success('已重置代码并清空结果')
+  } catch (e) {
+    console.error('Retry failed:', e)
+    ElMessage.error('操作失败，请重试')
+  }
+}
 </script>
 
 <style scoped>
@@ -334,6 +390,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.btn-text {
+  font-size: 12px;
+  color: #606266;
 }
 
 /* 响应式调整 */

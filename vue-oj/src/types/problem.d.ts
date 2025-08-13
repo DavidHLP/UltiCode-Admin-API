@@ -31,52 +31,27 @@ export interface ProblemDetailVo {
   difficulty: ProblemDifficulty
 }
 
-// ====== Extended types for Problem View, Submissions, and Solutions ======
-
-export type SubmissionStatus =
-  | 'PENDING'
-  | 'JUDGING'
-  | 'ACCEPTED'
-  | 'WRONG_ANSWER'
-  | 'TIME_LIMIT_EXCEEDED'
-  | 'MEMORY_LIMIT_EXCEEDED'
-  | 'RUNTIME_ERROR'
-  | 'COMPILE_ERROR'
-  | 'SYSTEM_ERROR'
-  | string
-
-export interface Submission {
+// 题解卡片 VO（列表项）
+export interface SolutionCardVo {
   id: number
-  userId?: number
-  problemId: number
-  language: string
-  sourceCode?: string
-  status: SubmissionStatus
-  score?: number
-  timeUsed?: number
-  memoryUsed?: number
-  compileInfo?: string
-  judgeInfo?: string
+  title: string
+  problem: string
+  tags: string[]
+  authorUsername: string
+  authorAvatar?: string
   createdAt: string
+  upvotes: number
+  views: number
 }
 
+// 题解详情 VO
 export interface SolutionVo {
   id: number
   title: string
   content: string
-  authorUsername?: string
+  authorUsername: string
   authorAvatar?: string
+  createdAt: string
   upvotes?: number
   downvotes?: number
-  createdAt: string
-}
-
-export interface SolutionCardVo {
-  id: number
-  title: string
-  preview?: string
-  authorUsername?: string
-  upvotes?: number
-  downvotes?: number
-  createdAt: string
 }
