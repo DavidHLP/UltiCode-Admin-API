@@ -1,24 +1,30 @@
 <template>
-  <div class="question-card-container">
+  <div class="qc-wrap">
     <HeaderComponent :icon="Document" title="题目">
       <template #right>
         <el-button-group>
           <el-button :type="activeTab === 'description' ? 'primary' : undefined" text @click="go('description')">
-            <el-icon><Document /></el-icon>
+            <el-icon>
+              <Document />
+            </el-icon>
             <span style="margin-left: 4px">题目描述</span>
           </el-button>
           <el-button :type="activeTab === 'solution' ? 'primary' : undefined" text @click="go('solution')">
-            <el-icon><Promotion /></el-icon>
+            <el-icon>
+              <Promotion />
+            </el-icon>
             <span style="margin-left: 4px">题解</span>
           </el-button>
           <el-button :type="activeTab === 'submissions' ? 'primary' : undefined" text @click="go('submissions')">
-            <el-icon><List /></el-icon>
+            <el-icon>
+              <List />
+            </el-icon>
             <span style="margin-left: 4px">提交记录</span>
           </el-button>
         </el-button-group>
       </template>
     </HeaderComponent>
-    <div class="main-content">
+    <div class="qc-content">
       <router-view :problem="problem" :problem-id="problem?.id" />
     </div>
   </div>
@@ -76,23 +82,23 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 容器布局 */
-.question-card-container {
+/* 禁止外层面板自身滚动，避免双滚动条 */
+:deep(.question-pane) {
+  overflow: hidden !important;
+}
+
+.qc-wrap {
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0;
-}
-
-/* 使用统一 HeaderComponent 样式，无需本地 header/tabs 样式 */
-
-/* Main 内容区域 */
-.main-content {
-  flex: 1;
-  background: #ffffff;
   overflow: hidden;
   min-height: 0;
 }
 
-/* 响应式：采用 HeaderComponent 默认适配，无需额外样式 */
+.qc-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
 </style>

@@ -12,7 +12,6 @@
         <slot name="right" />
       </div>
     </div>
-    <!-- 默认插槽：可用于放置 Tabs 等更丰富的头部内容 -->
     <slot />
   </div>
 </template>

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -30,39 +31,57 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
         if (allComments == null || allComments.isEmpty()) {
             return new ArrayList<>();
         }
+        Set<Long> userIdsToFetch =
+                allComments.stream()
+                        .flatMap(
+                                comment ->
+                                        Stream.of(comment.getUserId(), comment.getReplyToUserId()))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+
+        if (userIdsToFetch.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         Map<Long, User> users =
                 userServiceFeignClient
-                        .getUserByIds(
-                                allComments.stream()
-                                        .map(SolutionComments::getUserId)
-                                        .distinct()
-                                        .toList())
+                        .getUserByIds(new ArrayList<>(userIdsToFetch))
                         .getData()
                         .stream()
                         .collect(Collectors.toMap(User::getUserId, Function.identity()));
+
         Map<Long, SolutionCommentVo> commentVoMap =
                 allComments.stream()
                         .map(
-                                comment ->
-                                        SolutionCommentVo.builder()
-                                                .id(comment.getId())
-                                                .solutionId(comment.getSolutionId())
-                                                .userId(comment.getUserId())
-                                                .content(comment.getContent())
-                                                .parentId(comment.getParentId())
-                                                .rootId(comment.getRootId())
-                                                .replyToUserId(comment.getReplyToUserId())
-                                                .upvotes(comment.getUpvotes())
-                                                .downvotes(comment.getDownvotes())
-                                                .children(new ArrayList<>())
-                                                .avatar(users.get(comment.getUserId()).getAvatar())
-                                                .username(
-                                                        users.get(comment.getUserId())
-                                                                .getUsername())
-                                                .replyToUsername(
-                                                        users.get(comment.getReplyToUserId())
-                                                                .getUsername())
-                                                .build())
+                                comment -> {
+                                    User author = users.get(comment.getUserId());
+                                    String replyToUsername = null;
+                                    if (comment.getReplyToUserId() != null) {
+                                        User replyToUser = users.get(comment.getReplyToUserId());
+                                        if (replyToUser != null) {
+                                            replyToUsername = replyToUser.getUsername();
+                                        }
+                                    }
+
+                                    return SolutionCommentVo.builder()
+                                            .id(comment.getId())
+                                            .solutionId(comment.getSolutionId())
+                                            .userId(comment.getUserId())
+                                            .content(comment.getContent())
+                                            .parentId(comment.getParentId())
+                                            .rootId(comment.getRootId())
+                                            .replyToUserId(comment.getReplyToUserId())
+                                            .upvotes(comment.getUpvotes())
+                                            .downvotes(comment.getDownvotes())
+                                            .children(new ArrayList<>())
+                                            .avatar(author != null ? author.getAvatar() : null)
+                                            .username(
+                                                    author != null
+                                                            ? author.getUsername()
+                                                            : "Unknown User")
+                                            .replyToUsername(replyToUsername)
+                                            .build();
+                                })
                         .collect(Collectors.toMap(SolutionCommentVo::getId, Function.identity()));
 
         List<SolutionCommentVo> rootComments = new ArrayList<>();

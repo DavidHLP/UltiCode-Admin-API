@@ -1,21 +1,18 @@
 <template>
   <ProblemLayout ref="problemLayoutRef" :initial-left-pane-size="50" :initial-top-pane-size="60" :save-layout="true"
-    layout-key="problem-view" @layout-change="handleLayoutChange" @pane-resize="handlePaneResize">
+    layout-key="problem-view">
 
     <!-- Header 插槽 -->
     <template #header-left>
-      <div class="header-breadcrumb">
-        <router-link to="/problems" class="breadcrumb-link">
+      <el-breadcrumb class="header-breadcrumb" :separator-icon="Right">
+        <el-breadcrumb-item :to="{ path: '/problems' }">
           <el-icon>
             <ArrowLeft />
           </el-icon>
-          题目列表
-        </router-link>
-        <el-icon class="breadcrumb-separator">
-          <Right />
-        </el-icon>
-        <span class="current-problem">题目详情</span>
-      </div>
+          <span style="margin-left: 4px">题目列表</span>
+        </el-breadcrumb-item>
+        <el-breadcrumb-item>题目详情</el-breadcrumb-item>
+      </el-breadcrumb>
     </template>
 
     <template #header-center>
@@ -35,14 +32,18 @@
         <el-space size="small" alignment="center">
           <el-tooltip content="运行样例" placement="bottom">
             <el-button text :loading="isRunning" @click="handleRun">
-              <el-icon><VideoPlay /></el-icon>
+              <el-icon>
+                <VideoPlay />
+              </el-icon>
               <span class="btn-text">运行</span>
             </el-button>
           </el-tooltip>
 
           <el-tooltip content="重置代码" placement="bottom">
             <el-button text :disabled="isSubmitting || isRunning" @click="handleRetry">
-              <el-icon><RefreshLeft /></el-icon>
+              <el-icon>
+                <RefreshLeft />
+              </el-icon>
               <span class="btn-text">重试</span>
             </el-button>
           </el-tooltip>
@@ -57,7 +58,8 @@
 
     <!-- 代码编辑器插槽 -->
     <template #code>
-      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" :problem-id="problem.id" @submit="handleSubmit" />
+      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" :problem-id="problem.id"
+        @submit="handleSubmit" />
     </template>
 
     <!-- 调试面板插槽 -->
@@ -93,18 +95,14 @@ const problemLayoutRef = ref<InstanceType<typeof ProblemLayout> | null>(null)
 const isSubmitting = ref(false)
 const isRunning = ref(false)
 
-// 布局相关状态
-const layoutState = ref({
-  leftPaneSize: 50,
-  topPaneSize: 60
-})
+// 布局相关状态已由 ProblemLayout 自行管理，此处不再冗余保存
 
 // 将后端的 TestCaseVo 转换为前端 DebugCard 使用的 TestCase 模型
 const mapTestCaseVoToClient = (vo: TestCaseVo): TestCase => {
   const inputs = Array.isArray(vo.testCaseInputs)
     ? [...vo.testCaseInputs]
-        .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-        .map((inp) => ({ inputName: inp.testCaseName, input: inp.inputContent }))
+      .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+      .map((inp) => ({ inputName: inp.testCaseName, input: inp.inputContent }))
     : []
 
   const output = vo.testCaseOutput?.output ?? ''
@@ -132,9 +130,9 @@ const fetchProblem = async () => {
 
     const initialCodeMap = Array.isArray(res.initialCode)
       ? res.initialCode.reduce((acc, curr) => {
-          acc[curr.language] = curr.code
-          return acc
-        }, {} as { [key: string]: string })
+        acc[curr.language] = curr.code
+        return acc
+      }, {} as { [key: string]: string })
       : {}
 
     // 先渲染题目基本信息，测试用例随后单独拉取
@@ -201,16 +199,7 @@ const pollSubmissionResult = (submissionId: number) => {
   }, 2000)
 }
 
-// 布局变化处理
-const handleLayoutChange = (data: { leftPaneSize: number; topPaneSize: number }) => {
-  layoutState.value = data
-  console.log('Layout changed:', data)
-}
-
-// 面板调整处理
-const handlePaneResize = (data: { type: 'horizontal' | 'vertical'; sizes: number[] }) => {
-  console.log('Pane resized:', data)
-}
+// 去除多余事件处理（仅用于日志），保持最小业务逻辑
 
 
 
@@ -282,33 +271,7 @@ const handleRetry = () => {
 </script>
 
 <style scoped>
-/* ProblemView 现在主要负责业务逻辑，样式由 ProblemLayout 组件处理 */
-
-/* 如果需要覆盖 ProblemLayout 的某些样式，可以在这里添加 */
-:deep(.problem-layout) {
-  /* 确保布局组件正确显示 */
-  min-height: 100vh;
-}
-
-/* 确保组件内容正确显示 */
-:deep(.pane-content) {
-  display: flex;
-  flex-direction: column;
-}
-
-/* 针对特定组件的样式调整 */
-:deep(.question-pane .pane-content) {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-}
-
-:deep(.code-pane .pane-content) {
-  background: rgba(255, 255, 255, 0.98);
-}
-
-:deep(.debug-pane .pane-content) {
-  background: rgba(255, 255, 255, 0.95);
-}
+/* ProblemView 只保留与业务相关的最小样式，布局交由 ProblemLayout 控制 */
 
 /* Header 相关样式 */
 .header-breadcrumb {
@@ -318,26 +281,7 @@ const handleRetry = () => {
   font-size: 14px;
 }
 
-.breadcrumb-link {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #606266;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  padding: 4px 8px;
-  border-radius: 4px;
-}
-
-.breadcrumb-link:hover {
-  color: #409eff;
-  background: rgba(64, 158, 255, 0.1);
-}
-
-.breadcrumb-separator {
-  color: #c0c4cc;
-  font-size: 12px;
-}
+/* 使用 Element Plus el-breadcrumb 代替自定义面包屑链接 */
 
 .current-problem {
   color: #303133;
@@ -424,10 +368,6 @@ const handleRetry = () => {
 
   .header-actions {
     gap: 4px;
-  }
-
-  :deep(.pane-content) {
-    background: rgba(255, 255, 255, 0.98) !important;
   }
 }
 

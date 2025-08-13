@@ -2,6 +2,7 @@ package com.david.controller;
 
 import com.david.service.ISolutionCommentService;
 import com.david.solution.SolutionComments;
+import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;
@@ -11,10 +12,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/problems/api/view/solution/comment")
-public class SolutionCommentController {
+public class SolutionCommentController extends BaseController {
 	private final ISolutionCommentService solutionCommentService;
 	@PostMapping
 	public ResponseResult<Void> createComment(@RequestBody  SolutionComments solutionComments) {
+		solutionComments.setUserId(getCurrentUserId());
 		if (!solutionCommentService.save(solutionComments)){
 			throw new RuntimeException("创建评论失败");
 		}

@@ -5,7 +5,7 @@
         <el-icon class="back-icon" @click="handleBack">
           <ArrowLeft />
         </el-icon>
-        <h1>{{ isEdit ? '编辑题解' : '新增题解' }}</h1>
+        {{ isEdit ? '编辑题解' : '新增题解' }}
       </div>
     </div>
 
@@ -105,7 +105,7 @@ const form = reactive({
 const rules: FormRules = {
   title: [
     { required: true, message: '请输入题解标题', trigger: 'blur' },
-    { min: 5, max: 100, message: '长度在 5 到 100 个字符', trigger: 'blur' },
+    { max: 100, message: '长度在 100 个字符以内', trigger: 'blur' },
   ],
   content: [
     { required: true, message: '请输入题解内容', trigger: 'blur' },
@@ -245,7 +245,6 @@ const handleSubmit = async () => {
 <style scoped>
 .solution-edit {
   padding: 24px;
-  height: 100%;
   background: #fff;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -265,27 +264,7 @@ const handleSubmit = async () => {
   align-items: center;
   gap: 16px;
 }
-
-.back-button {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0;
-  height: auto;
-  font-size: 14px;
-  color: #606266;
-}
-
-.back-button:hover {
-  color: #409eff;
-  background: transparent;
-}
-
-.back-button .el-icon {
-  font-size: 16px;
-}
-
-h1 {
+.solution-header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 500;
@@ -347,7 +326,7 @@ h1 {
     padding: 16px;
   }
 
-  .header-left h1 {
+  .header-left h2 {
     font-size: 18px;
   }
 

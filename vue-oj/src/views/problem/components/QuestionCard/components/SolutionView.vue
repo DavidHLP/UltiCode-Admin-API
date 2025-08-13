@@ -187,8 +187,7 @@ defineExpose({
 
 .solution-content {
   padding: 24px;
-  height: calc(100vh - 12px);
-  overflow: auto;
+  overflow: hidden;
   background: transparent;
   box-sizing: border-box;
   display: flex;

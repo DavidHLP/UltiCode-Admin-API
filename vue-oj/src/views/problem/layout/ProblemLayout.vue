@@ -1,31 +1,28 @@
 <template>
-  <div class="problem-layout">
+  <el-container class="problem-layout">
     <!-- Header 区域 -->
-    <div class="problem-header">
+    <el-header class="problem-header" height="auto">
       <slot name="header">
-        <!-- 默认 header 内容 -->
-        <div class="default-header">
-          <div class="header-left">
+        <el-row class="problem-header-row" align="middle" justify="space-between" :gutter="8">
+          <el-col :span="8" class="header-left">
             <slot name="header-left" />
-          </div>
-          <div class="header-center">
+          </el-col>
+          <el-col :span="8" class="header-center">
             <slot name="header-center" />
-          </div>
-          <div class="header-right">
+          </el-col>
+          <el-col :span="8" class="header-right">
             <slot name="header-right" />
-          </div>
-        </div>
+          </el-col>
+        </el-row>
       </slot>
-    </div>
+    </el-header>
 
     <!-- 主要内容区域 -->
-    <div class="problem-container">
+    <el-main class="problem-container">
       <Splitpanes class="problem-splitpanes" @resize="handleResize" :push-other-panes="false">
         <!-- 左侧题目描述面板 -->
         <Pane :size="leftPaneSize" :min-size="25" :max-size="75" class="question-pane">
-          <div class="pane-content">
-            <slot name="question" />
-          </div>
+          <slot name="question" />
         </Pane>
 
         <!-- 右侧工作区面板 -->
@@ -33,22 +30,18 @@
           <Splitpanes class="workspace-splitpanes" horizontal @resize="handleWorkspaceResize">
             <!-- 代码编辑器面板 -->
             <Pane :size="topPaneSize" :min-size="30" :max-size="80" class="code-pane">
-              <div class="pane-content">
-                <slot name="code" />
-              </div>
+              <slot name="code" />
             </Pane>
 
             <!-- 调试/结果面板 -->
             <Pane :size="100 - topPaneSize" :min-size="20" class="debug-pane">
-              <div class="pane-content">
-                <slot name="debug" />
-              </div>
+              <slot name="debug" />
             </Pane>
           </Splitpanes>
         </Pane>
       </Splitpanes>
-    </div>
-  </div>
+    </el-main>
+  </el-container>
 </template>
 
 <script lang="ts" setup>
@@ -71,13 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
   layoutKey: 'problem-layout'
 })
 
-// Emits 定义
-interface Emits {
-  (e: 'layout-change', data: { leftPaneSize: number; topPaneSize: number }): void
-  (e: 'pane-resize', data: { type: 'horizontal' | 'vertical'; sizes: number[] }): void
-}
-
-const emit = defineEmits<Emits>()
+// 移除未使用的事件发射，精简组件逻辑
 
 // 响应式状态
 const leftPaneSize = ref(props.initialLeftPaneSize)
@@ -121,32 +108,12 @@ const saveLayout = () => {
 const handleResize = (event: Array<{ size: number }>) => {
   leftPaneSize.value = event[0].size
   saveLayout()
-
-  emit('layout-change', {
-    leftPaneSize: leftPaneSize.value,
-    topPaneSize: topPaneSize.value
-  })
-
-  emit('pane-resize', {
-    type: 'vertical',
-    sizes: event.map(pane => pane.size)
-  })
 }
 
 // 处理工作区分割线调整
 const handleWorkspaceResize = (event: Array<{ size: number }>) => {
   topPaneSize.value = event[0].size
   saveLayout()
-
-  emit('layout-change', {
-    leftPaneSize: leftPaneSize.value,
-    topPaneSize: topPaneSize.value
-  })
-
-  emit('pane-resize', {
-    type: 'horizontal',
-    sizes: event.map(pane => pane.size)
-  })
 }
 
 // 重置布局
@@ -154,11 +121,6 @@ const resetLayout = () => {
   leftPaneSize.value = props.initialLeftPaneSize
   topPaneSize.value = props.initialTopPaneSize
   saveLayout()
-
-  emit('layout-change', {
-    leftPaneSize: leftPaneSize.value,
-    topPaneSize: topPaneSize.value
-  })
 }
 
 // 响应式布局调整
@@ -191,7 +153,7 @@ onUnmounted(() => {
 
 <style scoped>
 .problem-layout {
-  height: 100vh;
+  height: 98vh;
   background: #f5f7fa;
   overflow: hidden;
   position: relative;
@@ -203,17 +165,10 @@ onUnmounted(() => {
 .problem-header {
   flex-shrink: 0;
   background: #ffffff;
-  border-bottom: 1px solid #ebeef5;
   z-index: 100;
 }
 
-.default-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  min-height: 48px;
-}
+/* 使用 Element Plus el-header + el-row 取代 .default-header */
 
 .header-left,
 .header-center,
@@ -243,6 +198,7 @@ onUnmounted(() => {
   padding: 8px;
   box-sizing: border-box;
   overflow: hidden;
+  min-height: 0;
 }
 
 .problem-splitpanes {
@@ -256,20 +212,40 @@ onUnmounted(() => {
 }
 
 /* 面板容器样式 */
-.question-pane,
-.workspace-pane,
-.code-pane,
-.debug-pane {
+.workspace-pane {
   background: transparent;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.pane-content {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
+.question-pane {
   background: #ffffff;
+  overflow: hidden;
+  /* 问题面板不滚动，交由子级内容容器控制 */
+  position: relative;
+}
+
+.code-pane,
+.debug-pane {
+  background: #ffffff;
+  overflow: auto;
+  /* 代码与调试面板内部滚动 */
+  position: relative;
+}
+
+/* 让代码编辑器插槽内容自适应填满高度，避免 Monaco 容器过小 */
+.code-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.code-pane>* {
+  flex: 1;
+  min-height: 0;
 }
 
 /* 分割线样式（简化） */
@@ -303,6 +279,7 @@ onUnmounted(() => {
     padding: 8px;
   }
 }
+
 @media (max-width: 768px) {
   .problem-layout {
     background: #f5f7fa;
@@ -337,10 +314,27 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
-  .default-header { padding: 4px 12px; min-height: 40px; }
-  .header-left, .header-center, .header-right { gap: 4px; }
-  .problem-container { padding: 4px; }
-  :deep(.splitpanes--vertical > .splitpanes__splitter) { width: 4px !important; }
-  :deep(.splitpanes--horizontal > .splitpanes__splitter) { height: 4px !important; }
+  .default-header {
+    padding: 4px 12px;
+    min-height: 40px;
+  }
+
+  .header-left,
+  .header-center,
+  .header-right {
+    gap: 4px;
+  }
+
+  .problem-container {
+    padding: 4px;
+  }
+
+  :deep(.splitpanes--vertical > .splitpanes__splitter) {
+    width: 4px !important;
+  }
+
+  :deep(.splitpanes--horizontal > .splitpanes__splitter) {
+    height: 4px !important;
+  }
 }
 </style>

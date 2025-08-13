@@ -1,9 +1,5 @@
 <template>
-  <div class="solution-card">
-    <div class="solution-container">
-      <router-view :problem-id="problemId" @vote="handleVote" />
-    </div>
-  </div>
+  <router-view :problem-id="problemId" @vote="handleVote" />
 </template>
 
 <script lang="ts" setup>
@@ -31,12 +27,3 @@ const handleVote = async (solution: SolutionVo, type: 'up' | 'down') => {
   }
 }
 </script>
-
-<style scoped>
-.solution-card {
-  padding: 0;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
-</style>
