@@ -58,11 +58,6 @@
             <el-tooltip content="全屏" placement="bottom">
               <el-button text @click="toggleFullScreen"><el-icon><FullScreen /></el-icon></el-button>
             </el-tooltip>
-
-            <el-button type="primary" size="small" @click="submitCode">
-              <el-icon><Promotion /></el-icon>
-              <span style="margin-left: 4px">提交</span>
-            </el-button>
         </el-space>
       </template>
     </HeaderComponent>
@@ -79,7 +74,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, shallowRef, computed, watchEffect, nextTick } from 'vue';
 import * as monaco from 'monaco-editor';
-import { Document, RefreshRight, FullScreen, CopyDocument, Download, MagicStick, Sunny, Moon, ZoomIn, ZoomOut, Promotion, SwitchButton } from '@element-plus/icons-vue';
+import { Document, RefreshRight, FullScreen, CopyDocument, Download, MagicStick, Sunny, Moon, ZoomIn, ZoomOut, SwitchButton } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { toMonacoLanguage, LANGUAGE_OPTIONS } from '@/utils/languagetype';
 import { getCodeTemplate } from '@/api/problem';
@@ -101,7 +96,7 @@ const props = defineProps<{
   problemId?: number;
 }>();
 
-const emit = defineEmits<{
+defineEmits<{
   (e: 'code-change', code: string, language: string): void;
   (e: 'submit', language: string, code: string): void;
 }>();
@@ -229,14 +224,6 @@ const getCode = () => {
   return editor.value?.getValue();
 };
 
-const submitCode = () => {
-  const code = getCode();
-  if (code) {
-    emit('code-change', code, selectedLanguage.value);
-    emit('submit', selectedLanguage.value, code);
-  }
-};
-
 // ============ 辅助能力 ============
 const updateStats = () => {
   const val = editor.value?.getValue() ?? '';
@@ -321,7 +308,7 @@ const toggleFullScreen = async () => {
 };
 
 // 暴露方法给父组件调用
-defineExpose({ getCode, resetCode, submitCode });
+defineExpose({ getCode, resetCode });
 </script>
 
 <style scoped>

@@ -1,0 +1,46 @@
+package com.david.service.impl;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.judge.Submission;
+import com.david.judge.enums.JudgeStatus;
+import com.david.mapper.SubmissionMapper;
+import com.david.service.ISubmissionService;
+import com.david.vo.CalendarVo;
+import com.david.vo.SubmissionCardVo;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submission>
+        implements ISubmissionService {
+
+    private final SubmissionMapper submissionMapper;
+
+    @Override
+    public Page<SubmissionCardVo> pageSubmissionCardVos(
+            Page<SubmissionCardVo> p, Long problemId, Long currentUserId) {
+        return submissionMapper.pageSubmissionCardVos(p, problemId, currentUserId);
+    }
+
+    @Override
+    public List<JudgeStatus> getSubmissionsStatusByProblemId(Long problemId) {
+        return this.lambdaQuery()
+                .select(Submission::getStatus)
+                .eq(Submission::getProblemId, problemId)
+                .list()
+                .stream()
+                .map(Submission::getStatus)
+                .toList();
+    }
+
+    @Override
+    public List<CalendarVo> getSubmissionCalendar(Long userId) {
+        return submissionMapper.getSubmissionCalendar(userId);
+    }
+}

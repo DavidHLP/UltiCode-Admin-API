@@ -1,4 +1,4 @@
-package com.david.dto;
+package com.david.submit;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class InputDto {
-	private String input;
-	private String inputName;
+public class SubmitToSandboxRequest {
+
 }

@@ -49,24 +49,21 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { Plus, Delete } from '@element-plus/icons-vue';
-import type { TestCase, InputDto } from '@/types/problem';
 
-// 扩展测试用例类型以包含名称
-interface TestCaseWithNames extends Omit<TestCase, 'inputs'> {
-  name: string;
-  inputs: InputDto[];
-}
-
-interface Props {
-  testCases: TestCase[];
-}
-
-const props = defineProps<Props>();
+const props = defineProps<{
+  testCases: Array<{
+    id: number;
+    inputs: Array<{ inputName: string; input: string }>;
+    output: string;
+    sample: boolean;
+    score: number;
+  }>;
+}>();
 
 const activeTestCaseName = ref(`Case 1`);
 
 // 创建本地测试用例副本
-const localTestCases = ref<TestCaseWithNames[]>(props.testCases.map((tc, index) => ({
+const localTestCases = ref(props.testCases.map((tc, index) => ({
   ...tc,
   name: `Case ${index + 1}`,
   // 确保 inputs 数组存在且不为空
@@ -111,7 +108,7 @@ const addNewTestCase = () => {
     }))
     : [{ inputName: '', input: '' }]; // 如果没有当前用例，使用默认格式
 
-  const newCase: TestCaseWithNames = {
+  const newCase = {
     id: Date.now(), // 临时ID
     name: newCaseName,
     inputs: templateInputs,

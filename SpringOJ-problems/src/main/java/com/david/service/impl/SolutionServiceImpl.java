@@ -8,6 +8,7 @@ import com.david.mapper.SolutionMapper;
 import com.david.service.ISolutionCommentService;
 import com.david.service.ISolutionService;
 import com.david.solution.Solution;
+import com.david.utils.MarkdownUtils;
 import com.david.vo.SolutionCardVo;
 import com.david.vo.SolutionDetailVo;
 
@@ -79,6 +80,8 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                                     userMap.get(solutionCardVo.getUserId()).getUsername());
                             solutionCardVo.setAuthorAvatar(
                                     userMap.get(solutionCardVo.getUserId()).getAvatar());
+                            solutionCardVo.setContentView(
+                                    MarkdownUtils.toPlainText(solutionCardVo.getContentView()));
                         });
         return pageSolutions;
     }

@@ -5,7 +5,6 @@
   <div v-else class="result-details">
     <div class="result-header">
       <el-tag :type="statusTagType" size="large">{{ submissionResult.status }}</el-tag>
-      <div class="score-info">得分: {{ submissionResult.score }}/100</div>
     </div>
 
     <div class="result-stats">
@@ -24,19 +23,19 @@
       <pre class="compile-info">{{ submissionResult.compileInfo }}</pre>
     </div>
 
-    <div v-if="submissionResult.errorMessage" class="error-section">
-      <h4>错误信息</h4>
-      <pre class="error-message">{{ submissionResult.errorMessage }}</pre>
+    <div v-if="submissionResult.judgeInfo" class="error-section">
+      <h4>判题信息</h4>
+      <pre class="error-message">{{ submissionResult.judgeInfo }}</pre>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Submission } from '../../../../types/problem';
+import type { SubmissionDetailVo } from '@/types/submission';
 
 interface Props {
-  submissionResult?: Submission | null;
+  submissionResult?: SubmissionDetailVo | null;
 }
 
 const props = defineProps<Props>();
@@ -44,18 +43,17 @@ const props = defineProps<Props>();
 const statusTagType = computed(() => {
   if (!props.submissionResult) return 'info';
 
-  switch (props.submissionResult.status) {
-    case 'Accepted':
+  const s = String(props.submissionResult.status || '').toUpperCase();
+  switch (s) {
+    case 'ACCEPTED':
       return 'success';
-    case 'Wrong Answer':
+    case 'WRONG_ANSWER':
       return 'danger';
-    case 'Time Limit Exceeded':
+    case 'TIME_LIMIT_EXCEEDED':
+    case 'MEMORY_LIMIT_EXCEEDED':
       return 'warning';
-    case 'Memory Limit Exceeded':
-      return 'warning';
-    case 'Runtime Error':
-      return 'danger';
-    case 'Compile Error':
+    case 'RUNTIME_ERROR':
+    case 'COMPILE_ERROR':
       return 'danger';
     default:
       return 'info';

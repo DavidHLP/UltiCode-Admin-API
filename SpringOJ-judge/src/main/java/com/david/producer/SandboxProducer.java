@@ -1,19 +1,18 @@
 package com.david.producer;
 
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Component;
-
 import com.david.dto.SandboxExecuteRequest;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Component;
+
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class SandboxProducer {
 
-    private final KafkaTemplate<String, SandboxExecuteRequest> kafkaTemplate;
+	private final KafkaTemplate<String, SandboxExecuteRequest> kafkaTemplate;
 
-    public void executeInSandbox(SandboxExecuteRequest request) {
-        kafkaTemplate.send("sandbox_execute_request_topic", request);
-    }
 }

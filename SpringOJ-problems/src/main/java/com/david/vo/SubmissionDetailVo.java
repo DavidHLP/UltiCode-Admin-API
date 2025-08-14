@@ -1,8 +1,5 @@
-package com.david.judge;
+package com.david.vo;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.david.judge.enums.JudgeStatus;
 import com.david.judge.enums.LanguageType;
 
@@ -11,21 +8,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.io.Serial;
-import java.io.Serializable;
-
-/** 提交记录实体类 */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("submissions")
-public class Submission implements Serializable {
-
-    @Serial private static final long serialVersionUID = 1L;
-
-    /** 提交记录ID，主键，自动增长 */
-    @TableId(value = "id", type = IdType.AUTO)
+public class SubmissionDetailVo {
     private Long id;
 
     /** 提交用户的ID */
@@ -37,14 +24,8 @@ public class Submission implements Serializable {
     /** 编程语言 */
     private LanguageType language;
 
-    /** 用户提交的源代码 */
-    private String sourceCode;
-
     /** 判题状态 */
     private JudgeStatus status;
-
-    /** 得分 */
-    private Integer score;
 
     /** 程序执行耗时，单位为毫秒 */
     private Integer timeUsed;
@@ -52,9 +33,7 @@ public class Submission implements Serializable {
     /** 程序执行内存消耗，单位为KB */
     private Integer memoryUsed;
 
-    /** 编译错误时的详细信息 */
+    private String sourceCode;
     private String compileInfo;
-
-    /** 判题的详细信息，建议使用JSON格式存储 */
     private String judgeInfo;
 }

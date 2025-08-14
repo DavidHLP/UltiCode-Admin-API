@@ -9,7 +9,7 @@
           <el-icon>
             <ArrowLeft />
           </el-icon>
-          <span style="margin-left: 4px">题目列表</span>
+          <span style="margin-left: 4px">返回</span>
         </el-breadcrumb-item>
         <el-breadcrumb-item>题目详情</el-breadcrumb-item>
       </el-breadcrumb>
@@ -58,13 +58,13 @@
 
     <!-- 代码编辑器插槽 -->
     <template #code>
-      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="problem.initialCode" :problem-id="problem.id"
+      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="initialCodeMap" :problem-id="problem.id"
         @submit="handleSubmit" />
     </template>
 
     <!-- 调试面板插槽 -->
     <template #debug>
-      <DebugCard v-if="problem" :submission-result="submissionResult" :test-cases="problem.testCases" />
+      <DebugCard v-if="problem" :submission-result="submissionResult" :test-cases="clientTestCases" />
     </template>
   </ProblemLayout>
 </template>
@@ -80,25 +80,32 @@ import QuestionCardRouter from './components/QuestionCard.vue'
 import CodeCard from './components/CodeCard.vue'
 import DebugCard from './components/DebugCard.vue'
 import { getProblemDetailVoById, submitCode } from '@/api/problem'
-import { getSubmissionById } from '@/api/submission'
-import type { Problem, Submission, TestCase } from '@/types/problem'
-import type { ProblemDetailVo } from '@/types/problem.d'
+import { fetchSubmissionDetail } from '@/api/submission'
+import type { ProblemDetailVo } from '@/types/problem'
+import type { SubmissionDetailVo } from '@/types/submission'
 import { ElMessage } from 'element-plus'
 import { fetchTestCasesByProblemId } from '@/api/testCase'
 import type { TestCaseVo } from '@/types/testCase'
 
 const route = useRoute()
-const problem = ref<Problem | null>(null)
+const problem = ref<ProblemDetailVo | null>(null)
 const codeCardRef = ref<InstanceType<typeof CodeCard> | null>(null)
-const submissionResult = ref<Submission | null>(null)
+const submissionResult = ref<SubmissionDetailVo | null>(null)
 const problemLayoutRef = ref<InstanceType<typeof ProblemLayout> | null>(null)
 const isSubmitting = ref(false)
 const isRunning = ref(false)
 
-// 布局相关状态已由 ProblemLayout 自行管理，此处不再冗余保存
+// 新类型：代码模板映射与测试用例（前端展示结构）
+const initialCodeMap = ref<{ [key: string]: string }>({})
+const clientTestCases = ref<Array<{
+  id: number
+  inputs: Array<{ inputName: string; input: string }>
+  output: string
+  sample: boolean
+  score: number
+}>>([])
 
-// 将后端的 TestCaseVo 转换为前端 DebugCard 使用的 TestCase 模型
-const mapTestCaseVoToClient = (vo: TestCaseVo): TestCase => {
+const mapTestCaseVoToClient = (vo: TestCaseVo) => {
   const inputs = Array.isArray(vo.testCaseInputs)
     ? [...vo.testCaseInputs]
       .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
@@ -124,16 +131,8 @@ const fetchProblem = async () => {
 
   try {
     const res = (await getProblemDetailVoById(problemId)) as ProblemDetailVo & {
-      // 兼容后端未下发时的可选字段
       initialCode?: Array<{ language: string; code: string }>
     }
-
-    const initialCodeMap = Array.isArray(res.initialCode)
-      ? res.initialCode.reduce((acc, curr) => {
-        acc[curr.language] = curr.code
-        return acc
-      }, {} as { [key: string]: string })
-      : {}
 
     // 先渲染题目基本信息，测试用例随后单独拉取
     problem.value = {
@@ -141,19 +140,23 @@ const fetchProblem = async () => {
       title: res.title,
       description: res.description,
       difficulty: res.difficulty,
-      initialCode: initialCodeMap,
-      testCases: [],
     }
+
+    // 构建代码模板映射，传递给 CodeCard
+    initialCodeMap.value = Array.isArray(res.initialCode)
+      ? res.initialCode.reduce((acc, curr) => {
+        acc[curr.language] = curr.code
+        return acc
+      }, {} as { [key: string]: string })
+      : {}
 
     // 拉取测试用例并映射为前端模型
     try {
       const serverTestCases = (await fetchTestCasesByProblemId(problemId)) as TestCaseVo[]
-      const mapped: TestCase[] = Array.isArray(serverTestCases)
+      const mapped = Array.isArray(serverTestCases)
         ? serverTestCases.map(mapTestCaseVoToClient)
         : []
-      if (problem.value) {
-        problem.value.testCases = mapped
-      }
+      clientTestCases.value = mapped
     } catch (e) {
       // 若后端返回404（无样例），静默为空数组
       console.warn('Failed to fetch test cases or none exists:', e)
@@ -185,7 +188,7 @@ const handleSubmit = async (language: string, code: string) => {
 const pollSubmissionResult = (submissionId: number) => {
   const interval = setInterval(async () => {
     try {
-      const result = await getSubmissionById(submissionId)
+      const result = await fetchSubmissionDetail(submissionId)
       if (result.status !== 'PENDING' && result.status !== 'JUDGING') {
         submissionResult.value = result
         clearInterval(interval)
@@ -199,8 +202,6 @@ const pollSubmissionResult = (submissionId: number) => {
   }, 2000)
 }
 
-// 去除多余事件处理（仅用于日志），保持最小业务逻辑
-
 
 
 // 处理提交代码
@@ -212,8 +213,6 @@ const handleSubmitCode = async () => {
 
   try {
     isSubmitting.value = true
-    // 调用CodeCard的submitCode方法
-    codeCardRef.value.submitCode()
   } catch (error) {
     console.error('Submit failed:', error)
     ElMessage.error('提交失败，请重试')
@@ -237,8 +236,6 @@ const handleRun = async () => {
   }
   try {
     isRunning.value = true
-    // 触发一次提交以运行样例（兼容当前提交流程）
-    codeCardRef.value.submitCode()
     // 展开下方调试面板，便于查看结果
     const topRef = (problemLayoutRef.value as unknown as { topPaneSize: Ref<number> } | undefined)?.topPaneSize
     if (topRef && typeof topRef.value === 'number') {

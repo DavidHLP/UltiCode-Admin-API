@@ -25,10 +25,6 @@
         <span class="meta-label">编程语言</span>
         <span class="meta-value">{{ submission.language }}</span>
       </div>
-      <div class="meta-item">
-        <span class="meta-label">提交时间</span>
-        <span class="meta-value">{{ formatDate(submission.createdAt) }}</span>
-      </div>
     </div>
 
     <el-tabs v-model="activeTab" class="submission-tabs">
@@ -38,8 +34,8 @@
       <el-tab-pane v-if="submission.compileInfo" label="编译信息" name="compile">
         <ErrorCodeComponent :message="submission.compileInfo" type="compile" />
       </el-tab-pane>
-      <el-tab-pane v-if="submission.errorMessage" label="错误信息" name="error">
-        <ErrorCodeComponent :message="submission.errorMessage" type="error" />
+      <el-tab-pane v-if="submission.judgeInfo" label="判题信息" name="judge">
+        <ErrorCodeComponent :message="submission.judgeInfo" type="error" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -50,38 +46,21 @@ import { defineEmits, defineProps, ref } from 'vue'
 import { Back as ElIconBack } from '@element-plus/icons-vue'
 import CodeComponent from '@/components/CodeComponent.vue'
 import ErrorCodeComponent from '@/components/ErrorCodeComponent.vue'
-import type { Submission } from '@/types/problem'
+import type { SubmissionDetailVo } from '@/types/submission'
+import { getStatusTagType } from '@/utils/status'
 
 const activeTab = ref('code')
 
 // 定义 props 和 emits
 const { submission } = defineProps<{
-  submission: Submission
+  submission: SubmissionDetailVo
 }>()
 
 const emit = defineEmits<{
   (e: 'back'): void
 }>()
 
-const getStatusTagType = (status: string) => {
-  switch (status) {
-    case 'Accepted':
-      return 'success'
-    case 'Wrong Answer':
-    case 'Time Limit Exceeded':
-    case 'Memory Limit Exceeded':
-    case 'Runtime Error':
-    case 'Compile Error':
-      return 'danger'
-    default:
-      return 'warning'
-  }
-}
-
-const formatDate = (dateString?: string) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleString()
-}
+// 状态颜色映射使用全局工具 getStatusTagType
 
 const handleBack = () => {
   emit('back')

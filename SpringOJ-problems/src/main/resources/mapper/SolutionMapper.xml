@@ -7,7 +7,7 @@
         <result property="userId" column="user_id"/>
         <result property="tags" column="tags" javaType="java.util.List"
                 typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
-        <result property="contentView" column="content_view"/>
+        <result property="contentView" column="content"/>
         <result property="title" column="title"/>
         <result property="language" column="language"/>
         <result property="upvotes" column="upvotes"/>

@@ -17,7 +17,21 @@
     <div v-loading="loading" class="submission-container">
       <template v-if="!currentSubmission">
         <el-empty v-if="submissions.length === 0 && !loading" description="暂无提交记录" />
-        <SubmissionTable v-else :submissions="submissions" @row-click="handleRowClick" />
+        <template v-else>
+          <SubmissionTable :submissions="submissions" @row-click="handleRowClick" />
+          <div class="pager">
+            <el-pagination
+              background
+              layout="prev, pager, next, sizes, total"
+              :total="total"
+              :current-page="page"
+              :page-size="size"
+              :page-sizes="[5, 10, 20, 50]"
+              @current-change="onPageChange"
+              @size-change="onSizeChange"
+            />
+          </div>
+        </template>
       </template>
       <SubmissionView v-else :submission="currentSubmission" @back="currentSubmission = null" />
     </div>
@@ -28,8 +42,8 @@
 import { ref, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getSubmissionsByProblemId } from '@/api/submission'
-import type { Submission } from '@/types/problem'
+import { fetchSubmissionPage, fetchSubmissionDetail } from '@/api/submission'
+import type { SubmissionCardVo, SubmissionDetailVo } from '@/types/submission'
 import SubmissionTable from './components/SubmissionTable.vue'
 import SubmissionView from './components/SubmissionView.vue'
 import HeaderComponent from '../components/HeaderComponent.vue'
@@ -40,9 +54,12 @@ const route = useRoute()
 // 从路由参数获取 problemId
 const problemId = computed(() => Number(route.params.id))
 
-const submissions = ref<Submission[]>([])
-const currentSubmission = ref<Submission | null>(null)
+const submissions = ref<SubmissionCardVo[]>([])
+const currentSubmission = ref<SubmissionDetailVo | null>(null)
 const loading = ref(false)
+const total = ref(0)
+const page = ref(1)
+const size = ref(10)
 
 // 获取提交记录
 const fetchSubmissions = async () => {
@@ -50,11 +67,9 @@ const fetchSubmissions = async () => {
 
   try {
     loading.value = true
-    const res: Submission[] = await getSubmissionsByProblemId(problemId.value)
-    submissions.value = res.map((submission: Submission) => ({
-      ...submission,
-      memoryUsed: submission.memoryUsed ? Number((submission.memoryUsed / 1024).toFixed(2)) : 0
-    }))
+    const res = await fetchSubmissionPage({ problemId: problemId.value, page: page.value, size: size.value })
+    submissions.value = res.records
+    total.value = res.total
   } catch (error) {
     console.error('获取提交记录失败:', error)
     ElMessage.error('获取提交记录失败')
@@ -64,8 +79,28 @@ const fetchSubmissions = async () => {
 }
 
 // 处理行点击
-const handleRowClick = (submission: Submission) => {
-  currentSubmission.value = submission
+const handleRowClick = async (row: SubmissionCardVo) => {
+  try {
+    loading.value = true
+    const detail = await fetchSubmissionDetail(row.id)
+    currentSubmission.value = detail
+  } catch (e) {
+    console.error('获取提交详情失败:', e)
+    ElMessage.error('获取提交详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const onPageChange = (p: number) => {
+  page.value = p
+  fetchSubmissions()
+}
+
+const onSizeChange = (s: number) => {
+  size.value = s
+  page.value = 1
+  fetchSubmissions()
 }
 
 // 监听路由参数变化
@@ -84,5 +119,10 @@ watch(
 <style scoped>
 .submission-card {
   padding: 16px;
+}
+.submission-container .pager {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
 }
 </style>

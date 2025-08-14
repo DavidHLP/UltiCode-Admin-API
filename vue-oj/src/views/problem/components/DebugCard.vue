@@ -32,19 +32,31 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 import { DataAnalysis, DocumentChecked } from '@element-plus/icons-vue'
-import type { Submission, TestCase } from '../../../types/problem'
+import type { SubmissionDetailVo } from '@/types/submission'
 import TestCaseCard from './DebugCard/TestCaseCard.vue'
 import ResultCaseCard from './DebugCard/ResultCaseCard.vue'
 import HeaderComponent from './components/HeaderComponent.vue'
 
 interface Props {
-  testCases: TestCase[]
-  submissionResult?: Submission | null
+  testCases: Array<{
+    id: number
+    inputs: Array<{ inputName: string; input: string }>
+    output: string
+    sample: boolean
+    score: number
+  }>
+  submissionResult?: SubmissionDetailVo | null
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  (e: 'addTestCase', testCase: TestCase): void
+  (e: 'addTestCase', testCase: {
+    id: number
+    inputs: Array<{ inputName: string; input: string }>
+    output: string
+    sample: boolean
+    score: number
+  }): void
 }>()
 
 const mainTab = ref('test-cases')

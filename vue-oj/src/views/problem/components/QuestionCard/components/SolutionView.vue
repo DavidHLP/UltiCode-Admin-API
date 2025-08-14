@@ -6,7 +6,7 @@
           <el-icon>
             <ElIconBack />
           </el-icon>
-          <span>返回题解列表</span>
+          <span>返回</span>
         </el-button>
         <h1>{{ solution?.title || '加载中...' }}</h1>
       </div>

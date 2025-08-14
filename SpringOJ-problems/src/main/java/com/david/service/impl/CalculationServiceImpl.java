@@ -1,6 +1,7 @@
 package com.david.service.impl;
 
-
+import com.david.judge.enums.JudgeStatus;
+import com.david.service.ISubmissionService;
 import com.david.vo.CalendarVo;
 
 import lombok.RequiredArgsConstructor;
@@ -12,24 +13,22 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CalculationServiceImpl {
-//    private final ISubmissionService submissionService;
+    private final ISubmissionService submissionService;
 
     public Integer submissionPassRate(Long problemId) {
-//        List<JudgeStatus> judgeStatuses =
-//                submissionService.getSubmissionsStatusByProblemId(problemId);
-//        if (judgeStatuses.isEmpty()) {
-//            return 0;
-//        }
-//        long acceptedCount =
-//                judgeStatuses.stream()
-//                        .filter(judgeStatus -> judgeStatus.equals(JudgeStatus.ACCEPTED))
-//                        .count();
-//        return (int) ((acceptedCount * 100) / judgeStatuses.size());
-	    return null;
+        List<JudgeStatus> judgeStatuses =
+                submissionService.getSubmissionsStatusByProblemId(problemId);
+        if (judgeStatuses.isEmpty()) {
+            return 0;
+        }
+        long acceptedCount =
+                judgeStatuses.stream()
+                        .filter(judgeStatus -> judgeStatus.equals(JudgeStatus.ACCEPTED))
+                        .count();
+        return (int) ((acceptedCount * 100) / judgeStatuses.size());
     }
 
     public List<CalendarVo> getSubmissionCalendar(Long userId) {
-//        return submissionService.getSubmissionCalendar(userId);
-	    return null;
+        return submissionService.getSubmissionCalendar(userId);
     }
 }

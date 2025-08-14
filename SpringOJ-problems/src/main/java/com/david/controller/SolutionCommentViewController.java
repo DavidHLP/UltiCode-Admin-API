@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/problems/api/view/solution/comment")
-public class SolutionCommentController extends BaseController {
+public class SolutionCommentViewController extends BaseController {
 	private final ISolutionCommentService solutionCommentService;
 	@PostMapping
 	public ResponseResult<Void> createComment(@RequestBody  SolutionComments solutionComments) {
