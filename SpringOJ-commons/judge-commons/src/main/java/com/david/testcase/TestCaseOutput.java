@@ -1,7 +1,6 @@
 package com.david.testcase;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.david.submission.enums.OutputType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,7 +42,7 @@ public class TestCaseOutput implements Serializable {
 	 * 输出类型 (varchar(50)，可为空)
 	 */
 	@TableField("output_type")
-	private OutputType outputType;
+	private String outputType;
 
 	/**
 	 * 该测试点的分值，默认为10

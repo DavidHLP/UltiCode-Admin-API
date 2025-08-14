@@ -36,41 +36,63 @@ public class JavaCodeUtils {
 	 * @return 完整的 Main 类源码
 	 */
 	public String generateMainClass(String solutionFunctionName, String outputType, String inputType , String output , String input) {
+        // 生成 JSON 字面量（保证合法）
+        String inputJsonLiteral = JavaFormationUtils.toJavaStringLiteral(
+                JavaFormationUtils.ensureJsonLiteral(input, inputType)
+        );
+        String expectedJsonLiteral = JavaFormationUtils.toJavaStringLiteral(
+                JavaFormationUtils.ensureJsonLiteral(output, outputType)
+        );
+
+        // 输入传递给 solution(String s) 作为 JSON 文本，这里不反序列化为具体类型
+
         String codeTemplate = """
                 import java.util.*;
+                import com.fasterxml.jackson.databind.ObjectMapper;
+                import com.fasterxml.jackson.databind.JsonNode;
+
                 class Main {
-                    private static String toStr(Object o) {
-                        if (o == null) return "null";
-                        Class<?> c = o.getClass();
-                        if (c.isArray()) {
-                            if (o instanceof int[]) return java.util.Arrays.toString((int[]) o);
-                            if (o instanceof long[]) return java.util.Arrays.toString((long[]) o);
-                            if (o instanceof short[]) return java.util.Arrays.toString((short[]) o);
-                            if (o instanceof byte[]) return java.util.Arrays.toString((byte[]) o);
-                            if (o instanceof char[]) return java.util.Arrays.toString((char[]) o);
-                            if (o instanceof boolean[]) return java.util.Arrays.toString((boolean[]) o);
-                            if (o instanceof float[]) return java.util.Arrays.toString((float[]) o);
-                            if (o instanceof double[]) return java.util.Arrays.toString((double[]) o);
-                            return java.util.Arrays.deepToString((Object[]) o);
-                        }
-                        return String.valueOf(o);
+                    private static final ObjectMapper MAPPER = new ObjectMapper();
+
+                    private static String asJson(Object o) {
+                        try { return MAPPER.writeValueAsString(o); } catch (Exception e) { return String.valueOf(o); }
                     }
+
                     public static void main(String[] args) {
                         try {
                             Solution solution = new Solution();
-                            String s = %s;
-                            %s expected = %s;
+                            String s = %s; // JSON 文本输入
+
+                            // 期望输出按 JSON 读取为树
+                            JsonNode expectedNode = MAPPER.readTree(%s);
+
                             %s result = solution.%s(s);
-                            boolean ok = java.util.Objects.deepEquals(expected, result);
+                            String resultJson = asJson(result);
+                            JsonNode resultNode = MAPPER.readTree(resultJson);
+
+                            boolean ok = java.util.Objects.equals(expectedNode, resultNode);
                             System.out.println(ok);
-                            System.out.println(toStr(result));
+                            System.out.println(resultJson);
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
                     }
                 }
             """;
-        return String.format(codeTemplate, input, outputType, output, outputType, solutionFunctionName);
+
+        // 占位：
+        // %s1 -> inputJsonLiteral
+        // %s2 -> expectedJsonLiteral
+        // %s3 -> outputType
+        // %s4 -> solutionFunctionName
+
+        return String.format(
+                codeTemplate,
+                inputJsonLiteral,     // %s1
+                expectedJsonLiteral,  // %s2
+                outputType,           // %s3
+                solutionFunctionName  // %s4
+        );
     }
 
 	public String generateMainFixSolutionClass(String MainClass, String SolutionClass)

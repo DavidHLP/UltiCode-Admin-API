@@ -1,7 +1,6 @@
 package com.david.chain.utils;
 
 import com.david.enums.LanguageType;
-import com.david.testcase.TestCase;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,8 +17,9 @@ public class JudgmentContext {
     private Long problemId;
     private Long submissionId;
     private Long userId;
+	private String compileInfo;
+	private String judgeInfo;
     private LanguageType language;
-    private String sourceCode;
-    private List<TestCase> testCases;
-    private Boolean isFinalJudge;
+    private String solutionCode;
+	private List<TestCaseContext> testCaseContexts;
 }

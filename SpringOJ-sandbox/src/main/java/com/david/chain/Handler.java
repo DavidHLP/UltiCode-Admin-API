@@ -2,12 +2,11 @@ package com.david.chain;
 
 import com.david.chain.utils.JudgmentContext;
 
+import lombok.Setter;
+
+@Setter
 public abstract class Handler {
     protected Handler nextHandler;
 
-    public void setNext(Handler nextHandler) {
-        this.nextHandler = nextHandler;
-    }
-
-    public abstract void handleRequest(JudgmentContext judgmentContext);
+    public abstract Boolean handleRequest(JudgmentContext judgmentContext);
 }
