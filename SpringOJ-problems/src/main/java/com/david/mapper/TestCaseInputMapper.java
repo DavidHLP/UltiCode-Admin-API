@@ -1,12 +1,12 @@
 package com.david.mapper;
 
-import java.util.List;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.david.testcase.TestCaseInput;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.david.judge.TestCaseInput;
+import java.util.List;
 
 @Mapper
 public interface TestCaseInputMapper extends BaseMapper<TestCaseInput> {

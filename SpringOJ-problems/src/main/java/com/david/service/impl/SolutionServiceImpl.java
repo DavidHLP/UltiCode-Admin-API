@@ -8,9 +8,9 @@ import com.david.mapper.SolutionMapper;
 import com.david.service.ISolutionCommentService;
 import com.david.service.ISolutionService;
 import com.david.solution.Solution;
+import com.david.solution.vo.SolutionCardVo;
+import com.david.solution.vo.SolutionDetailVo;
 import com.david.utils.MarkdownUtils;
-import com.david.vo.SolutionCardVo;
-import com.david.vo.SolutionDetailVo;
 
 import lombok.RequiredArgsConstructor;
 

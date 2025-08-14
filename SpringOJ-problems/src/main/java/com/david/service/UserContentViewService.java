@@ -1,6 +1,6 @@
 package com.david.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.solution.UserContentView;
+import com.david.usercontent.UserContentView;
 
 public interface UserContentViewService extends IService<UserContentView> {}

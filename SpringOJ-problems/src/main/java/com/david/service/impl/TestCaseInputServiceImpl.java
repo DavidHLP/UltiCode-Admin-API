@@ -1,9 +1,9 @@
 package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.judge.TestCaseInput;
 import com.david.mapper.TestCaseInputMapper;
 import com.david.service.ITestCaseInputService;
+import com.david.testcase.TestCaseInput;
 
 import lombok.RequiredArgsConstructor;
 

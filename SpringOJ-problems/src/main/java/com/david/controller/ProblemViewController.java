@@ -1,14 +1,14 @@
 package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.judge.Problem;
-import com.david.judge.enums.CategoryType;
-import com.david.judge.enums.LanguageType;
-import com.david.judge.enums.ProblemDifficulty;
+import com.david.enums.CategoryType;
+import com.david.enums.LanguageType;
+import com.david.problem.Problem;
+import com.david.problem.enums.ProblemDifficulty;
+import com.david.problem.vo.ProblemCardVo;
+import com.david.problem.vo.ProblemDetailVo;
 import com.david.service.IProblemService;
 import com.david.utils.ResponseResult;
-import com.david.vo.ProblemDetailVo;
-import com.david.vo.ProblemVo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,14 +21,14 @@ public class ProblemViewController {
     private final IProblemService problemService;
 
     @GetMapping("/page")
-    public ResponseResult<Page<ProblemVo>> pageProblemVos(
+    public ResponseResult<Page<ProblemCardVo>> pageProblemVos(
             @RequestParam long page,
             @RequestParam long size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProblemDifficulty difficulty,
             @RequestParam(required = false) CategoryType category) {
         Page<Problem> p = new Page<>(page, size);
-        Page<ProblemVo> result = problemService.pageProblemVos(p, keyword, difficulty, category);
+        Page<ProblemCardVo> result = problemService.pageProblemVos(p, keyword, difficulty, category);
         return ResponseResult.success("成功获取题目分页", result);
     }
 

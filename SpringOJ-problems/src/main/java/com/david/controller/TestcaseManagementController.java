@@ -1,7 +1,7 @@
 package com.david.controller;
 
-import com.david.judge.TestCase;
 import com.david.service.impl.TestCaseServiceImpl;
+import com.david.testcase.TestCase;
 import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;

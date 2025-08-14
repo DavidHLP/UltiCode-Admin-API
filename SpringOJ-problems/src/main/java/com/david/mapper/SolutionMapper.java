@@ -3,7 +3,7 @@ package com.david.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.solution.Solution;
-import com.david.vo.SolutionCardVo;
+import com.david.solution.vo.SolutionCardVo;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

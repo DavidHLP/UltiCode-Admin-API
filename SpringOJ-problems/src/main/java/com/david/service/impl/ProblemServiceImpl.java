@@ -2,16 +2,16 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.judge.Problem;
-import com.david.judge.enums.CategoryType;
-import com.david.judge.enums.LanguageType;
-import com.david.judge.enums.ProblemDifficulty;
+import com.david.enums.CategoryType;
+import com.david.enums.LanguageType;
 import com.david.mapper.ProblemMapper;
+import com.david.problem.Problem;
+import com.david.problem.enums.ProblemDifficulty;
+import com.david.problem.vo.ProblemCardVo;
+import com.david.problem.vo.ProblemDetailVo;
 import com.david.service.IProblemService;
 import com.david.utils.CodeUtils;
 import com.david.utils.SolutionDto;
-import com.david.vo.ProblemDetailVo;
-import com.david.vo.ProblemVo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,20 +42,20 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    public Page<ProblemVo> pageProblemVos(
+    public Page<ProblemCardVo> pageProblemVos(
             Page<Problem> page,
             String keyword,
             ProblemDifficulty difficulty,
             CategoryType category) {
         Page<Problem> problemPage =
                 problemMapper.pageProblems(page, keyword, difficulty, category, true);
-        Page<ProblemVo> result =
+        Page<ProblemCardVo> result =
                 new Page<>(problemPage.getCurrent(), problemPage.getSize(), problemPage.getTotal());
         result.setRecords(
                 problemPage.getRecords().stream()
                         .map(
                                 problem ->
-                                        ProblemVo.builder()
+                                        ProblemCardVo.builder()
                                                 .id(problem.getId())
                                                 .category(problem.getCategory())
                                                 .difficulty(problem.getDifficulty())

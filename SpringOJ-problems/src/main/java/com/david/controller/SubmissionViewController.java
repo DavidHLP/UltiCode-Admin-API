@@ -1,12 +1,12 @@
 package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.judge.Submission;
 import com.david.service.ISubmissionService;
+import com.david.submission.Submission;
+import com.david.submission.vo.SubmissionCardVo;
+import com.david.submission.vo.SubmissionDetailVo;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
-import com.david.vo.SubmissionCardVo;
-import com.david.vo.SubmissionDetailVo;
 
 import lombok.RequiredArgsConstructor;
 

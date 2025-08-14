@@ -1,8 +1,8 @@
 package com.david.controller;
 
 import com.david.service.impl.TestCaseServiceImpl;
+import com.david.testcase.vo.TestCaseVo;
 import com.david.utils.ResponseResult;
-import com.david.vo.TestCaseVo;
 
 import lombok.RequiredArgsConstructor;
 

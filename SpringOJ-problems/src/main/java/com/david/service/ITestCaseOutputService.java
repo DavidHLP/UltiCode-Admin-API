@@ -1,7 +1,7 @@
 package com.david.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.judge.TestCaseOutput;
+import com.david.testcase.TestCaseOutput;
 
 import java.util.List;
 

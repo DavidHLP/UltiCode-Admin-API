@@ -6,7 +6,7 @@ import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionCommentMapper;
 import com.david.service.ISolutionCommentService;
 import com.david.solution.SolutionComments;
-import com.david.vo.SolutionCommentVo;
+import com.david.solution.vo.SolutionCommentVo;
 
 import lombok.RequiredArgsConstructor;
 

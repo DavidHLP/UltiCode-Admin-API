@@ -3,8 +3,8 @@ package com.david.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.david.solution.Solution;
-import com.david.vo.SolutionCardVo;
-import com.david.vo.SolutionDetailVo;
+import com.david.solution.vo.SolutionCardVo;
+import com.david.solution.vo.SolutionDetailVo;
 
 /**
  * <p>

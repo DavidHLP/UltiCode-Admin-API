@@ -2,7 +2,7 @@ package com.david.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.david.solution.SolutionComments;
-import com.david.vo.SolutionCommentVo;
+import com.david.solution.vo.SolutionCommentVo;
 
 import java.util.List;
 

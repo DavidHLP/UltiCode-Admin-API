@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.david.mapper.SubmissionMapper">
-    <resultMap id="SubmissionCardVoResultMap" type="com.david.vo.SubmissionCardVo">
+    <resultMap id="SubmissionCardVoResultMap" type="com.david.submission.vo.SubmissionCardVo">
         <id property="id" column="id"/>
         <result property="problemId" column="problem_id"/>
         <result property="userId" column="user_id"/>
@@ -16,7 +16,7 @@
         where problem_id = #{problemId}
           and user_id = #{userId}
     </select>
-    <resultMap id="CalendarVoResultMap" type="com.david.vo.CalendarVo">
+    <resultMap id="CalendarVoResultMap" type="com.david.calendar.vo.CalendarVo">
         <id property="date" column="date"/>
         <result property="count" column="count"/>
     </resultMap>

@@ -1,8 +1,8 @@
 package com.david.service.impl;
 
-import com.david.judge.enums.JudgeStatus;
+import com.david.calendar.vo.CalendarVo;
+import com.david.enums.JudgeStatus;
 import com.david.service.ISubmissionService;
-import com.david.vo.CalendarVo;
 
 import lombok.RequiredArgsConstructor;
 

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.david.mapper.ProblemMapper">
 
-    <resultMap id="ProblemResultMap" type="com.david.judge.Problem" autoMapping="true">
+    <resultMap id="ProblemResultMap" type="com.david.problem.Problem" autoMapping="true">
         <id property="id" column="id"/>
         <result property="tags" column="tags" javaType="java.util.List"
                 typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>

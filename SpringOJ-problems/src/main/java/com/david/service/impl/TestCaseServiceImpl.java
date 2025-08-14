@@ -1,10 +1,10 @@
 package com.david.service.impl;
 
-import com.david.judge.TestCase;
-import com.david.judge.TestCaseOutput;
 import com.david.service.ITestCaseInputService;
 import com.david.service.ITestCaseOutputService;
-import com.david.vo.TestCaseVo;
+import com.david.testcase.TestCase;
+import com.david.testcase.TestCaseOutput;
+import com.david.testcase.vo.TestCaseVo;
 
 import lombok.RequiredArgsConstructor;
 

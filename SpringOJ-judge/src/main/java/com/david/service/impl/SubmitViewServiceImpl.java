@@ -1,8 +1,8 @@
 package com.david.service.impl;
 
-import com.david.dto.SubmitCodeRequest;
 import com.david.interfaces.SubmissionServiceFeignClient;
 import com.david.service.ISubmitViewService;
+import com.david.submission.dto.SubmitCodeRequest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

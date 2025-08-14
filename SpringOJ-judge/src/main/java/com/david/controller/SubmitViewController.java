@@ -1,7 +1,7 @@
 package com.david.controller;
 
-import com.david.dto.SubmitCodeRequest;
 import com.david.service.ISubmitViewService;
+import com.david.submission.dto.SubmitCodeRequest;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
 

@@ -3,10 +3,10 @@ package com.david.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.service.ISolutionService;
 import com.david.solution.Solution;
+import com.david.solution.vo.SolutionCardVo;
+import com.david.solution.vo.SolutionDetailVo;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
-import com.david.vo.SolutionCardVo;
-import com.david.vo.SolutionDetailVo;
 
 import lombok.RequiredArgsConstructor;
 

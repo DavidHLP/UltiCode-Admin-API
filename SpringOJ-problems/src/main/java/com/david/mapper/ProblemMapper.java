@@ -2,9 +2,9 @@ package com.david.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.judge.Problem;
-import com.david.judge.enums.CategoryType;
-import com.david.judge.enums.ProblemDifficulty;
+import com.david.enums.CategoryType;
+import com.david.problem.Problem;
+import com.david.problem.enums.ProblemDifficulty;
 import com.david.utils.SolutionDto;
 
 import org.apache.ibatis.annotations.Mapper;

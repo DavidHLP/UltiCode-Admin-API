@@ -1,6 +1,6 @@
 package com.david.utils;
 
-import com.david.judge.enums.LanguageType;
+import com.david.enums.LanguageType;
 import com.david.utils.java.JavaCodeUtils;
 import com.david.utils.java.JavaType;
 

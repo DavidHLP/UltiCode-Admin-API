@@ -1,9 +1,9 @@
 package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.judge.Problem;
-import com.david.judge.enums.CategoryType;
-import com.david.judge.enums.ProblemDifficulty;
+import com.david.enums.CategoryType;
+import com.david.problem.Problem;
+import com.david.problem.enums.ProblemDifficulty;
 import com.david.service.IProblemService;
 import com.david.utils.ResponseResult;
 

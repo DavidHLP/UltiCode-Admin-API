@@ -4,7 +4,7 @@
     <delete id="deleteByTestCaseOutputId">
         delete from test_case_inputs where test_case_output_id = #{testCaseOutputId}
     </delete>
-    <select id="getByTestCaseOutputId" resultType="com.david.judge.TestCaseInput">
+    <select id="getByTestCaseOutputId" resultType="com.david.testcase.TestCaseInput">
         select * from test_case_inputs where test_case_output_id = #{testCaseOutputId}
     </select>
 </mapper>

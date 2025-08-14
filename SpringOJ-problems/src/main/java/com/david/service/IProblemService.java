@@ -2,12 +2,12 @@ package com.david.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.david.judge.Problem;
-import com.david.judge.enums.CategoryType;
-import com.david.judge.enums.LanguageType;
-import com.david.judge.enums.ProblemDifficulty;
-import com.david.vo.ProblemDetailVo;
-import com.david.vo.ProblemVo;
+import com.david.enums.CategoryType;
+import com.david.enums.LanguageType;
+import com.david.problem.Problem;
+import com.david.problem.enums.ProblemDifficulty;
+import com.david.problem.vo.ProblemCardVo;
+import com.david.problem.vo.ProblemDetailVo;
 
 /**
  * <p>
@@ -25,10 +25,10 @@ public interface IProblemService extends IService<Problem> {
                                CategoryType category,
                                Boolean isVisible);
 
-	Page<ProblemVo> pageProblemVos(Page<Problem> page,
-	                               String keyword,
-	                               ProblemDifficulty difficulty,
-	                               CategoryType category);
+	Page<ProblemCardVo> pageProblemVos(Page<Problem> page,
+	                                   String keyword,
+	                                   ProblemDifficulty difficulty,
+	                                   CategoryType category);
 
 	ProblemDetailVo getProblemDetailVoById(Long id);
 
