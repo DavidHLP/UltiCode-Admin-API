@@ -81,7 +81,7 @@ const statusTagType = computed(() => {
 }
 
 .result-details {
-  padding: 24px;
+  padding: 16px;
   height: 100%;
   background: transparent;
 }
@@ -90,28 +90,28 @@ const statusTagType = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid rgba(59, 130, 246, 0.1);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ebeef5;
 }
 
 :deep(.el-tag) {
-  border-radius: 20px;
-  padding: 8px 20px;
-  font-weight: 600;
-  font-size: 14px;
-  border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 500;
+  font-size: 13px;
+  border: 1px solid #dcdfe6;
+  box-shadow: none;
 }
 
 .score-info {
-  font-size: 16px;
-  color: #1e293b;
-  font-weight: 600;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(29, 78, 216, 0.1));
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+  background: #f5f7fa;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
 }
 
 .result-stats {
@@ -124,20 +124,17 @@ const statusTagType = computed(() => {
 .stat-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.5);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 6px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
 .stat-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
+  transform: none;
+  box-shadow: none;
+  border-color: #e5e7eb;
 }
 
 .stat-label {
@@ -149,13 +146,9 @@ const statusTagType = computed(() => {
 }
 
 .stat-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .compile-section,
@@ -165,126 +158,63 @@ const statusTagType = computed(() => {
 
 .compile-section h4,
 .error-section h4 {
-  font-size: 16px;
-  color: #1e293b;
-  margin: 0 0 16px 0;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 14px;
+  color: #606266;
+  margin: 0 0 8px 0;
+  font-weight: 500;
 }
 
 .compile-section h4::before {
-  content: '';
-  width: 4px;
-  height: 16px;
-  background: linear-gradient(135deg, #10b981, #059669);
-  border-radius: 2px;
+  content: none;
+  display: none;
 }
 
 .error-section h4::before {
-  content: '';
-  width: 4px;
-  height: 16px;
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border-radius: 2px;
+  content: none;
+  display: none;
 }
 
 .compile-info,
 .error-message {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(226, 232, 240, 0.5);
-  border-radius: 12px;
-  padding: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
   font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
   color: #374151;
   white-space: pre-wrap;
   word-wrap: break-word;
-  max-height: 300px;
+  max-height: 240px;
   overflow-y: auto;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .compile-info {
-  border-left: 4px solid #10b981;
-  background: rgba(16, 185, 129, 0.05);
+  background: #f5f7fa;
 }
 
 .error-message {
-  border-left: 4px solid #ef4444;
-  background: rgba(239, 68, 68, 0.05);
+  background: #fff5f5;
   color: #dc2626;
 }
 
-/* 滚动条样式 */
+/* 简化的滚动条样式 */
 .compile-info::-webkit-scrollbar,
 .error-message::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+}
+
+.compile-info::-webkit-scrollbar-thumb,
+.error-message::-webkit-scrollbar-thumb {
+  background-color: #dcdfe6;
+  border-radius: 2px;
 }
 
 .compile-info::-webkit-scrollbar-track,
 .error-message::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 3px;
+  background: transparent;
 }
 
-.compile-info::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.3);
-  border-radius: 3px;
-}
-
-.error-message::-webkit-scrollbar-thumb {
-  background: rgba(239, 68, 68, 0.3);
-  border-radius: 3px;
-}
-
-.compile-info::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.5);
-}
-
-.error-message::-webkit-scrollbar-thumb:hover {
-  background: rgba(239, 68, 68, 0.5);
-}
-
-/* 动画效果 */
-.result-details {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-.stat-item {
-  animation: slideInUp 0.6s ease-out;
-}
-
-.stat-item:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.stat-item:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* 移除动画，保持简洁 */
 </style>

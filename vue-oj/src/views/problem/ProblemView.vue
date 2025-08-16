@@ -79,7 +79,8 @@ import ProblemLayout from './layout/ProblemLayout.vue'
 import QuestionCardRouter from './components/QuestionCard.vue'
 import CodeCard from './components/CodeCard.vue'
 import DebugCard from './components/DebugCard.vue'
-import { getProblemDetailVoById, submitCode } from '@/api/problem'
+import { getProblemDetailVoById } from '@/api/problem'
+import { submitCode as submitCodeApi } from '@/api/submit'
 import { fetchSubmissionDetail } from '@/api/submission'
 import type { ProblemDetailVo } from '@/types/problem'
 import type { SubmissionDetailVo } from '@/types/submission'
@@ -169,19 +170,26 @@ const fetchProblem = async () => {
 
 const handleSubmit = async (language: string, code: string) => {
   if (!problem.value) return
+  const trimmed = (code || '').trim()
+  if (!trimmed) {
+    ElMessage.warning('代码不能为空')
+    return
+  }
 
   try {
-    const submissionId = await submitCode({
+    isSubmitting.value = true
+    const submissionId = await submitCodeApi({
       problemId: problem.value.id,
-      sourceCode: code,
       language,
+      sourceCode: trimmed,
     })
-
     ElMessage.success('代码提交成功，正在判题...')
     pollSubmissionResult(submissionId)
   } catch (error) {
     console.error('Submission failed:', error)
     ElMessage.error('代码提交失败')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -204,23 +212,17 @@ const pollSubmissionResult = (submissionId: number) => {
 
 
 
-// 处理提交代码
-const handleSubmitCode = async () => {
+// 处理提交代码：触发 CodeCard 暴露的 submit()，由 handleSubmit 统一处理提交流程
+const handleSubmitCode = () => {
   if (!codeCardRef.value || !problem.value) {
     ElMessage.warning('请等待页面加载完成')
     return
   }
-
   try {
-    isSubmitting.value = true
+    codeCardRef.value.submit()
   } catch (error) {
-    console.error('Submit failed:', error)
+    console.error('Submit trigger failed:', error)
     ElMessage.error('提交失败，请重试')
-  } finally {
-    // 延迟重置加载状态，给用户反馈
-    setTimeout(() => {
-      isSubmitting.value = false
-    }, 1000)
   }
 }
 

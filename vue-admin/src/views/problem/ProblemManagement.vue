@@ -62,18 +62,6 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="timeLimit" label="时间限制" width="120" align="center">
-          <template #default="scope">
-            <span>{{ scope.row.timeLimit }}ms</span>
-          </template>
-        </el-table-column>
-
-        <el-table-column prop="memoryLimit" label="内存限制" width="120" align="center">
-          <template #default="scope">
-            <span>{{ scope.row.memoryLimit }}MB</span>
-          </template>
-        </el-table-column>
-
         <el-table-column label="操作" width="200" align="center" fixed="right">
           <template #default="scope">
             <div class="action-buttons">

@@ -29,4 +29,10 @@ public class SubmissionManagementController {
         }
         return ResponseResult.success("提交记录更新成功", submission.getId());
     }
+
+    @PutMapping("/callbackId")
+    public ResponseResult<Long> updateSubmissionThenCallback(@RequestBody Submission submission) {
+        if (!submissionService.updateById(submission)) return ResponseResult.fail(401, "提交记录更新失败");
+        return ResponseResult.success("提交记录更新成功", submission.getId());
+    }
 }

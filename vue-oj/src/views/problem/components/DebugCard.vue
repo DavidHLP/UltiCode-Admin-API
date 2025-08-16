@@ -109,7 +109,7 @@ watch(
 /* Main 内容区域 */
 .main-content {
   flex: 1;
-  background: #ffffff;
+  background: transparent;
   overflow: hidden;
   min-height: 0;
 }

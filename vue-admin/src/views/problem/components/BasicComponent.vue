@@ -86,27 +86,6 @@
               />
             </el-form-item>
           </div>
-
-          <div class="col-6">
-            <el-form-item label="时间限制 (ms)" prop="timeLimit">
-              <el-input-number
-                v-model="localProblem.timeLimit"
-                :min="1"
-                :step="50"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </div>
-          <div class="col-6">
-            <el-form-item label="内存限制 (MB)" prop="memoryLimit">
-              <el-input-number
-                v-model="localProblem.memoryLimit"
-                :min="1"
-                :step="16"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </div>
         </div>
       </el-card>
     </div>

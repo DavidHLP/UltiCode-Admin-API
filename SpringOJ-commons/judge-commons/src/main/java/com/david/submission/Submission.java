@@ -43,6 +43,15 @@ public class Submission implements Serializable {
     /** 判题状态 */
     private JudgeStatus status;
 
+    /** 错误测试用例的Id */
+    private Long errorTestCaseId;
+
+    /** 错误测试用例的输出 */
+    private String errorTestCaseOutput;
+
+    /** 错误测试用例的期望输出 */
+    private String errorTestCaseExpectOutput;
+
     /** 得分 */
     private Integer score;
 

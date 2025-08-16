@@ -143,7 +143,7 @@ const removeCurrentTestCase = () => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -165,11 +165,12 @@ const removeCurrentTestCase = () => {
 
 .test-case-details {
   flex: 1;
-  padding: 0 16px 16px 16px;
+  padding: 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: transparent;
 }
 
 .section-title {
@@ -253,4 +254,6 @@ const removeCurrentTestCase = () => {
   display: flex;
   flex-direction: column;
 }
+
+/* 移除动画，保持简洁 */
 </style>

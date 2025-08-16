@@ -96,7 +96,7 @@ const props = defineProps<{
   problemId?: number;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'code-change', code: string, language: string): void;
   (e: 'submit', language: string, code: string): void;
 }>();
@@ -224,6 +224,16 @@ const getCode = () => {
   return editor.value?.getValue();
 };
 
+// 暴露当前语言，便于父组件读取
+const getLanguage = () => selectedLanguage.value;
+
+// 暴露提交方法：向父组件派发 submit 事件
+const submit = () => {
+  const code = getCode() || '';
+  const lang = selectedLanguage.value;
+  emit('submit', lang, code);
+};
+
 // ============ 辅助能力 ============
 const updateStats = () => {
   const val = editor.value?.getValue() ?? '';
@@ -308,7 +318,7 @@ const toggleFullScreen = async () => {
 };
 
 // 暴露方法给父组件调用
-defineExpose({ getCode, resetCode });
+defineExpose({ getCode, resetCode, getLanguage, submit });
 </script>
 
 <style scoped>

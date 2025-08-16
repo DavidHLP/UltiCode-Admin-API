@@ -1,4 +1,4 @@
-package com.david.chain.utils;
+package com.david.testcase.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,10 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TestCaseInputContext {
+public class TestCaseOutputDto {
 	private Long id;
-	private Integer orderIndex;
-	private String input;
-	private String testCaseName;
-	private String inputType;
+	private String outputType;
 }

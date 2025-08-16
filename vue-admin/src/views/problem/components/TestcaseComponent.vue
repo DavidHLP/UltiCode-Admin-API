@@ -84,6 +84,8 @@
       :mode="editorMode"
       :problem-id="problemId!"
       :editing-row="editingRow"
+      :lock-format="!!formatTemplate"
+      :format-template="formatTemplate"
       @saved="onSaved"
       @cancel="onCancelEdit"
     />
@@ -104,6 +106,13 @@ const route = useRoute()
 const problemId = ref<number | null>(null)
 const loading = ref(false)
 const list = ref<TestCase[]>([])
+
+// 从现有测试用例中提取“格式”：输入参数的名称与类型、输出类型
+type CaseFormat = {
+  outputType?: string
+  inputs: { inputType?: string; testCaseName: string }[]
+}
+const formatTemplate = ref<CaseFormat | null>(null)
 
 const showEditor = ref(false)
 const editorMode = ref<'create' | 'edit'>('create')
@@ -132,6 +141,20 @@ const loadList = async () => {
   loading.value = true
   try {
     list.value = await fetchTestCasesByProblemId(problemId.value)
+    // 基于最新列表提取格式（以第一条为准）
+    if (list.value.length) {
+      const first = list.value[0]
+      const sorted = [...first.testCaseInput].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+      formatTemplate.value = {
+        outputType: first.testCaseOutput?.outputType,
+        inputs: sorted.map((it) => ({
+          inputType: it.inputType,
+          testCaseName: it.testCaseName || ''
+        }))
+      }
+    } else {
+      formatTemplate.value = null
+    }
   } catch (e) {
     console.error(e)
     ElMessage.error('加载测试用例失败')

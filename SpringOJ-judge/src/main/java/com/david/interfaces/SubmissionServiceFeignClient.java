@@ -14,4 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public interface SubmissionServiceFeignClient {
 	@PostMapping("/callbackId")
 	ResponseResult<Long> createSubmissionThenCallback(@RequestBody Submission submission);
+
+	@PutMapping("/callbackId")
+	ResponseResult<Long> updateSubmissionThenCallback(@RequestBody Submission submission);
 }

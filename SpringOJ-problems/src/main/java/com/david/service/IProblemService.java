@@ -8,6 +8,7 @@ import com.david.problem.Problem;
 import com.david.problem.enums.ProblemDifficulty;
 import com.david.problem.vo.ProblemCardVo;
 import com.david.problem.vo.ProblemDetailVo;
+import com.david.submission.dto.CompareDescription;
 
 /**
  * <p>
@@ -33,4 +34,6 @@ public interface IProblemService extends IService<Problem> {
 	ProblemDetailVo getProblemDetailVoById(Long id);
 
 	String getCodeTemplate(Long problemId, LanguageType language);
+
+	CompareDescription getCompareDescription(Long id);
 }

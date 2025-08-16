@@ -1,9 +1,14 @@
 package com.david.utils;
 
+import com.david.testcase.dto.TestCaseInputDto;
+import com.david.testcase.dto.TestCaseOutputDto;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Builder
@@ -11,5 +16,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class SolutionDto {
 	String solutionFunctionName;
-	String outputType;
+	TestCaseOutputDto testCaseOutput;
+	List<TestCaseInputDto> testCaseInputs;
 }

@@ -1,6 +1,5 @@
 package com.david.utils.java;
 
-
 import lombok.Getter;
 
 /**

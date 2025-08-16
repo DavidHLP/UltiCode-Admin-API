@@ -2,9 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.david.mapper.TestCaseInputMapper">
     <delete id="deleteByTestCaseOutputId">
-        delete from test_case_inputs where test_case_output_id = #{testCaseOutputId}
+        delete
+        from test_case_inputs
+        where test_case_output_id = #{testCaseOutputId}
     </delete>
     <select id="getByTestCaseOutputId" resultType="com.david.testcase.TestCaseInput">
-        select * from test_case_inputs where test_case_output_id = #{testCaseOutputId}
+        select *
+        from test_case_inputs
+        where test_case_output_id = #{testCaseOutputId}
+    </select>
+    <resultMap id="TestCaseInputDtoResultMap" type="com.david.testcase.dto.TestCaseInputDto">
+        <id property="id" column="id"/>
+        <result property="testCaseName" column="test_case_name"/>
+        <result property="inputType" column="input_type"/>
+    </resultMap>
+    <select id="getTestCaseInputDtoByTestCaseId" resultType="com.david.testcase.dto.TestCaseInputDto">
+        select test_case_name, input_type, id, order_index
+        from test_case_inputs
+        where test_case_output_id = #{testCaseId}
     </select>
 </mapper>

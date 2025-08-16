@@ -8,11 +8,6 @@
                 typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
     </resultMap>
 
-    <resultMap id="SolutionDtoResultMap" type="com.david.utils.SolutionDto" autoMapping="true">
-        <result property="solutionFunctionName" column="solution_function_name"/>
-        <result property="outputType" column="output_type"/>
-    </resultMap>
-
     <select id="pageProblems" resultMap="ProblemResultMap">
         SELECT
         *
@@ -34,10 +29,15 @@
         </where>
         ORDER BY id ASC
     </select>
-    <select id="selectSolutionFunctionNameAndOutputType" resultMap="SolutionDtoResultMap">
-        select distinct solution_function_name, output_type
+    <select id="selectSolutionFunctionName" resultType="String">
+        select distinct solution_function_name
         from problems
                  left join test_cases_outputs on problems.id = test_cases_outputs.problem_id
         where problem_id = #{problemId}
+    </select>
+    <select id="selectCompareDescription" resultType="com.david.submission.dto.CompareDescription">
+        select solution_function_name, difficulty
+        from problems
+        where id = #{problemId}
     </select>
 </mapper>

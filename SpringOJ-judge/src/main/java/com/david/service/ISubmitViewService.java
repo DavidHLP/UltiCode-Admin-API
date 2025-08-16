@@ -14,4 +14,7 @@ public interface ISubmitViewService {
      * @return 提交记录ID
      */
     Long submitAndJudge(SubmitCodeRequest request, Long userId);
+
+	Long submitAndJudgeToUpdate(SubmitCodeRequest request, Long userId , Long submissionId);
+	Long submitAndJudgeToCreate(SubmitCodeRequest request, Long userId);
 }

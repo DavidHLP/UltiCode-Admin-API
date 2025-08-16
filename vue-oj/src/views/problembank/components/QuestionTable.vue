@@ -2,21 +2,33 @@
   <div>
     <!-- 题目表格 -->
     <div v-infinite-scroll="loadMore" :infinite-scroll-disabled="loading || !hasMore">
-      <el-table v-loading="loading" :data="questions" :show-header="false" class="simple-table" stripe
-        style="width: 100%" @row-click="handleRowClick">
-
+      <el-table
+        v-loading="loading"
+        :data="questions"
+        :show-header="false"
+        class="simple-table"
+        stripe
+        style="width: 100%"
+        @row-click="handleRowClick"
+      >
         <!-- 题目标题列 -->
         <el-table-column label="题目" min-width="200" prop="title">
           <template #default="{ row }">
             <router-link :to="`/problem/${row.id}`" class="question-title">
-              {{ row.id }}. {{ row.title }}
+              {{ row.title }}
             </router-link>
           </template>
         </el-table-column>
 
         <el-table-column align="center" label="标签" prop="tags" width="200">
           <template #default="{ row }">
-            <el-tag v-for="tag in row.tags" :key="tag" effect="light" size="" style="margin-right: 8px">
+            <el-tag
+              v-for="tag in row.tags"
+              :key="tag"
+              effect="light"
+              size=""
+              style="margin-right: 8px"
+            >
               {{ tag }}
             </el-tag>
           </template>
@@ -119,7 +131,6 @@ const handleRowClick = (row: ProblemVo) => {
 :deep(.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell) {
   background-color: #fafafa;
 }
-
 
 /* 题目样式 */
 .question-title {

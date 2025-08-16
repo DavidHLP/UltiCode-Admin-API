@@ -21,7 +21,7 @@
               <el-switch v-model="form.testCaseOutput.isSample" />
             </el-form-item>
             <el-form-item label="输出类型">
-              <el-select v-model="form.testCaseOutput.outputType" clearable filterable placeholder="请选择输出类型">
+              <el-select v-model="form.testCaseOutput.outputType" :disabled="lockFormat && hasOutputTypeTpl" clearable filterable placeholder="请选择输出类型">
                 <el-option v-for="opt in outputTypeOptions" :key="opt" :label="opt" :value="opt" />
               </el-select>
             </el-form-item>
@@ -46,12 +46,12 @@
               <div class="input-list">
                 <div v-for="(inp, idx) in form.testCaseInput" :key="idx" class="input-item">
                   <el-form-item :prop="`testCaseInput.${idx}.inputType`" label-width="0">
-                    <el-select v-model="inp.inputType" clearable filterable placeholder="类型">
+                    <el-select v-model="inp.inputType" :disabled="lockFormat" clearable filterable placeholder="类型">
                       <el-option v-for="opt in inputTypeOptions" :key="opt" :label="opt" :value="opt" />
                     </el-select>
                   </el-form-item>
                   <el-form-item :prop="`testCaseInput.${idx}.testCaseName`" :rules="[{ required: true, message: '请输入输入名称', trigger: 'blur' }]" label-width="0">
-                    <el-input v-model="inp.testCaseName" placeholder="输入名称，如 nums 或 n" />
+                    <el-input v-model="inp.testCaseName" :disabled="lockFormat" placeholder="输入名称，如 nums 或 n" />
                   </el-form-item>
                   <el-form-item :prop="`testCaseInput.${idx}.inputContent`" :rules="[{ required: true, message: '请输入输入内容', trigger: 'blur' }]" label-width="0">
                     <el-input
@@ -66,12 +66,12 @@
                   <div class="op">
                     <el-tooltip content="在此处添加一项" placement="top">
                       <span>
-                        <el-button :disabled="mode === 'edit'" circle :icon="Plus" size="small" @click="addInput(idx + 1)" />
+                        <el-button :disabled="mode === 'edit' || lockFormat" circle :icon="Plus" size="small" @click="addInput(idx + 1)" />
                       </span>
                     </el-tooltip>
                     <el-tooltip content="删除该项" placement="top">
                       <span>
-                        <el-button :disabled="mode === 'edit' || form.testCaseInput.length <= 1" circle :icon="Delete" size="small" type="danger" @click="removeInput(idx)" />
+                        <el-button :disabled="mode === 'edit' || lockFormat || form.testCaseInput.length <= 1" circle :icon="Delete" size="small" type="danger" @click="removeInput(idx)" />
                       </span>
                     </el-tooltip>
                   </div>
@@ -86,6 +86,14 @@
               show-icon
               title="编辑模式仅支持修改现有输入，不支持新增/删除"
             />
+            <el-alert
+              v-if="lockFormat"
+              class="tip"
+              type="warning"
+              :closable="false"
+              show-icon
+              title="已依据已有测试用例的格式锁定：参数名称、类型与数量及输出类型不可修改，仅可填写输入内容与期望输出"
+            />
           </el-card>
         </el-col>
       </el-row>
@@ -94,19 +102,23 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, computed } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import type { TestCase, TestCaseInput, TestCaseOutput } from '@/types/testCase.ts'
+import type { TestCase, TestCaseInput, TestCaseOutput } from '@/types/testCase.d'
 import { InputType, OutputType } from '@/types/testCase.d'
 import { createTestCase, updateTestCase } from '@/api/testCase.ts'
 import { Plus, Delete, Check, Close } from '@element-plus/icons-vue'
 
 type Mode = 'create' | 'edit'
-const props = defineProps<{ mode: Mode; problemId: number; editingRow?: TestCase | null }>()
+type CaseFormat = { outputType?: string; inputs: { inputType?: string; testCaseName: string }[] }
+const props = defineProps<{ mode: Mode; problemId: number; editingRow?: TestCase | null; lockFormat?: boolean; formatTemplate?: CaseFormat | null }>()
 const emit = defineEmits<{ (e: 'saved'): void; (e: 'cancel'): void }>()
 
 const inputTypeOptions = InputType
 const outputTypeOptions = OutputType
+
+const lockFormat = computed(() => !!props.lockFormat)
+const hasOutputTypeTpl = computed(() => !!props.formatTemplate?.outputType)
 
 type TestCaseForm = {
   problemId: number
@@ -143,16 +155,37 @@ const rules: FormRules = {
 
 watchEffect(() => {
   if (props.mode === 'create') {
-    form.value = {
-      problemId: props.problemId,
-      testCaseOutput: {
+    if (props.formatTemplate && props.formatTemplate.inputs?.length) {
+      // 按模板初始化：锁定输出类型与输入的名称/类型/数量
+      const tpl = props.formatTemplate
+      form.value = {
         problemId: props.problemId,
-        output: '',
-        score: 10,
-        isSample: false,
-        outputType: undefined,
-      },
-      testCaseInput: [newInput(0)],
+        testCaseOutput: {
+          problemId: props.problemId,
+          output: '',
+          score: 10,
+          isSample: false,
+          outputType: tpl.outputType,
+        },
+        testCaseInput: tpl.inputs.map((it, idx) => ({
+          testCaseName: it.testCaseName,
+          inputContent: '',
+          inputType: it.inputType,
+          orderIndex: idx,
+        })),
+      }
+    } else {
+      form.value = {
+        problemId: props.problemId,
+        testCaseOutput: {
+          problemId: props.problemId,
+          output: '',
+          score: 10,
+          isSample: false,
+          outputType: undefined,
+        },
+        testCaseInput: [newInput(0)],
+      }
     }
   } else if (props.mode === 'edit' && props.editingRow) {
     const row = props.editingRow
@@ -181,14 +214,14 @@ watchEffect(() => {
 })
 
 const addInput = (insertIndex?: number) => {
-  if (props.mode === 'edit') return
+  if (props.mode === 'edit' || props.lockFormat) return
   const idx = insertIndex ?? form.value.testCaseInput.length
   form.value.testCaseInput.splice(idx, 0, newInput(idx))
   form.value.testCaseInput.forEach((it, i) => (it.orderIndex = i))
 }
 
 const removeInput = (idx: number) => {
-  if (props.mode === 'edit') return
+  if (props.mode === 'edit' || props.lockFormat) return
   if (form.value.testCaseInput.length <= 1) return ElMessage.warning('至少需要一个输入')
   form.value.testCaseInput.splice(idx, 1)
   form.value.testCaseInput.forEach((it, i) => (it.orderIndex = i))
@@ -198,6 +231,32 @@ const onSubmit = async () => {
   if (!formRef.value) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
+  // 锁定格式下校验：输出类型、输入数量/名称/类型需与模板一致
+  const validateFormat = (): boolean => {
+    if (!props.lockFormat || !props.formatTemplate) return true
+    const tpl = props.formatTemplate
+    if (tpl.outputType && form.value.testCaseOutput.outputType !== tpl.outputType) {
+      ElMessage.warning('输出类型与既有格式不一致')
+      return false
+    }
+    const ins = form.value.testCaseInput
+    if (ins.length !== tpl.inputs.length) {
+      ElMessage.warning('输入参数数量与既有格式不一致')
+      return false
+    }
+    for (let i = 0; i < ins.length; i++) {
+      if ((ins[i].testCaseName || '') !== (tpl.inputs[i].testCaseName || '')) {
+        ElMessage.warning(`第 ${i + 1} 个输入名称与既有格式不一致`)
+        return false
+      }
+      if ((ins[i].inputType || '') !== (tpl.inputs[i].inputType || '')) {
+        ElMessage.warning(`第 ${i + 1} 个输入类型与既有格式不一致`)
+        return false
+      }
+    }
+    return true
+  }
+  if (!validateFormat()) return
   saving.value = true
   try {
     if (props.mode === 'create') {

@@ -133,8 +133,6 @@ const problemRules: FormRules = {
     { min: 1, max: 100, message: '方法名长度应在 1-100 字符内', trigger: 'blur' },
   ],
   problemType: [{ required: true, message: '请选择题目类型', trigger: 'change' }],
-  timeLimit: [{ required: true, message: '请输入时间限制', trigger: 'blur' }],
-  memoryLimit: [{ required: true, message: '请输入内存限制', trigger: 'blur' }],
   difficulty: [{ required: true, message: '请选择难度', trigger: 'change' }],
 }
 

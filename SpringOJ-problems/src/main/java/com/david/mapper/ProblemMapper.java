@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.enums.CategoryType;
 import com.david.problem.Problem;
 import com.david.problem.enums.ProblemDifficulty;
-import com.david.utils.SolutionDto;
+import com.david.submission.dto.CompareDescription;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -20,7 +20,7 @@ import org.apache.ibatis.annotations.Param;
  */
 @Mapper
 public interface ProblemMapper extends BaseMapper<Problem> {
-	SolutionDto selectSolutionFunctionNameAndOutputType(Long problemId);
+	String selectSolutionFunctionName(Long problemId);
 
 	Page<Problem> pageProblems(
         Page<Problem> page,
@@ -29,4 +29,6 @@ public interface ProblemMapper extends BaseMapper<Problem> {
         @Param("category") CategoryType category,
         @Param("isVisible") Boolean isVisible
     );
+
+	CompareDescription selectCompareDescription(@Param("problemId") Long problemId);
 }

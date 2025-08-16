@@ -7,24 +7,14 @@ import lombok.Data;
 /**
  * 判题系统属性配置
  */
-@ConfigurationProperties(prefix = "judge")
 @Data
+@ConfigurationProperties(prefix = "judge")
 public class JudgeProperties {
 
 	/**
 	 * 工作目录
 	 */
 	private String workDir = "/tmp/oj-sandbox";
-
-	/**
-	 * 默认内存限制(MB)
-	 */
-	private int defaultMemoryLimit = 128;
-
-	/**
-	 * 默认时间限制(ms)
-	 */
-	private int defaultTimeLimit = 2000;
 
 	/**
 	 * 默认编译超时(s)

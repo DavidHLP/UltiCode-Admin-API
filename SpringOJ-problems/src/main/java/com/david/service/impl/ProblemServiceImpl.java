@@ -5,17 +5,24 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.enums.CategoryType;
 import com.david.enums.LanguageType;
 import com.david.mapper.ProblemMapper;
+import com.david.mapper.TestCaseInputMapper;
+import com.david.mapper.TestCaseOutputMapper;
 import com.david.problem.Problem;
 import com.david.problem.enums.ProblemDifficulty;
 import com.david.problem.vo.ProblemCardVo;
 import com.david.problem.vo.ProblemDetailVo;
 import com.david.service.IProblemService;
+import com.david.submission.dto.CompareDescription;
+import com.david.testcase.dto.TestCaseInputDto;
+import com.david.testcase.dto.TestCaseOutputDto;
 import com.david.utils.CodeUtils;
 import com.david.utils.SolutionDto;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * 服务实现类
@@ -29,6 +36,8 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
         implements IProblemService {
     private final ProblemMapper problemMapper;
     private final CalculationServiceImpl calculationService;
+    private final TestCaseInputMapper testCaseInputMapper;
+    private final TestCaseOutputMapper testCaseOutputMapper;
     private final CodeUtils codeUtils;
 
     @Override
@@ -85,12 +94,36 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
 
     @Override
     public String getCodeTemplate(Long problemId, LanguageType language) {
-        SolutionDto solutionDto = problemMapper.selectSolutionFunctionNameAndOutputType(problemId);
-        if (solutionDto == null
-                || solutionDto.getSolutionFunctionName() == null
-                || solutionDto.getOutputType() == null) {
-            throw new IllegalArgumentException("题目不存在或题目未设置函数名和返回值类型");
+        String solutionFunctionName = problemMapper.selectSolutionFunctionName(problemId);
+        if (solutionFunctionName == null || solutionFunctionName.isEmpty()) {
+            throw new IllegalArgumentException("问题不存在");
         }
+        TestCaseOutputDto testCaseOutput =
+                testCaseOutputMapper.selectTestCaseOutputDtoFirstByProblemId(problemId);
+        if (testCaseOutput == null) {
+            throw new IllegalArgumentException("问题不存在");
+        }
+        List<TestCaseInputDto> testCaseInputDtoList =
+                testCaseInputMapper.getTestCaseInputDtoByTestCaseId(testCaseOutput.getId());
+        if (testCaseInputDtoList == null || testCaseInputDtoList.isEmpty()) {
+            throw new IllegalArgumentException("问题不存在");
+        }
+        SolutionDto solutionDto =
+                SolutionDto.builder()
+                        .solutionFunctionName(solutionFunctionName)
+                        .testCaseOutput(testCaseOutput)
+                        .testCaseInputs(testCaseInputDtoList)
+                        .build();
+
         return codeUtils.generateSolutionClass(language, solutionDto);
     }
+
+	@Override
+	public CompareDescription getCompareDescription(Long id) {
+		CompareDescription compareDescription = problemMapper.selectCompareDescription(id);
+		if (compareDescription == null){
+			throw new IllegalArgumentException("获取题目信息失败");
+		}
+		return compareDescription;
+	}
 }

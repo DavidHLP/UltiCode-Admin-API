@@ -5,6 +5,7 @@ import com.david.enums.CategoryType;
 import com.david.problem.Problem;
 import com.david.problem.enums.ProblemDifficulty;
 import com.david.service.IProblemService;
+import com.david.submission.dto.CompareDescription;
 import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;
@@ -61,5 +62,10 @@ public class ProblemManagementController {
 			return ResponseResult.fail(404, "题目不存在");
 		}
 		return ResponseResult.success("成功获取题目", problem);
+	}
+
+	@GetMapping("/compareDescription")
+	public ResponseResult<CompareDescription> getCompareDescription(@RequestParam Long id){
+		return ResponseResult.success("成功获取题目函数名", problemService.getCompareDescription(id));
 	}
 }

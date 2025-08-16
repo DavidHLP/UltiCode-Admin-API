@@ -59,16 +59,6 @@ public class Problem implements Serializable {
     private String description;
 
     /**
-     * 时间限制，单位为毫秒，默认为1000ms
-     */
-    private Integer timeLimit;
-
-    /**
-     * 内存限制，单位为MB，默认为128MB
-     */
-    private Integer memoryLimit;
-
-    /**
      * 题目难度，枚举类型，默认为EASY'
      */
     private ProblemDifficulty difficulty;
