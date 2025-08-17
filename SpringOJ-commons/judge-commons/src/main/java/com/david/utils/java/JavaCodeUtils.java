@@ -6,71 +6,101 @@ import com.david.testcase.dto.TestCaseOutputDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
+/**
+ * 全新的 JSON 导向 Java 代码生成器。
+ * 
+ * 核心设计原则：
+ * 1. 严格 JSON：所有测试用例必须是合法 JSON 格式
+ * 2. 类型安全：基于新的 JavaType 枚举系统
+ * 3. 简化模板：专注核心功能，移除复杂的兼容性处理
+ * 4. 统一标准：使用 Jackson 进行所有 JSON 处理
+ */
 @Component
 public class JavaCodeUtils {
 
     /**
-     * 根据给定的方法名和返回类型，生成一个 Solution 类的代码字符串。
-     *
+     * 生成 Solution 类模板代码
+     * 
      * @param solutionFunctionName 函数名
-     * @param testCaseOutput       测试用例期望输出（决定返回类型）
-     * @param testCaseInputs       测试用例输入列表（决定参数列表），按 orderIndex 升序
-     * @return 可直接展示给用户的完整 Solution 类模板
-     * @throws IllegalArgumentException 当内部推导类型或参数声明异常时抛出
+     * @param testCaseOutput 测试用例输出（决定返回类型）
+     * @param testCaseInputs 测试用例输入列表（决定参数列表）
+     * @return 完整的 Solution 类模板
      */
     public String generateSolutionClass(
             String solutionFunctionName,
             TestCaseOutputDto testCaseOutput,
             List<TestCaseInputDto> testCaseInputs) {
-        String returnType = toJavaTypeName(testCaseOutput == null ? null : testCaseOutput.getOutputType());
-        String params = buildParamDecls(testCaseInputs);
-        boolean needUtilImport = usesCollectionType(returnType);
-        if (!needUtilImport && testCaseInputs != null) {
-            for (TestCaseInputDto in : testCaseInputs) {
-                if (usesCollectionType(toJavaTypeName(in.getInputType()))) {
-                    needUtilImport = true;
-                    break;
-                }
-            }
+        
+        if (solutionFunctionName == null || solutionFunctionName.trim().isEmpty()) {
+            throw new IllegalArgumentException("解题函数名不能为空");
         }
-
-        StringBuilder sb = new StringBuilder();
+        
+        // 确定返回类型
+        JavaType returnType = JavaType.VOID;
+        if (testCaseOutput != null && testCaseOutput.getOutputType() != null) {
+            returnType = parseJavaType(testCaseOutput.getOutputType());
+        }
+        
+        // 排序并构建参数列表
+        List<TestCaseInputDto> sortedInputs = sortInputsByOrder(testCaseInputs);
+        List<JavaType> inputTypes = new ArrayList<>();
+        StringBuilder paramDecls = new StringBuilder();
+        
+        for (int i = 0; i < sortedInputs.size(); i++) {
+            TestCaseInputDto input = sortedInputs.get(i);
+            JavaType inputType = parseJavaType(input.getInputType());
+            inputTypes.add(inputType);
+            
+            if (i > 0) paramDecls.append(", ");
+            paramDecls.append(inputType.getTypeName())
+                     .append(" ")
+                     .append(sanitizeParameterName(input.getTestCaseName(), i));
+        }
+        
+        // 检查是否需要导入 java.util
+        boolean needUtilImport = needsUtilImport(returnType, inputTypes);
+        
+        // 生成代码
+        StringBuilder code = new StringBuilder();
+        
         if (needUtilImport) {
-            sb.append("import java.util.*;\n\n");
+            code.append("import java.util.*;\n\n");
         }
-        sb.append("class Solution {\n");
-        sb.append("    public ")
-                .append(returnType)
-                .append(' ')
-                .append(solutionFunctionName)
-                .append('(')
-                .append(params)
-                .append(") {\n");
-        sb.append("        // TODO: 实现你的算法\n");
-        if (!"void".equals(returnType)) {
-            sb.append("        ").append(defaultReturnStatement(returnType)).append(";\n");
+        
+        code.append("class Solution {\n")
+            .append("    public ")
+            .append(returnType.getTypeName())
+            .append(" ")
+            .append(solutionFunctionName)
+            .append("(")
+            .append(paramDecls)
+            .append(") {\n")
+            .append("        // TODO: 实现你的算法\n");
+        
+        if (returnType != JavaType.VOID) {
+            String defaultReturn = getDefaultReturnStatement(returnType);
+            code.append("        ").append(defaultReturn).append(";\n");
         }
-        sb.append("    }\n");
-        sb.append("}\n");
-        return sb.toString();
+        
+        code.append("    }\n")
+            .append("}\n");
+        
+        return code.toString();
     }
 
     /**
-     * 生成支持多测试用例的 Main 类（fail-fast：遇到第一个失败即停止）。
-     * JSON 安全策略：
-     * - 统一使用 Jackson（ObjectMapper）序列化；
-     * - 字符串若非 JSON 则作为字符串再次序列化，保证输出始终很合法 JSON；
-     * - 比较时优先按 JSON 结构比对，失败再按字符串等值比对。
-     *
+     * 生成支持多测试用例的主程序代码
+     * 
      * @param solutionFunctionName 目标函数名
-     * @param outputType           返回类型（可为 JavaType 枚举名或 Java 类型名）
-     * @param allInputTypes        每个测试用例的输入类型列表的列表
-     * @param allInputValues       每个测试用例的输入值列表的列表
-     * @param allExpectedOutputs   每个测试用例的期望输出列表（字符串形式，将按 JSON 尝试解析）
-     * @return 完整 Main 类源码
-     * @throws IllegalArgumentException 当入参列表大小不一致或为空，或测试用例配置非法时抛出
+     * @param outputType 返回类型
+     * @param allInputTypes 所有测试用例的输入类型列表
+     * @param allInputValues 所有测试用例的输入值列表（JSON 格式）
+     * @param allExpectedOutputs 所有测试用例的期望输出列表（JSON 格式）
+     * @return 完整的主程序代码
      */
     public String generateMultiTestCaseMainClass(
             String solutionFunctionName,
@@ -78,253 +108,417 @@ public class JavaCodeUtils {
             List<List<String>> allInputTypes,
             List<List<String>> allInputValues,
             List<String> allExpectedOutputs) {
-        if (allInputTypes == null || allInputValues == null || allExpectedOutputs == null ||
-                allInputTypes.size() != allInputValues.size() || allInputTypes.size() != allExpectedOutputs.size()) {
-            throw new IllegalArgumentException("allInputTypes、allInputValues 与 allExpectedOutputs 大小不一致或为空");
-        }
-
-        String javaOutputType = toJavaTypeName(outputType);
-        StringBuilder testCaseCalls = new StringBuilder();
-        testCaseCalls.append("for (int testIndex = 0; testIndex < ").append(allInputTypes.size())
-                .append("; testIndex++) {\n");
-
-        for (int i = 0; i < allInputTypes.size(); i++) {
-            List<String> inputTypes = allInputTypes.get(i);
+        
+        validateMultiTestCaseInput(allInputTypes, allInputValues, allExpectedOutputs);
+        
+        JavaType javaOutputType = parseJavaType(outputType);
+        int testCaseCount = allInputTypes.size();
+        
+        StringBuilder testCaseCode = new StringBuilder();
+        testCaseCode.append("            boolean shouldStop = false;\n");
+        
+        // 生成每个测试用例的执行逻辑
+        for (int i = 0; i < testCaseCount; i++) {
+            List<String> inputTypeNames = allInputTypes.get(i);
             List<String> inputValues = allInputValues.get(i);
-
-            if (inputTypes.size() != inputValues.size()) {
-                throw new IllegalArgumentException("测试用例[" + i + "]的inputTypes与inputValues长度不一致");
-            }
-
-            // 将类型键/枚举名统一映射为可编译的 Java 类型名
-            List<String> javaInputTypes = new ArrayList<>();
-            for (String t : inputTypes) {
-                javaInputTypes.add(toJavaTypeName(t));
-            }
-
-            String argsExpr = JavaFormationUtils.buildArgumentList(inputValues, javaInputTypes);
             String expectedOutput = allExpectedOutputs.get(i);
-
-            testCaseCalls.append("                if (testIndex == ").append(i).append(") {\n")
-                    .append("                    try {\n")
-                    .append("                        ").append(javaOutputType).append(" actualResult = solution.")
-                    .append(solutionFunctionName).append("(").append(argsExpr).append(");\n")
-                    .append("                        \n")
-                    .append("                        // 标准化实际结果和期望结果为可比较的格式\n")
-                    .append("                        String actualJson = normalizeForComparison(actualResult);\n")
-                    .append("                        String expectedJson = normalizeForComparison(")
-                    .append(JavaFormationUtils.toJavaStringLiteral(expectedOutput)).append(");\n")
-                    .append("                        \n")
-                    .append("                        // 解析并比较 JSON（严格：解析失败视为错误）\n")
-                    .append("                        JsonNode actualNode = MAPPER.readTree(actualJson);\n")
-                    .append("                        JsonNode expectedNode = MAPPER.readTree(expectedJson);\n")
-                    .append("                        boolean isMatch = actualNode.equals(expectedNode);\n")
-                    .append("                        \n")
-                    .append("                        if (isMatch) {\n")
-                    .append("                            // 成功：添加成功标记\n")
-                    .append("                            Map<String, Object> successInfo = new HashMap<>();\n")
-                    .append("                            successInfo.put(\"testCaseIndex\", ").append(i).append(");\n")
-                    .append("                            successInfo.put(\"success\", true);\n")
-                    .append("                            successInfo.put(\"output\", actualJson);\n")
-                    .append("                            results.add(asJson(successInfo));\n")
-                    .append("                        } else {\n")
-                    .append("                            // 失败：记录错误信息并停止\n")
-                    .append("                            Map<String, Object> errorInfo = new HashMap<>();\n")
-                    .append("                            errorInfo.put(\"testCaseIndex\", ").append(i).append(");\n")
-                    .append("                            errorInfo.put(\"success\", false);\n")
-                    .append("                            errorInfo.put(\"actualOutput\", actualJson);\n")
-                    .append("                            errorInfo.put(\"expectedOutput\", expectedJson);\n")
-                    .append("                            results.add(asJson(errorInfo));\n")
-                    .append("                            break; // 遇到第一个失败就停止\n")
-                    .append("                        }\n")
-                    .append("                    } catch (Exception e) {\n")
-                    .append("                        // 运行时异常：记录异常信息并停止\n")
-                    .append("                        Map<String, Object> errorInfo = new HashMap<>();\n")
-                    .append("                        errorInfo.put(\"testCaseIndex\", ").append(i).append(");\n")
-                    .append("                        errorInfo.put(\"success\", false);\n")
-                    .append("                        errorInfo.put(\"error\", e.getMessage());\n")
-                    .append("                        results.add(asJson(errorInfo));\n")
-                    .append("                        break; // 遇到异常也停止\n")
-                    .append("                    }\n")
-                    .append("                }\n");
+            
+            if (inputTypeNames.size() != inputValues.size()) {
+                throw new IllegalArgumentException("测试用例[" + i + "]的输入类型与输入值数量不匹配");
+            }
+            
+            // 转换为 JavaType
+            List<JavaType> javaInputTypes = inputTypeNames.stream()
+                    .map(this::parseJavaType)
+                    .collect(Collectors.toList());
+            
+            // 生成参数表达式
+            String paramExpression = JavaFormationUtils.buildParameterList(inputValues, javaInputTypes);
+            
+            testCaseCode
+                        .append("            // 测试用例 ").append(i).append("\n")
+                        .append("            if (!shouldStop) {\n")
+                        .append("                try {\n")
+                        .append("                    ").append(javaOutputType.getTypeName())
+                        .append(" actualResult = solution.")
+                        .append(solutionFunctionName)
+                        .append("(")
+                        .append(paramExpression)
+                        .append(");\n")
+                        .append("                    \n")
+                        .append("                    String actualJson = objectToJson(actualResult);\n")
+                        .append("                    String expectedJson = normalizeJson(")
+                        .append(escapeStringLiteral(expectedOutput))
+                        .append(");\n")
+                        .append("                    \n")
+                        .append("                    if (compareJson(actualJson, expectedJson)) {\n")
+                        .append("                        results.add(createSuccessResult(")
+                        .append(i)
+                        .append(", actualJson));\n")
+                        .append("                    } else {\n")
+                        .append("                        results.add(createFailureResult(")
+                        .append(i)
+                        .append(", actualJson, expectedJson));\n")
+                        .append("                        shouldStop = true; // 遇到失败即停止\n")
+                        .append("                    }\n")
+                        .append("                } catch (Exception e) {\n")
+                        .append("                    results.add(createErrorResult(")
+                        .append(i)
+                        .append(", e.getMessage()));\n")
+                        .append("                    shouldStop = true; // 遇到异常即停止\n")
+                        .append("                }\n")
+                        .append("            }\n")
+                        .append("            \n");
         }
+        
+        String template = """
+            import java.util.*;
+            import com.fasterxml.jackson.databind.ObjectMapper;
+            import com.fasterxml.jackson.databind.JsonNode;
 
-        testCaseCalls.append("            }");
+            public class Main {
+                private static final ObjectMapper MAPPER = new ObjectMapper();
 
-        String codeTemplate = """
-                     import java.util.*;
-                     import com.fasterxml.jackson.databind.ObjectMapper;
-                     import com.fasterxml.jackson.databind.JsonNode;
+                public static void main(String[] args) {
+                    try {
+                        Solution solution = new Solution();
+                        List<String> results = new ArrayList<>();
+                        
+            %s
+                        // 输出结果
+                        System.out.println("[" + String.join(",", results) + "]");
+                    } catch (Exception e) {
+                        System.err.println("运行时发生致命错误: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
 
-                     public class Main {
-                         private static final ObjectMapper MAPPER = new ObjectMapper();
+                /**
+                 * 将对象转换为 JSON 字符串
+                 */
+                private static String objectToJson(Object obj) {
+                    try {
+                        return MAPPER.writeValueAsString(obj);
+                    } catch (Exception e) {
+                        throw new RuntimeException("对象序列化为 JSON 失败", e);
+                    }
+                }
 
-                         /**
-                        * 使用 Jackson 直接序列化，失败即抛出异常
-                        */
-                       private static String asJson(Object obj) {
-                           try {
-                               return MAPPER.writeValueAsString(obj);
-                           } catch (Exception e) {
-                               throw new RuntimeException("JSON serialization failed", e);
-                           }
-                       }
+                /**
+                 * 标准化 JSON 字符串
+                 */
+                private static String normalizeJson(String jsonStr) {
+                    try {
+                        JsonNode node = MAPPER.readTree(jsonStr);
+                        return MAPPER.writeValueAsString(node);
+                    } catch (Exception e) {
+                        throw new RuntimeException("JSON 标准化失败: " + jsonStr, e);
+                    }
+                }
 
-                         /**
-                          * 标准化对象为可比较的 JSON 格式，仅使用 Jackson，不做兜底
-                          */
-                         private static String normalizeForComparison(Object obj) {
-                             try {
-                                 if (obj instanceof String) {
-                                     String str = (String) obj;
-                                     try {
-                                         JsonNode node = MAPPER.readTree(str);
-                                         return MAPPER.writeValueAsString(node);
-                                     } catch (Exception e) {
-                                         return MAPPER.writeValueAsString(str);
-                                     }
-                                 }
-                                 return MAPPER.writeValueAsString(obj);
-                             } catch (Exception e) {
-                                 throw new RuntimeException("JSON normalization failed", e);
-                             }
-                         }
+                /**
+                 * 比较两个 JSON 字符串是否相等
+                 */
+                private static boolean compareJson(String json1, String json2) {
+                    try {
+                        JsonNode node1 = MAPPER.readTree(json1);
+                        JsonNode node2 = MAPPER.readTree(json2);
+                        return node1.equals(node2);
+                    } catch (Exception e) {
+                        return false; // JSON 解析失败视为不相等
+                    }
+                }
 
-                         public static void main(String[] args) {
-                             try {
-                                 Solution solution = new Solution();
-                                 List<String> results = new ArrayList<>();
-                                \s
-                                 %s
-                                \s
-                                 // 输出结果（可能是完整数组或早期终止）
-                                 System.out.println("[" + String.join(",", results) + "]");
-                             } catch (Exception e) {
-                                 System.err.println("运行时发生致命错误: " + e.getMessage());
-                                 e.printStackTrace();
-                             }
-                         }
-                     }
-                \s""";
+                /**
+                 * 创建成功结果
+                 */
+                private static String createSuccessResult(int testCaseIndex, String actualJson) {
+                    try {
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("testCaseIndex", testCaseIndex);
+                        result.put("success", true);
+                        result.put("output", actualJson);
+                        return MAPPER.writeValueAsString(result);
+                    } catch (Exception e) {
+                        throw new RuntimeException("创建成功结果失败", e);
+                    }
+                }
 
-        return String.format(codeTemplate, testCaseCalls);
+                /**
+                 * 创建失败结果
+                 */
+                private static String createFailureResult(int testCaseIndex, String actualJson, String expectedJson) {
+                    try {
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("testCaseIndex", testCaseIndex);
+                        result.put("success", false);
+                        result.put("actualOutput", actualJson);
+                        result.put("expectedOutput", expectedJson);
+                        return MAPPER.writeValueAsString(result);
+                    } catch (Exception e) {
+                        throw new RuntimeException("创建失败结果失败", e);
+                    }
+                }
+
+                /**
+                 * 创建错误结果
+                 */
+                private static String createErrorResult(int testCaseIndex, String errorMessage) {
+                    try {
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("testCaseIndex", testCaseIndex);
+                        result.put("success", false);
+                        result.put("error", errorMessage);
+                        return MAPPER.writeValueAsString(result);
+                    } catch (Exception e) {
+                        throw new RuntimeException("创建错误结果失败", e);
+                    }
+                }
+            }
+            """;
+        
+        String generatedCode = String.format(template, testCaseCode.toString());
+        
+        // 临时修复：替换可能存在的 return 语句
+        generatedCode = generatedCode.replace(
+            "return; // 遇到失败即停止", 
+            "// 遇到失败即停止，但继续输出结果"
+        );
+        generatedCode = generatedCode.replace(
+            "return; // 遇到异常即停止", 
+            "// 遇到异常即停止，但继续输出结果"
+        );
+        
+        return generatedCode;
     }
 
     /**
-     * 合并已有 Main 源码与 Solution 源码，保持 package/import 位置正确，移除重复导入。
-     *
-     * @param MainClass     原始 Main 源码
-     * @param SolutionClass 原始 Solution 源码
-     * @return 合并后的完整源码
-     * @throws IllegalArgumentException 当任一源码为 null/空时抛出
+     * 合并 Solution 类和主程序代码
      */
-    public String generateMainFixSolutionClass(String MainClass, String SolutionClass) {
-        if (MainClass == null || SolutionClass == null) {
-            throw new IllegalArgumentException("MainClass or SolutionClass cannot be null");
+    public String generateMainFixSolutionClass(String mainClass, String solutionClass) {
+        if (mainClass == null || solutionClass == null) {
+            throw new IllegalArgumentException("主程序代码和 Solution 代码不能为空");
         }
-        String mainSrc = MainClass.trim();
-        String solutionSrc = SolutionClass.trim();
-        if (mainSrc.isEmpty() || solutionSrc.isEmpty()) {
-            throw new IllegalArgumentException("MainClass or SolutionClass cannot be empty");
+        
+        String trimmedMain = mainClass.trim();
+        String trimmedSolution = solutionClass.trim();
+        
+        if (trimmedMain.isEmpty() || trimmedSolution.isEmpty()) {
+            throw new IllegalArgumentException("主程序代码和 Solution 代码不能为空");
         }
-        // 提取可选的 package 与所有 import，确保它们位于文件顶部
-        String packageLine = "";
-        String mainBody = mainSrc;
-
-        // 提取 package（若存在，取第一条）
-        java.util.regex.Pattern pkgPattern = java.util.regex.Pattern.compile("(?m)^\\s*package\\s+[^;]+;\\s*$");
-        java.util.regex.Matcher pkgMatcher = pkgPattern.matcher(mainBody);
-        if (pkgMatcher.find()) {
-            packageLine = pkgMatcher.group().trim();
-            mainBody = pkgMatcher.replaceFirst("").trim();
+        
+        // 提取 package 声明（如果有）
+        String packageDecl = extractPackageDeclaration(trimmedMain);
+        String mainWithoutPackage = removePackageDeclaration(trimmedMain);
+        
+        // 提取 import 语句
+        List<String> imports = extractImports(mainWithoutPackage);
+        String mainWithoutImports = removeImports(mainWithoutPackage);
+        
+        // 构建最终代码
+        StringBuilder result = new StringBuilder();
+        
+        if (!packageDecl.isEmpty()) {
+            result.append(packageDecl).append("\n\n");
         }
-
-        // 提取所有 import
-        java.util.regex.Pattern impPattern = java.util.regex.Pattern.compile("(?m)^\\s*import\\s+[^;]+;\\s*$");
-        java.util.regex.Matcher impMatcher = impPattern.matcher(mainBody);
-        StringBuilder imports = new StringBuilder();
-        while (impMatcher.find()) {
-            String imp = impMatcher.group().trim();
-            if (!imports.isEmpty())
-                imports.append('\n');
-            imports.append(imp);
-        }
-        // 移除 mainBody 中的 import 语句
-        mainBody = impMatcher.replaceAll("").trim();
-
-        StringBuilder merged = new StringBuilder();
-        if (!packageLine.isEmpty()) {
-            merged.append(packageLine).append('\n').append('\n');
-        }
+        
         if (!imports.isEmpty()) {
-            merged.append(imports).append('\n').append('\n');
+            for (String importStmt : imports) {
+                result.append(importStmt).append("\n");
+            }
+            result.append("\n");
         }
-        merged.append(solutionSrc).append('\n').append('\n').append(mainBody).append('\n');
-        return merged.toString();
+        
+        result.append(trimmedSolution).append("\n\n")
+              .append(mainWithoutImports);
+        
+        return result.toString();
     }
 
-    // ============================= Helpers =============================
+    // ==================== 私有辅助方法 ====================
 
-    private String toJavaTypeName(String typeKeyOrName) {
-        if (typeKeyOrName == null || typeKeyOrName.isBlank()) {
-            return "void"; // 缺省视为无返回
+    /**
+     * 解析字符串为 JavaType
+     */
+    private JavaType parseJavaType(String typeStr) {
+        if (typeStr == null || typeStr.trim().isEmpty()) {
+            return JavaType.VOID;
         }
+        
         try {
-            return JavaType.valueOf(typeKeyOrName).getTypeName();
-        } catch (IllegalArgumentException ex) {
-            // 不是 JavaType 枚举名，直接当作已是 Java 类型名使用
-            return typeKeyOrName;
+            return JavaType.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // 如果不是枚举值，尝试根据字符串推断
+            return inferJavaTypeFromString(typeStr.trim());
         }
     }
 
-    private String buildParamDecls(List<TestCaseInputDto> inputs) {
-        if (inputs == null || inputs.isEmpty())
-            return "";
-        List<TestCaseInputDto> list = new ArrayList<>(inputs);
-        list.sort(
-                java.util.Comparator.comparing(
-                        i -> i.getOrderIndex() == null ? Integer.MAX_VALUE : i.getOrderIndex()));
-        java.util.List<String> decls = new java.util.ArrayList<>();
-        for (int idx = 0; idx < list.size(); idx++) {
-            TestCaseInputDto in = list.get(idx);
-            String typeName = toJavaTypeName(in.getInputType());
-            String paramName = sanitizeParamName(in.getTestCaseName(), idx);
-            decls.add(typeName + " " + paramName);
-        }
-        return String.join(", ", decls);
-    }
-
-    private String sanitizeParamName(String raw, int index) {
-        String base = (raw == null || raw.isBlank()) ? ("arg" + index) : raw.trim();
-        // 非法字符替换为下划线
-        base = base.replaceAll("[^A-Za-z0-9_]", "_");
-        // 不能以数字开头
-        if (base.isEmpty() || Character.isDigit(base.charAt(0))) {
-            base = "arg_" + base;
-        }
-        return base;
-    }
-
-    private String defaultReturnStatement(String returnTypeName) {
-        return switch (returnTypeName) {
-            case "boolean" -> "return false";
-            case "byte", "short", "int", "long", "float", "double" -> "return 0";
-            case "char" -> "return '\\0'";
-            case "void" -> ""; // 不会使用
-            default -> "return null"; // 引用类型或数组/泛型
+    /**
+     * 根据字符串推断 JavaType
+     */
+    private JavaType inferJavaTypeFromString(String typeStr) {
+        return switch (typeStr.toLowerCase()) {
+            case "int", "integer" -> JavaType.INTEGER;
+            case "double" -> JavaType.DOUBLE;
+            case "string" -> JavaType.STRING;
+            case "boolean" -> JavaType.BOOLEAN;
+            case "int[]", "integer[]" -> JavaType.INT_ARRAY;
+            case "double[]" -> JavaType.DOUBLE_ARRAY;
+            case "string[]" -> JavaType.STRING_ARRAY;
+            case "boolean[]" -> JavaType.BOOLEAN_ARRAY;
+            case "int[][]", "integer[][]" -> JavaType.INT_2D_ARRAY;
+            case "string[][]" -> JavaType.STRING_2D_ARRAY;
+            case "boolean[][]" -> JavaType.BOOLEAN_2D_ARRAY;
+            case "list<integer>", "list<int>" -> JavaType.LIST_INTEGER;
+            case "list<string>" -> JavaType.LIST_STRING;
+            case "list<list<integer>>", "list<list<int>>" -> JavaType.LIST_LIST_INTEGER;
+            case "list<list<string>>" -> JavaType.LIST_LIST_STRING;
+            default -> throw new IllegalArgumentException("不支持的类型: " + typeStr);
         };
     }
 
-    private boolean usesCollectionType(String typeName) {
-        if (typeName == null)
-            return false;
-        String t = typeName.replace(" ", "");
-        return t.startsWith("List<")
-                || t.startsWith("Set<")
-                || t.startsWith("Map<")
-                || t.contains("List<")
-                || t.contains("Set<")
-                || t.contains("Map<");
+    /**
+     * 根据顺序索引对输入参数排序
+     */
+    private List<TestCaseInputDto> sortInputsByOrder(List<TestCaseInputDto> inputs) {
+        if (inputs == null || inputs.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        return inputs.stream()
+                .sorted(Comparator.comparing(input -> 
+                    input.getOrderIndex() != null ? input.getOrderIndex() : Integer.MAX_VALUE))
+                .collect(Collectors.toList());
     }
 
+    /**
+     * 清理参数名
+     */
+    private String sanitizeParameterName(String rawName, int index) {
+        String base = (rawName == null || rawName.trim().isEmpty()) ? 
+                      ("arg" + index) : rawName.trim();
+        
+        // 替换非法字符
+        base = base.replaceAll("[^A-Za-z0-9_]", "_");
+        
+        // 确保不以数字开头
+        if (base.isEmpty() || Character.isDigit(base.charAt(0))) {
+            base = "arg_" + base;
+        }
+        
+        return base;
+    }
+
+    /**
+     * 检查是否需要导入 java.util
+     */
+    private boolean needsUtilImport(JavaType returnType, List<JavaType> inputTypes) {
+        if (returnType.isList()) {
+            return true;
+        }
+        
+        return inputTypes.stream().anyMatch(JavaType::isList);
+    }
+
+    /**
+     * 获取默认返回语句
+     */
+    private String getDefaultReturnStatement(JavaType returnType) {
+        return switch (returnType) {
+            case INTEGER -> "return 0";
+            case DOUBLE -> "return 0.0";
+            case STRING -> "return \"\"";
+            case BOOLEAN -> "return false";
+            case INT_ARRAY -> "return new int[0]";
+            case DOUBLE_ARRAY -> "return new double[0]";
+            case STRING_ARRAY -> "return new String[0]";
+            case BOOLEAN_ARRAY -> "return new boolean[0]";
+            case INT_2D_ARRAY -> "return new int[0][0]";
+            case STRING_2D_ARRAY -> "return new String[0][0]";
+            case BOOLEAN_2D_ARRAY -> "return new boolean[0][0]";
+            case LIST_INTEGER, LIST_STRING, LIST_LIST_INTEGER, LIST_LIST_STRING -> 
+                "return new ArrayList<>()";
+            case VOID -> "";
+        };
+    }
+
+    /**
+     * 验证多测试用例输入的合法性
+     */
+    private void validateMultiTestCaseInput(
+            List<List<String>> allInputTypes,
+            List<List<String>> allInputValues,
+            List<String> allExpectedOutputs) {
+        
+        if (allInputTypes == null || allInputValues == null || allExpectedOutputs == null) {
+            throw new IllegalArgumentException("测试用例参数不能为空");
+        }
+        
+        if (allInputTypes.size() != allInputValues.size() || 
+            allInputTypes.size() != allExpectedOutputs.size()) {
+            throw new IllegalArgumentException("测试用例参数数量不一致");
+        }
+        
+        if (allInputTypes.isEmpty()) {
+            throw new IllegalArgumentException("至少需要一个测试用例");
+        }
+    }
+
+    /**
+     * 转义字符串字面量
+     */
+    private String escapeStringLiteral(String str) {
+        if (str == null) return "null";
+        
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper()
+                    .writeValueAsString(str);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("字符串转义失败: " + str, e);
+        }
+    }
+
+    /**
+     * 提取 package 声明
+     */
+    private String extractPackageDeclaration(String code) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern
+                .compile("^\\s*package\\s+[^;]+;\\s*", java.util.regex.Pattern.MULTILINE);
+        java.util.regex.Matcher matcher = pattern.matcher(code);
+        return matcher.find() ? matcher.group().trim() : "";
+    }
+
+    /**
+     * 移除 package 声明
+     */
+    private String removePackageDeclaration(String code) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern
+                .compile("^\\s*package\\s+[^;]+;\\s*", java.util.regex.Pattern.MULTILINE);
+        return pattern.matcher(code).replaceFirst("").trim();
+    }
+
+    /**
+     * 提取 import 语句
+     */
+    private List<String> extractImports(String code) {
+        List<String> imports = new ArrayList<>();
+        java.util.regex.Pattern pattern = java.util.regex.Pattern
+                .compile("^\\s*import\\s+[^;]+;\\s*", java.util.regex.Pattern.MULTILINE);
+        java.util.regex.Matcher matcher = pattern.matcher(code);
+        
+        while (matcher.find()) {
+            imports.add(matcher.group().trim());
+        }
+        
+        return imports;
+    }
+
+    /**
+     * 移除 import 语句
+     */
+    private String removeImports(String code) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern
+                .compile("^\\s*import\\s+[^;]+;\\s*", java.util.regex.Pattern.MULTILINE);
+        return pattern.matcher(code).replaceAll("").trim();
+    }
 }

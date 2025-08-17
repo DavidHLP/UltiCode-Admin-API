@@ -1,13 +1,12 @@
 package com.david.chain.handler.Java;
 
-import cn.hutool.core.util.ReUtil;
-import cn.hutool.core.util.StrUtil;
-
 import com.david.chain.Handler;
 import com.david.chain.utils.JudgmentContext;
 import com.david.chain.utils.JudgmentResult;
 import com.david.enums.JudgeStatus;
-import com.david.enums.interfaces.LimitType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,178 +15,190 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * Java 代码比较处理器
+ * 负责比较用户程序的运行结果与期望输出，基于严格的 JSON 格式比较
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class JavaCompareHandler extends Handler {
-
-    /**
-     * 解析毫秒数字，支持形如 "123ms" 或 "123" 的字符串，解析失败返回 null。
-     */
-    private static Long parseNumberMs(String s) {
-        return parseLeadingNumber(s);
-    }
-
-    /**
-     * 解析 MB 数字，支持形如 "64MB"、"64" 的字符串，解析失败返回 null。
-     */
-    private static Long parseNumberMb(String s) {
-        return parseLeadingNumber(s);
-    }
-
-    /**
-     * 提取字符串前缀的连续数字（忽略后续单位），无数字或异常则返回 null。
-     * 使用 util ReUtil 提高健壮性。
-     */
-    private static Long parseLeadingNumber(String s) {
-        if (StrUtil.isBlank(s))
-            return null;
-        String digits = ReUtil.get("^(\\d+)", s.trim(), 1);
-        if (StrUtil.isBlank(digits))
-            return null;
-        try {
-            return Long.parseLong(digits);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    /**
-     * 终态对比处理器：
-     * 1) 基于 JavaRunHandler 已生成的 JudgmentResult 列表进行时间和内存限制检查；
-     * 2) 更新每个 JudgmentResult 的最终状态（时间超限/内存超限/通过）；
-     * 3) 设置 JudgmentContext 的最终状态。
-     * <p>
-     * 注：JavaRunHandler 已完成输出正确性检查，此处主要进行资源限制检查。
-     *
-     * @param judgmentContext 评测上下文，包含 JavaRunHandler 生成的 JudgmentResult 列表
-     * @return 当所有测试用例都通过且未超时/超内存时返回 true；否则返回 false。
-     */
+    
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    
     @Override
     public Boolean handleRequest(JudgmentContext judgmentContext) {
         try {
-            if (judgmentContext == null) {
-                log.error("JavaCompareHandler: JudgmentContext is null");
+            log.info("开始比较运行结果与期望输出");
+            
+            // 验证输入参数
+            if (!validateInput(judgmentContext)) {
                 return false;
             }
-
-            List<JudgmentResult> judgmentResults = judgmentContext.getJudgmentResults();
-            if (judgmentResults == null || judgmentResults.isEmpty()) {
-                log.warn("JavaCompareHandler: No JudgmentResults found, skipping resource limit checks");
-                return createErrorAndExit(judgmentContext, "缺少测试用例执行结果");
-            }
-
-            LimitType limitType = judgmentContext.getLimitType();
-            if (limitType == null) {
-                log.warn("JavaCompareHandler: LimitType is null, skipping resource limit checks");
-                // 无限制时直接基于现有结果判断
-                return finalizeResults(judgmentContext, judgmentResults);
-            }
-
-            // 对每个 JudgmentResult 进行资源限制检查
-            boolean allPassed = true;
-            int passedCount = 0;
-            int failedCount = 0;
-            JudgeStatus finalStatus = JudgeStatus.ACCEPTED;
-
-            for (JudgmentResult result : judgmentResults) {
-                // 跳过已经是错误状态的结果（如编译错误、运行错误等）
-                if (result.getJudgeStatus() != null &&
-                        result.getJudgeStatus() != JudgeStatus.WRONG_ANSWER &&
-                        result.getJudgeStatus() != JudgeStatus.ACCEPTED) {
-                    allPassed = false;
-                    failedCount++;
-                    continue;
-                }
-
-                // 检查时间限制
-                Long usedMs = parseNumberMs(result.getTimeUsed());
-                long limitMs = limitType.getTimeLimitMillis();
-                if (usedMs != null && usedMs > limitMs) {
-                    result.setJudgeStatus(JudgeStatus.TIME_LIMIT_EXCEEDED);
-                    result.setJudgeInfo((result.getJudgeInfo() != null ? result.getJudgeInfo() + "\n" : "") +
-                            "时间超限: " + usedMs + "ms > " + limitMs + "ms");
-                    allPassed = false;
-                    failedCount++;
-                    finalStatus = JudgeStatus.TIME_LIMIT_EXCEEDED;
-                    continue;
-                }
-
-                // 检查内存限制
-                Long usedMb = parseNumberMb(result.getMemoryUsed());
-                long limitMb = limitType.getMemoryLimitMB();
-                if (usedMb != null && usedMb > limitMb) {
-                    result.setJudgeStatus(JudgeStatus.MEMORY_LIMIT_EXCEEDED);
-                    result.setJudgeInfo((result.getJudgeInfo() != null ? result.getJudgeInfo() + "\n" : "") +
-                            "内存超限: " + usedMb + "MB > " + limitMb + "MB");
-                    allPassed = false;
-                    failedCount++;
-                    finalStatus = JudgeStatus.MEMORY_LIMIT_EXCEEDED;
-                    continue;
-                }
-
-                // 如果之前是 WRONG_ANSWER，保持该状态
-                if (result.getJudgeStatus() == JudgeStatus.WRONG_ANSWER) {
-                    allPassed = false;
-                    failedCount++;
-                    finalStatus = JudgeStatus.WRONG_ANSWER;
-                } else {
-                    // 通过所有检查，设置为 ACCEPTED
-                    result.setJudgeStatus(JudgeStatus.ACCEPTED);
-                    passedCount++;
+            
+            List<JudgmentResult> results = judgmentContext.getJudgmentResults();
+            
+            // 对每个测试用例进行比较
+            boolean allCorrect = true;
+            for (JudgmentResult result : results) {
+                boolean isCorrect = compareResult(result, judgmentContext);
+                if (!isCorrect) {
+                    allCorrect = false;
                 }
             }
-
-            // 设置最终状态和信息
-            judgmentContext.setJudgeStatus(allPassed ? JudgeStatus.ACCEPTED : finalStatus);
-
-            String statusInfo = String.format("资源限制检查完成 - 通过: %d, 失败: %d, 总计: %d",
-                    passedCount, failedCount, judgmentResults.size());
-
-            String originalInfo = judgmentContext.getJudgeInfo();
-            judgmentContext.setJudgeInfo(originalInfo != null ? originalInfo + "\n" + statusInfo : statusInfo);
-
-            log.info("JavaCompareHandler completed: {}", statusInfo);
-
-            // 继续责任链或返回终态
-            if (this.nextHandler != null) {
-                return this.nextHandler.handleRequest(judgmentContext);
+            
+            // 设置最终判题状态
+            if (allCorrect) {
+                judgmentContext.setJudgeStatus(JudgeStatus.ACCEPTED);
+                log.info("所有测试用例通过，判题结果: ACCEPTED");
+            } else {
+                judgmentContext.setJudgeStatus(JudgeStatus.WRONG_ANSWER);
+                log.info("存在错误答案，判题结果: WRONG_ANSWER");
             }
-            return allPassed;
-
+            
+            return true;
+            
         } catch (Exception e) {
-            log.error("JavaCompareHandler处理异常", e);
-            return createErrorAndExit(judgmentContext, "资源限制检查阶段出错: " + e.getMessage());
+            log.error("比较过程中发生异常", e);
+            judgmentContext.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            judgmentContext.setJudgeInfo("比较异常: " + e.getMessage());
+            return false;
         }
     }
-
+    
     /**
-     * 当无 LimitType 时，基于现有结果进行最终判定
+     * 验证输入参数
      */
-    private boolean finalizeResults(JudgmentContext context, List<JudgmentResult> results) {
-        boolean allPassed = true;
-        JudgeStatus finalStatus = JudgeStatus.ACCEPTED;
-
-        for (JudgmentResult result : results) {
-            if (result.getJudgeStatus() == null) {
+    private boolean validateInput(JudgmentContext context) {
+        if (context.getJudgmentResults() == null || context.getJudgmentResults().isEmpty()) {
+            log.error("没有找到运行结果");
+            context.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            context.setJudgeInfo("没有找到运行结果");
+            return false;
+        }
+        
+        if (context.getTestCases() == null || context.getTestCases().isEmpty()) {
+            log.error("没有找到测试用例");
+            context.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            context.setJudgeInfo("没有找到测试用例");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 比较单个测试用例的结果
+     * 根据测试用例ID匹配对应的期望输出
+     */
+    private boolean compareResult(JudgmentResult result, JudgmentContext context) {
+        try {
+            // 查找对应的测试用例
+            Long testCaseId = result.getTestCaseId();
+            String expectedOutput = findExpectedOutput(testCaseId, context.getTestCases());
+            
+            if (expectedOutput == null) {
+                log.error("找不到测试用例ID {} 对应的期望输出", testCaseId);
+                result.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+                result.setJudgeInfo("找不到对应的期望输出");
+                return false;
+            }
+            
+            // 从 compileInfo 中提取实际输出 (由 JavaRunHandler 设置)
+            String actualOutput = extractActualOutput(result.getCompileInfo());
+            
+            log.debug("比较测试用例 {} - 实际输出: {}, 期望输出: {}", testCaseId, actualOutput, expectedOutput);
+            
+            // 使用严格的 JSON 比较
+            boolean isEqual = compareJsonStrings(actualOutput, expectedOutput);
+            
+            if (isEqual) {
                 result.setJudgeStatus(JudgeStatus.ACCEPTED);
-            } else if (result.getJudgeStatus() != JudgeStatus.ACCEPTED) {
-                allPassed = false;
-                finalStatus = result.getJudgeStatus();
+                result.setJudgeInfo("答案正确");
+                log.debug("测试用例 {} 通过", testCaseId);
+            } else {
+                result.setJudgeStatus(JudgeStatus.WRONG_ANSWER);
+                result.setJudgeInfo(String.format("答案错误 - 期望: %s, 实际: %s", expectedOutput, actualOutput));
+                log.debug("测试用例 {} 不通过 - 期望: {}, 实际: {}", testCaseId, expectedOutput, actualOutput);
+                
+                // 设置上下文中的错误信息（只记录第一个错误）
+                if (context.getErrorTestCaseId() == null) {
+                    context.setErrorTestCaseId(testCaseId);
+                    context.setErrorTestCaseOutput(actualOutput);
+                    context.setErrorTestCaseExpectOutput(expectedOutput);
+                }
+            }
+            
+            return isEqual;
+            
+        } catch (Exception e) {
+            log.error("比较测试用例时发生异常", e);
+            result.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            result.setJudgeInfo("比较异常: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * 严格的 JSON 字符串比较
+     * 使用 Jackson 解析后进行语义比较，避免格式差异
+     */
+    private boolean compareJsonStrings(String actual, String expected) {
+        if (actual == null && expected == null) {
+            return true;
+        }
+        
+        if (actual == null || expected == null) {
+            return false;
+        }
+        
+        try {
+            // 解析为 JsonNode 进行语义比较
+            JsonNode actualNode = objectMapper.readTree(actual);
+            JsonNode expectedNode = objectMapper.readTree(expected);
+            
+            return actualNode.equals(expectedNode);
+            
+        } catch (JsonProcessingException e) {
+            log.warn("JSON 解析失败，使用字符串直接比较 - actual: {}, expected: {}", actual, expected, e);
+            // 如果 JSON 解析失败，回退到字符串比较
+            return actual.trim().equals(expected.trim());
+        }
+    }
+    
+    /**
+     * 根据测试用例ID查找期望输出
+     */
+    private String findExpectedOutput(Long testCaseId, List<com.david.testcase.TestCase> testCases) {
+        if (testCaseId == null || testCases == null) {
+            return null;
+        }
+        
+        for (com.david.testcase.TestCase testCase : testCases) {
+            if (testCaseId.equals(testCase.getId())) {
+                return testCase.getTestCaseOutput() != null ? 
+                    testCase.getTestCaseOutput().getOutput() : null;
             }
         }
-
-        context.setJudgeStatus(finalStatus);
-        return allPassed;
+        
+        return null;
     }
-
+    
     /**
-     * 创建错误状态并退出
+     * 从 compileInfo 中提取实际输出
+     * JavaRunHandler 将输出存储在 compileInfo 字段中，格式为 "实际输出: {actual_output}"
      */
-    private boolean createErrorAndExit(JudgmentContext context, String errorMsg) {
-        context.setJudgeInfo(errorMsg);
-        context.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
-        log.error("JavaCompareHandler error: {}", errorMsg);
-        return false;
+    private String extractActualOutput(String compileInfo) {
+        if (compileInfo == null) {
+            return null;
+        }
+        
+        // JavaRunHandler 存储格式是: "实际输出: {actual_output}"
+        if (compileInfo.startsWith("实际输出: ")) {
+            return compileInfo.substring(5).trim();
+        }
+        
+        // 否则直接返回 compileInfo
+        return compileInfo;
     }
 }

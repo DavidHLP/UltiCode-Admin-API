@@ -3,369 +3,475 @@ package com.david.chain.handler.Java;
 import com.david.chain.Handler;
 import com.david.chain.utils.JudgmentContext;
 import com.david.chain.utils.JudgmentResult;
-import com.david.config.JudgeProperties;
 import com.david.enums.JudgeStatus;
-import com.david.enums.interfaces.LimitType;
-import com.david.testcase.TestCase;
-import com.david.testcase.TestCaseOutput;
-import com.david.utils.java.JavaFormationUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.*;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
+/**
+ * Java 代码运行处理器
+ * 
+ * 功能：
+ * 1. 执行编译后的 Java 程序
+ * 2. 解析 JSON 格式的运行结果
+ * 3. 处理运行时错误和超时
+ * 4. 监控资源使用情况
+ */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JavaRunHandler extends Handler {
-
-    private final JudgeProperties judgeProperties;
-
-    // 读取 Linux /proc/<pid>/status 的内存占用（优先 VmHWM，其次 VmRSS），单位：kB
-    private static Long readProcMemKb(long pid) {
-        try {
-            Path status = Paths.get("/proc", String.valueOf(pid), "status");
-            if (!Files.exists(status))
-                return null;
-            java.util.List<String> lines = Files.readAllLines(status);
-            Long rss = null;
-            for (String raw : lines) {
-                String line = raw.trim();
-                if (line.startsWith("VmHWM:")) {
-                    String[] parts = line.split("\\s+");
-                    for (String part : parts) {
-                        if (!part.isEmpty() && part.chars().allMatch(Character::isDigit)) {
-                            try {
-                                return Long.parseLong(part);
-                            } catch (NumberFormatException ignored) {
-                            }
-                        }
-                    }
-                } else if (line.startsWith("VmRSS:")) {
-                    String[] parts = line.split("\\s+");
-                    for (String part : parts) {
-                        if (!part.isEmpty() && part.chars().allMatch(Character::isDigit)) {
-                            try {
-                                rss = Long.parseLong(part);
-                            } catch (NumberFormatException ignored) {
-                            }
-                        }
-                    }
-                }
-            }
-            return rss; // 若无 HWM，则返回 RSS（当前值）
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    // 将 kB 转换为 MB 数值（最小 1MB）
-    private static long kbToMBValue(long kb) {
-        return Math.max(1L, kb / 1024L);
-    }
-
+    
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final int RUN_TIMEOUT_SECONDS = 10;
+    private static final String TEMP_DIR_PREFIX = "springoj-run-";
+    private static final String MAIN_CLASS_NAME = "Main";
+    
     @Override
     public Boolean handleRequest(JudgmentContext judgmentContext) {
+        Path tempDir = null;
         try {
-            if (judgmentContext == null) {
+            log.info("开始运行 Java 代码，提交ID: {}", judgmentContext.getSubmissionId());
+            
+            // 验证必要参数
+            if (!validateContext(judgmentContext)) {
                 return false;
             }
-
-            // 计算编译产物目录，与 JavaCompileHandler 保持一致
-            Long sid = judgmentContext.getSubmissionId();
-            String sidStr = (sid == null ? String.valueOf(System.currentTimeMillis()) : String.valueOf(sid));
-            Path workDir = Paths.get(judgeProperties.getWorkDir(), "java", sidStr);
-            Files.createDirectories(workDir);
-
-            // 组合 java 命令
-            String javaHome = System.getProperty("java.home");
-            String javaBin = javaHome == null ? "java" : Paths.get(javaHome, "bin", "java").toString();
-
-            String classpath = workDir + File.pathSeparator + System.getProperty("java.class.path", ".");
-
-            // 依据 LimitType 设置运行资源限制
-            LimitType lt = judgmentContext.getLimitType();
-            int xmx = Math.max(16, lt.getMemoryLimitMB()); // 至少 16MB
-            List<String> cmd = new ArrayList<>();
-            cmd.add(javaBin);
-            cmd.add("-Xmx" + xmx + "m");
-            cmd.add("-cp");
-            cmd.add(classpath);
-            cmd.add("Main");
-
-            ProcessBuilder pb = new ProcessBuilder(cmd);
-            pb.redirectErrorStream(true);
-            pb.directory(workDir.toFile());
-
-            // 记录启动时间用于统计整体运行耗时
-            long startNs = System.nanoTime();
-            Process p = pb.start();
-
-            // 读取输出（单行：实际结果JSON），并控制超时
-            StringBuilder fullOut = new StringBuilder();
-            String resultLine = null;
-
-            // 运行超时：使用 LimitType 的毫秒限制；保证最小 100ms
-            int timeoutMs;
-            long limitMsLong = lt.getTimeLimitMillis();
-            timeoutMs = (limitMsLong > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) limitMsLong;
-            timeoutMs = Math.max(100, timeoutMs);
-            try (BufferedReader br = new BufferedReader(
-                    new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
-                long start = System.nanoTime();
-                String line;
-                while (true) {
-                    if (br.ready() && (line = br.readLine()) != null) {
-                        if (resultLine == null && !line.trim().isEmpty()) {
-                            resultLine = line;
-                        }
-                        fullOut.append(line).append('\n');
-                    } else {
-                        if (p.waitFor(10, TimeUnit.MILLISECONDS)) {
-                            // 进程结束，尝试读尽缓冲
-                            while (br.ready() && (line = br.readLine()) != null) {
-                                if (resultLine == null && !line.trim().isEmpty()) {
-                                    resultLine = line;
-                                }
-                                fullOut.append(line).append('\n');
-                            }
-                            break;
-                        }
-                        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
-                        if (elapsedMs > timeoutMs) {
-                            p.destroyForcibly();
-                            // 记录整体耗时（从进程启动起）
-                            long totalMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
-                            judgmentContext.setTimeUsed(String.valueOf(totalMs));
-                            // 记录内存使用（尽力获取，获取失败则回退为 -Xmx）
-                            Long memKbTimeout = readProcMemKb(p.pid());
-                            if (memKbTimeout != null) {
-                                judgmentContext.setMemoryUsed(String.valueOf(kbToMBValue(memKbTimeout)));
-                            } else {
-                                judgmentContext.setMemoryUsed(String.valueOf(xmx));
-                            }
-                            return createErrorAndExit(judgmentContext, "运行超时(>" + timeoutMs + "ms)",
-                                    JudgeStatus.TIME_LIMIT_EXCEEDED);
-                        }
-                    }
+            
+            // 创建临时运行目录
+            tempDir = createTempDirectory();
+            
+            // 复制编译后的代码到运行目录
+            copyCompiledCode(tempDir, judgmentContext.getRunCode());
+            
+            // 执行程序
+            RunResult result = executeJavaProgram(tempDir);
+            
+            // 处理运行结果
+			if (!handleRunResult(result, judgmentContext)){
+				return false;
+			}
+			return nextHandler.handleRequest(judgmentContext);
+            
+        } catch (Exception e) {
+            log.error("运行过程发生异常，提交ID: {}, 错误: {}", 
+                     judgmentContext.getSubmissionId(), e.getMessage(), e);
+            
+            judgmentContext.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            judgmentContext.setJudgeInfo("运行过程发生系统错误: " + e.getMessage());
+            return false;
+            
+        } finally {
+            // 清理临时目录
+            if (tempDir != null) {
+                cleanupTempDirectory(tempDir);
+            }
+        }
+    }
+    
+    /**
+     * 验证判题上下文
+     */
+    private boolean validateContext(JudgmentContext context) {
+        if (context.getJudgeStatus() != JudgeStatus.CONTINUE) {
+            log.error("前置处理未成功，当前状态: {}, 提交ID: {}", 
+                     context.getJudgeStatus(), context.getSubmissionId());
+            return false;
+        }
+        
+        if (context.getRunCode() == null || context.getRunCode().trim().isEmpty()) {
+            log.error("待运行代码为空，提交ID: {}", context.getSubmissionId());
+            context.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            context.setJudgeInfo("待运行代码不能为空");
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * 创建临时运行目录
+     */
+    private Path createTempDirectory() throws IOException {
+        return Files.createTempDirectory(TEMP_DIR_PREFIX);
+    }
+    
+    /**
+     * 复制编译后的代码到运行目录
+     */
+    private void copyCompiledCode(Path tempDir, String sourceCode) throws IOException {
+        // 写入源代码文件
+        Path sourceFile = tempDir.resolve("Main.java");
+        Files.write(sourceFile, sourceCode.getBytes("UTF-8"));
+        
+        // 编译代码到运行目录
+        compileCodeInRunDirectory(tempDir, sourceFile);
+    }
+    
+    /**
+     * 在运行目录中编译代码
+     */
+    private void compileCodeInRunDirectory(Path tempDir, Path sourceFile) throws IOException {
+        List<String> command = new ArrayList<>();
+        command.add("javac");
+        command.add("-encoding");
+        command.add("UTF-8");
+        command.add("-cp");
+        command.add(buildClasspath());
+        command.add(sourceFile.toString());
+        
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.directory(tempDir.toFile());
+        processBuilder.redirectErrorStream(true);
+        
+        Process process = processBuilder.start();
+        try {
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new RuntimeException("运行时编译失败");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("编译过程被中断", e);
+        }
+    }
+    
+    /**
+     * 执行 Java 程序
+     */
+    private RunResult executeJavaProgram(Path tempDir) {
+        try {
+            // 构建运行命令
+            List<String> command = new ArrayList<>();
+            command.add("java");
+            command.add("-Xmx256m"); // 限制最大堆内存
+            command.add("-Xss1m");   // 限制栈大小
+            command.add("-cp");
+            command.add(buildClasspath() + File.pathSeparator + tempDir.toString());
+            command.add(MAIN_CLASS_NAME);
+            
+            log.debug("运行命令: {}", String.join(" ", command));
+            
+            // 创建进程
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            processBuilder.directory(tempDir.toFile());
+            processBuilder.redirectErrorStream(false); // 分别处理输出和错误流
+            
+            // 启动运行进程
+            Process process = processBuilder.start();
+            
+            // 使用线程池处理超时和IO
+            ExecutorService executor = Executors.newFixedThreadPool(3);
+            
+            // 异步读取输出流
+            Future<String> outputFuture = executor.submit(() -> readStream(process.getInputStream()));
+            
+            // 异步读取错误流
+            Future<String> errorFuture = executor.submit(() -> readStream(process.getErrorStream()));
+            
+            // 异步等待进程结束
+            Future<Integer> processFuture = executor.submit(() -> {
+                try {
+                    return process.waitFor();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("进程等待被中断", e);
                 }
-            }
-
-            // 记录整体耗时与内存占用（若可获取）
-            long elapsedTotalMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
-            judgmentContext.setTimeUsed(String.valueOf(elapsedTotalMs));
-            Long memKb = readProcMemKb(p.pid());
-            if (memKb != null) {
-                judgmentContext.setMemoryUsed(String.valueOf(kbToMBValue(memKb)));
-            } else {
-                judgmentContext.setMemoryUsed(String.valueOf(xmx));
-            }
-
-            int exit = p.exitValue();
-            if (exit != 0) {
-                return createErrorAndExit(judgmentContext, "运行异常，exitCode=" + exit + "\n" + fullOut,
-                        JudgeStatus.RUNTIME_ERROR);
-            }
-
-            if (resultLine == null) {
-                return createErrorAndExit(judgmentContext, "运行输出缺失：未获取到结果\n" + fullOut, JudgeStatus.RUNTIME_ERROR);
-            }
-
-            // 解析多测试用例的 JSON 数组结果并与期望值比对
-            List<TestCase> testCases = judgmentContext.getTestCases();
-            if (testCases == null || testCases.isEmpty()) {
-                return createErrorAndExit(judgmentContext, "运行完成，但缺少测试用例用于比对，输出=" + resultLine,
-                        JudgeStatus.SYSTEM_ERROR);
-            }
-
-            ObjectMapper mapper = new ObjectMapper();
-            List<JudgmentResult> judgmentResults = new ArrayList<>();
-
+            });
+            
             try {
-                // 解析运行结果为 JSON 数组
-                JsonNode resultArray = mapper.readTree(resultLine);
-                if (!resultArray.isArray()) {
-                    return createErrorAndExit(judgmentContext, "运行输出格式错误：期望 JSON 数组，实际=" + resultLine,
-                            JudgeStatus.RUNTIME_ERROR);
-                }
-
-                // fail-fast 模式下，如果某个测试用例失败，后续测试用例不会执行，结果数量可能少于测试用例数量
-                if (resultArray.size() > testCases.size()) {
-                    return createErrorAndExit(judgmentContext,
-                            "运行结果数量超过测试用例数量：期望<=" + testCases.size() + "，实际=" + resultArray.size(),
-                            JudgeStatus.RUNTIME_ERROR);
-                }
-
-                // 逐个比对已执行的测试用例结果
-                boolean hasFailedCase = false;
-                for (int i = 0; i < resultArray.size(); i++) {
-                    TestCase testCase = testCases.get(i);
-                    TestCaseOutput expectedOutput = testCase.getTestCaseOutput();
-
-                    if (expectedOutput == null) {
-                        judgmentResults.add(createErrorJudgmentResult(
-                                testCase.getId(), "测试用例[" + testCase.getId() + "]缺少期望输出",
-                                judgmentContext, JudgeStatus.SYSTEM_ERROR));
-                        continue;
-                    }
-
-                    String expectedRaw = Objects.toString(expectedOutput.getOutput(), "");
-                    String outputType = expectedOutput.getOutputType();
-                    String expectedJson = JavaFormationUtils.ensureJsonLiteral(expectedRaw, outputType);
-
-                    JsonNode actualResult = resultArray.get(i);
-                    boolean isCorrect;
-                    String errorMsg = null;
-                    String actualOutput;
-
-                    try {
-                        // 检查是否为错误结果
-                        if (actualResult.has("error")) {
-                            isCorrect = false;
-                            String errorText = actualResult.get("error").asText();
-                            errorMsg = "运行时错误: " + errorText;
-                            actualOutput = mapper.writeValueAsString(errorText);
-                        } else if (actualResult.has("success") && actualResult.get("success").asBoolean()) {
-                            // 成功的测试用例：提取实际输出进行比对
-                            JsonNode outputNode = actualResult.get("output");
-                            if (outputNode != null) {
-                                // 使用 Jackson 标准序列化确保格式正确
-                                actualOutput = mapper.writeValueAsString(outputNode);
-                            } else {
-                                // 如果没有 output 字段，序列化整个结果节点
-                                actualOutput = mapper.writeValueAsString(actualResult);
-                            }
-                            JsonNode expectedNode = mapper.readTree(expectedJson);
-                            JsonNode actualNode = mapper.readTree(actualOutput);
-                            isCorrect = Objects.equals(expectedNode, actualNode);
-                        } else {
-                            // 失败的测试用例：直接标记为错误
-                            isCorrect = false;
-                            JsonNode actualOutputNode = actualResult.get("actualOutput");
-                            if (actualOutputNode != null) {
-                                actualOutput = mapper.writeValueAsString(actualOutputNode);
-                            } else {
-                                // 序列化整个结果节点
-                                actualOutput = mapper.writeValueAsString(actualResult);
-                            }
-                            errorMsg = "测试用例失败";
-                        }
-                    } catch (Exception parseEx) {
-                        isCorrect = false;
-                        try {
-                            actualOutput = mapper.writeValueAsString(actualResult);
-                        } catch (Exception serEx) {
-                            actualOutput = "序列化失败";
-                        }
-                        errorMsg = "结果解析失败: " + parseEx.getMessage();
-                    }
-
-                    JudgeStatus status = isCorrect ? null : JudgeStatus.WRONG_ANSWER; // null表示待后续时间/内存检查决定
-                    String info = errorMsg != null ? errorMsg
-                            : ("输出比对:" + (isCorrect ? "通过" : "不通过") + ", 期望=" + expectedJson + ", 实际=" + actualOutput);
-
-                    judgmentResults.add(JudgmentResult.builder()
-                            .testCaseId(testCase.getId())
-                            .judgeStatus(status)
-                            .memoryUsed(judgmentContext.getMemoryUsed())
-                            .timeUsed(judgmentContext.getTimeUsed())
-                            .compileInfo(judgmentContext.getCompileInfo())
-                            .judgeInfo(info)
-                            .build());
-
-                    // 只记录第一个失败的测试用例信息到 JudgmentContext（用于 fail-fast 模式）
-                    if (!isCorrect) {
-                        judgmentContext.setErrorTestCaseId(testCase.getId());
-                        judgmentContext.setErrorTestCaseOutput(actualOutput != null ? actualOutput : "未知");
-                        judgmentContext.setErrorTestCaseExpectOutput(expectedJson);
-                        // fail-fast: 遇到第一个错误就停止处理后续测试用例
-                        break;
-                    }
-                }
-
-                // 对于 fail-fast 模式下未执行的测试用例，创建 "未执行" 状态的结果
-                for (int i = resultArray.size(); i < testCases.size(); i++) {
-                    TestCase testCase = testCases.get(i);
-                    judgmentResults.add(JudgmentResult.builder()
-                            .testCaseId(testCase.getId())
-                            .judgeStatus(JudgeStatus.SYSTEM_ERROR) // 使用 SYSTEM_ERROR 表示未执行
-                            .memoryUsed(judgmentContext.getMemoryUsed())
-                            .timeUsed(judgmentContext.getTimeUsed())
-                            .compileInfo(judgmentContext.getCompileInfo())
-                            .judgeInfo("fail-fast模式下未执行：因前序测试用例失败而跳过")
-                            .build());
-                }
-
-                judgmentContext.setJudgmentResults(judgmentResults);
-                judgmentContext.setJudgeInfo("运行完成，处理了 " + testCases.size() + " 个测试用例");
-
-            } catch (Exception parseEx) {
-                return createErrorAndExit(judgmentContext, "解析运行结果失败: " + parseEx.getMessage() + ", 输出=" + resultLine,
-                        JudgeStatus.RUNTIME_ERROR);
+                // 等待进程完成，设置超时
+                long startTime = System.currentTimeMillis();
+                Integer exitCode = processFuture.get(RUN_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                long endTime = System.currentTimeMillis();
+                
+                // 获取输出和错误信息
+                String output = outputFuture.get(1, TimeUnit.SECONDS);
+                String error = errorFuture.get(1, TimeUnit.SECONDS);
+                
+                executor.shutdown();
+                
+                return new RunResult(
+                    exitCode == 0, 
+                    exitCode, 
+                    output, 
+                    error,
+                    endTime - startTime,
+                    estimateMemoryUsage()
+                );
+                
+            } catch (TimeoutException e) {
+                log.warn("程序运行超时，强制终止进程");
+                process.destroyForcibly();
+                
+                // 取消所有异步任务
+                outputFuture.cancel(true);
+                errorFuture.cancel(true);
+                processFuture.cancel(true);
+                executor.shutdownNow();
+                
+                return new RunResult(
+                    false, 
+                    -1, 
+                    "", 
+                    "程序运行超时（超过 " + RUN_TIMEOUT_SECONDS + " 秒）",
+                    RUN_TIMEOUT_SECONDS * 1000L,
+                    0L
+                );
             }
-
-            // 继续责任链
-            if (this.nextHandler != null) {
-                return this.nextHandler.handleRequest(judgmentContext);
+            
+        } catch (Exception e) {
+            log.error("程序运行过程发生异常", e);
+            return new RunResult(
+                false, 
+                -1, 
+                "", 
+                "程序运行过程发生异常: " + e.getMessage(),
+                0L,
+                0L
+            );
+        }
+    }
+    
+    /**
+     * 读取流内容
+     */
+    private String readStream(InputStream inputStream) {
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(inputStream, "UTF-8"))) {
+            
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
             }
+        } catch (IOException e) {
+            log.warn("读取流内容时发生错误", e);
+        }
+        return output.toString().trim();
+    }
+    
+    /**
+     * 构建类路径
+     */
+    private String buildClasspath() {
+        List<String> classpaths = new ArrayList<>();
+        
+        // 系统类路径
+        String systemClasspath = System.getProperty("java.class.path");
+        if (systemClasspath != null && !systemClasspath.isEmpty()) {
+            classpaths.add(systemClasspath);
+        }
+        
+        // 当前目录
+        classpaths.add(".");
+        
+        return String.join(File.pathSeparator, classpaths);
+    }
+    
+    /**
+     * 估算内存使用量（简化实现）
+     */
+    private long estimateMemoryUsage() {
+        // 简化的内存使用估算，实际应用中可以使用更精确的方法
+        Runtime runtime = Runtime.getRuntime();
+        long totalMemory = runtime.totalMemory();
+        long freeMemory = runtime.freeMemory();
+        return (totalMemory - freeMemory) / (1024 * 1024); // 转换为MB
+    }
+    
+    /**
+     * 处理运行结果
+     */
+    private boolean handleRunResult(RunResult result, JudgmentContext context) {
+        if (!result.isSuccess()) {
+            // 运行失败
+            log.info("程序运行失败，提交ID: {}, 错误信息: {}", 
+                    context.getSubmissionId(), result.getError());
+            
+            context.setJudgeStatus(JudgeStatus.RUNTIME_ERROR);
+            context.setJudgeInfo("运行时错误: " + result.getError());
+            context.setTimeUsed(String.valueOf(result.getExecutionTime()));
+            context.setMemoryUsed(String.valueOf(result.getMemoryUsage()));
+            
+            return false;
+        }
+        
+        // 运行成功，解析输出结果
+        try {
+            List<JudgmentResult> judgmentResults = parseRunOutput(result.getOutput(), context);
+            
+            context.setJudgmentResults(judgmentResults);
+            context.setTimeUsed(String.valueOf(result.getExecutionTime()));
+            context.setMemoryUsed(String.valueOf(result.getMemoryUsage()));
+            context.setJudgeStatus(JudgeStatus.CONTINUE);
+            
+            log.info("程序运行成功，提交ID: {}, 测试用例数: {}", 
+                    context.getSubmissionId(), judgmentResults.size());
+            
             return true;
-        } catch (IOException | InterruptedException e) {
-            String msg = e.getMessage() == null ? e.toString() : e.getMessage();
-            return createErrorAndExit(judgmentContext, "运行阶段出错: " + msg + "\n详细信息: " + e.getClass().getSimpleName(),
-                    JudgeStatus.RUNTIME_ERROR);
+            
+        } catch (Exception e) {
+            log.error("解析运行结果失败，提交ID: {}, 错误: {}", 
+                     context.getSubmissionId(), e.getMessage(), e);
+            
+            context.setJudgeStatus(JudgeStatus.SYSTEM_ERROR);
+            context.setJudgeInfo("解析运行结果失败: " + e.getMessage());
+            return false;
         }
     }
-
+    
     /**
-     * 创建错误状态的 JudgmentResult
+     * 解析程序运行输出
      */
-    private JudgmentResult createErrorJudgmentResult(Long testCaseId, String errorMsg,
-            JudgmentContext context, JudgeStatus status) {
-        return JudgmentResult.builder()
-                .testCaseId(testCaseId)
-                .judgeStatus(status)
-                .memoryUsed(context.getMemoryUsed())
-                .timeUsed(context.getTimeUsed())
-                .compileInfo(context.getCompileInfo())
-                .judgeInfo(errorMsg)
-                .build();
-    }
-
-    /**
-     * 创建错误状态并退出
-     */
-    private boolean createErrorAndExit(JudgmentContext context, String errorMsg, JudgeStatus status) {
-        context.setJudgeInfo(errorMsg);
-        context.setJudgeStatus(status);
-
-        // 为所有测试用例创建统一的错误 JudgmentResult
-        List<TestCase> testCases = context.getTestCases();
+    private List<JudgmentResult> parseRunOutput(String output, JudgmentContext context) 
+            throws JsonProcessingException {
+        
+        if (output == null || output.trim().isEmpty()) {
+            throw new IllegalArgumentException("程序输出为空");
+        }
+        
+        String trimmedOutput = output.trim();
+        
+        // 期望输出格式：[{"testCaseIndex":0,"success":true,"output":"..."}]
+        JsonNode rootNode = MAPPER.readTree(trimmedOutput);
+        
+        if (!rootNode.isArray()) {
+            throw new IllegalArgumentException("程序输出不是 JSON 数组格式");
+        }
+        
         List<JudgmentResult> results = new ArrayList<>();
-
-        if (testCases != null && !testCases.isEmpty()) {
-            for (TestCase testCase : testCases) {
-                results.add(createErrorJudgmentResult(testCase.getId(), errorMsg, context, status));
-            }
-        } else {
-            // 无测试用例时创建一个通用错误结果
-            results.add(createErrorJudgmentResult(null, errorMsg, context, status));
+        
+        for (JsonNode resultNode : rootNode) {
+            JudgmentResult judgmentResult = parseTestCaseResult(resultNode, context);
+            results.add(judgmentResult);
         }
-
-        context.setJudgmentResults(results);
-        return false;
+        
+        return results;
+    }
+    
+    /**
+     * 解析单个测试用例结果
+     */
+    private JudgmentResult parseTestCaseResult(JsonNode resultNode, JudgmentContext context) {
+        JudgmentResult result = new JudgmentResult();
+        
+        // 解析测试用例索引
+        if (resultNode.has("testCaseIndex")) {
+            int testCaseIndex = resultNode.get("testCaseIndex").asInt();
+            if (testCaseIndex >= 0 && testCaseIndex < context.getTestCases().size()) {
+                result.setTestCaseId(context.getTestCases().get(testCaseIndex).getId());
+            }
+        }
+        
+        // 解析成功状态
+        boolean success = resultNode.has("success") && resultNode.get("success").asBoolean();
+        
+        if (success) {
+            result.setJudgeStatus(JudgeStatus.ACCEPTED);
+            result.setJudgeInfo("答案正确");
+            
+            if (resultNode.has("output")) {
+                // 实际输出（用于后续比较验证）
+                String actualOutput = resultNode.get("output").asText();
+                result.setCompileInfo("实际输出: " + actualOutput);
+            }
+            
+        } else {
+            result.setJudgeStatus(JudgeStatus.WRONG_ANSWER);
+            
+            if (resultNode.has("error")) {
+                result.setJudgeInfo("运行时错误: " + resultNode.get("error").asText());
+            } else if (resultNode.has("actualOutput") && resultNode.has("expectedOutput")) {
+                String actualOutput = resultNode.get("actualOutput").asText();
+                String expectedOutput = resultNode.get("expectedOutput").asText();
+                result.setJudgeInfo(String.format("答案错误\n期望输出: %s\n实际输出: %s", 
+                                                 expectedOutput, actualOutput));
+            } else {
+                result.setJudgeInfo("答案错误");
+            }
+        }
+        
+        // 设置资源使用信息
+        result.setTimeUsed(context.getTimeUsed());
+        result.setMemoryUsed(context.getMemoryUsed());
+        
+        return result;
+    }
+    
+    /**
+     * 清理临时目录
+     */
+    private void cleanupTempDirectory(Path tempDir) {
+        try {
+            Files.walk(tempDir)
+                 .sorted((a, b) -> b.getNameCount() - a.getNameCount())
+                 .forEach(path -> {
+                     try {
+                         Files.deleteIfExists(path);
+                     } catch (IOException e) {
+                         log.warn("清理临时文件失败: {}", path, e);
+                     }
+                 });
+        } catch (IOException e) {
+            log.warn("清理临时目录失败: {}", tempDir, e);
+        }
+    }
+    
+    /**
+     * 运行结果封装类
+     */
+    private static class RunResult {
+        private final boolean success;
+        private final int exitCode;
+        private final String output;
+        private final String error;
+        private final long executionTime;
+        private final long memoryUsage;
+        
+        public RunResult(boolean success, int exitCode, String output, String error, 
+                        long executionTime, long memoryUsage) {
+            this.success = success;
+            this.exitCode = exitCode;
+            this.output = output;
+            this.error = error;
+            this.executionTime = executionTime;
+            this.memoryUsage = memoryUsage;
+        }
+        
+        public boolean isSuccess() {
+            return success;
+        }
+        
+        public int getExitCode() {
+            return exitCode;
+        }
+        
+        public String getOutput() {
+            return output;
+        }
+        
+        public String getError() {
+            return error;
+        }
+        
+        public long getExecutionTime() {
+            return executionTime;
+        }
+        
+        public long getMemoryUsage() {
+            return memoryUsage;
+        }
     }
 }

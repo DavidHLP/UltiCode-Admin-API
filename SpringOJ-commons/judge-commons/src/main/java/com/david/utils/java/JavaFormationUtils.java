@@ -6,436 +6,412 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
+/**
+ * 全新的 JSON 导向格式化工具类。
+ * 
+ * 核心设计原则：
+ * 1. 严格 JSON：所有输入必须是合法 JSON 格式
+ * 2. 类型安全：根据 JavaType 严格验证和转换
+ * 3. 零容错：不合法输入直接抛出异常，不做兜底处理
+ * 4. 统一序列化：全部使用 Jackson ObjectMapper
+ */
 @Component
 public class JavaFormationUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     /**
-     * 确保提供的值转换为"合法 JSON 字面量"。
-     * 安全策略：统一使用 Jackson 内置方法，避免手写序列化和多次转换问题。
-     * - 所有类型统一通过 Jackson 处理，确保输出格式一致性
-     * - 避免双重序列化：先检测是否已为有效JSON，再决定处理策略
-     * - 类型安全：根据目标类型进行适当的值转换和验证
-     *
-     * @param rawValue 原始文本值（可能为非 JSON）
-     * @param typeName 目标 Java 类型名，用于判定处理策略
-     * @return 可安全用于 JSON 解析/比较的字符串（是一个合法的 JSON 片段）
-     * @throws IllegalArgumentException 当值与目标类型不匹配时抛出
+     * 验证 JSON 输入是否符合指定类型，并返回规范化的 JSON 字符串
+     * 
+     * @param jsonInput 输入的 JSON 字符串
+     * @param javaType 目标 Java 类型
+     * @return 规范化的 JSON 字符串
+     * @throws IllegalArgumentException 当输入不是合法 JSON 或类型不匹配时
      */
-    public static String ensureJsonLiteral(String rawValue, String typeName) {
-        if (rawValue == null) {
-            return "null";
+    public static String validateAndNormalizeJson(String jsonInput, JavaType javaType) {
+        if (jsonInput == null || jsonInput.trim().isEmpty()) {
+            throw new IllegalArgumentException("JSON 输入不能为空");
         }
 
-        String trimmed = rawValue.trim();
-        if (trimmed.isEmpty()) {
-            return isStringLike(typeName) ? "\"\"" : "null";
-        }
-
+        String trimmed = jsonInput.trim();
+        
+        // 首先验证是否是合法的 JSON
+        JsonNode jsonNode;
         try {
-            // 首先尝试解析为 JSON，检查是否已经是有效的 JSON 格式
-            JsonNode existingNode = MAPPER.readTree(trimmed);
-
-            // 根据目标类型验证和转换值
-            if (isStringLike(typeName)) {
-                // 字符串类型：如果解析出的是字符串节点，直接返回；否则将解析结果序列化为字符串
-                if (existingNode.isTextual()) {
-                    return MAPPER.writeValueAsString(existingNode.asText());
-                } else {
-                    return MAPPER.writeValueAsString(existingNode.toString());
-                }
-            } else if (isArrayLike(typeName)) {
-                // 数组类型：必须是数组节点
-                if (!existingNode.isArray()) {
-                    throw new IllegalArgumentException("期望数组类型，但输入不是 JSON 数组: " + trimmed);
-                }
-                return existingNode.toString();
-            } else if (isBooleanLike(typeName)) {
-                // 布尔类型：标准化布尔值
-                if (existingNode.isBoolean()) {
-                    return String.valueOf(existingNode.asBoolean());
-                } else if (existingNode.isTextual()) {
-                    String text = existingNode.asText();
-                    if ("true".equalsIgnoreCase(text))
-                        return "true";
-                    if ("false".equalsIgnoreCase(text))
-                        return "false";
-                    throw new IllegalArgumentException("无效的布尔值: " + text);
-                }
-                throw new IllegalArgumentException("无法转换为布尔值: " + trimmed);
-            } else {
-                // 其他类型（数字等）：直接返回标准化的 JSON
-                return existingNode.toString();
-            }
+            jsonNode = MAPPER.readTree(trimmed);
         } catch (JsonProcessingException e) {
-            // 输入不是有效的 JSON，根据目标类型进行处理
-            if (isStringLike(typeName)) {
-                // 字符串类型：使用 Jackson 序列化原始值
-                try {
-                    return MAPPER.writeValueAsString(trimmed);
-                } catch (JsonProcessingException ex) {
-                    throw new IllegalArgumentException("无法序列化字符串值: " + trimmed, ex);
-                }
-            } else if (isBooleanLike(typeName)) {
-                // 布尔类型：尝试解析文本布尔值
-                if ("true".equalsIgnoreCase(trimmed))
-                    return "true";
-                if ("false".equalsIgnoreCase(trimmed))
-                    return "false";
-                throw new IllegalArgumentException("无效的布尔值: " + trimmed);
-            } else if (isArrayLike(typeName)) {
-                // 数组类型：输入必须是有效的 JSON 数组
-                throw new IllegalArgumentException("数组类型输入必须是有效的 JSON 数组: " + trimmed, e);
-            } else {
-                // 其他类型：严格模式下不接受非 JSON 输入，直接抛出异常
-                throw new IllegalArgumentException("输入不是合法 JSON，且不匹配目标类型: " + trimmed, e);
-            }
+            throw new IllegalArgumentException("输入不是合法的 JSON 格式: " + trimmed, e);
         }
-    }
 
-    /**
-     * 生成在 Java 源码中可直接赋值的字符串字面量（含双引号且内部已转义）。
-     * 完全使用 Jackson 内置序列化，确保转义的正确性和安全性。
-     * 例如：传入 [1,2] => "[1,2]"； 传入 "abc" => "\"abc\""。
-     *
-     * @param rawText 原始字符串
-     * @return Java 源码中的字符串字面量表达式
-     * @throws IllegalArgumentException 当序列化失败时抛出
-     */
-    public static String toJavaStringLiteral(String rawText) {
-        if (rawText == null) {
-            return "null";
-        }
+        // 验证 JSON 类型是否匹配 JavaType
+        validateJsonNodeType(jsonNode, javaType);
+
+        // 返回标准化的 JSON 字符串
         try {
-            // 使用 Jackson 的标准序列化确保正确转义
-            return MAPPER.writeValueAsString(rawText);
+            return MAPPER.writeValueAsString(jsonNode);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("无法序列化字符串为 Java 字面量: " + rawText, e);
+            throw new IllegalArgumentException("JSON 序列化失败", e);
         }
     }
 
     /**
-     * 判断是否为字符串相关类型。
-     *
-     * @param typeName Java 类型名
-     * @return true 表示 String/Character/char
+     * 将 JSON 字符串转换为 Java 代码中的字面量表达式
+     * 
+     * @param jsonValue JSON 格式的值
+     * @param javaType 目标 Java 类型
+     * @return Java 代码字面量表达式
      */
-    public static boolean isStringLike(String typeName) {
-        String t = normalize(typeName);
-        return Objects.equals(t, "String") || Objects.equals(t, "Character") || Objects.equals(t, "char");
-    }
-
-    /**
-     * 判断是否为布尔相关类型。
-     *
-     * @param typeName Java 类型名
-     * @return true 表示 boolean/Boolean
-     */
-    public static boolean isBooleanLike(String typeName) {
-        String t = normalize(typeName);
-        return Objects.equals(t, "boolean") || Objects.equals(t, "Boolean");
-    }
-
-    /**
-     * 判断是否为数组类型（例如：int[]、String[]、double[][]）。
-     *
-     * @param typeName Java 类型名
-     * @return true 表示数组类型
-     */
-    public static boolean isArrayLike(String typeName) {
-        String t = normalize(typeName);
-        return t.endsWith("[]");
-    }
-
-    /**
-     * 提取一维元素类型（对多维数组，剥一层[]）。
-     * 例如："int[][]" -> "int[]"；"String[]" -> "String"。
-     *
-     * @param typeName 数组类型名
-     * @return 子元素类型名
-     */
-    public static String elementTypeOfArray(String typeName) {
-        String t = normalize(typeName);
-        if (!t.endsWith("[]"))
-            return t;
-        return t.substring(0, t.length() - 2);
-    }
-
-    /**
-     * 将原始文本验证并标准化为合法 JSON 数组字面量。
-     * 完全基于Jackson内置解析和序列化，确保格式正确性和类型安全。
-     *
-     * @param rawValue      原始文本值
-     * @param arrayTypeName 目标数组类型名（用于错误提示）
-     * @return 标准化的 JSON 数组文本
-     * @throws IllegalArgumentException 当 rawValue 不是合法 JSON 数组时抛出
-     */
-    public static String formatArrayLiteral(String rawValue, String arrayTypeName) {
-        String text = rawValue == null ? "[]" : rawValue.trim();
-
-        if (text.isEmpty()) {
-            return "[]";
-        }
-
+    public static String jsonToJavaLiteral(String jsonValue, JavaType javaType) {
+        String normalizedJson = validateAndNormalizeJson(jsonValue, javaType);
+        
         try {
-            JsonNode node = MAPPER.readTree(text);
-            if (!node.isArray()) {
-                throw new IllegalArgumentException(
-                        String.format("期望 JSON 数组类型，但输入为 %s 类型: %s",
-                                node.getNodeType(), text));
-            }
-
-            // 使用 Jackson 重新序列化确保格式标准化，避免空格/换行等格式差异
-            return MAPPER.writeValueAsString(node);
+            JsonNode node = MAPPER.readTree(normalizedJson);
+            return convertJsonNodeToJavaLiteral(node, javaType);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(
-                    String.format("数组类型 '%s' 的输入必须为合法 JSON 数组格式，输入值: %s",
-                            arrayTypeName, text),
-                    e);
+            throw new IllegalArgumentException("JSON 解析失败", e);
         }
     }
 
-    // =============== helpers ===============
-
     /**
-     * 已删除手写字符串转义方法，统一使用 Jackson 的 writeValueAsString 方法确保安全性。
-     * 该方法的功能已被 toJavaStringLiteral 中的 Jackson 序列化完全替代。
+     * 构建方法参数列表的 Java 代码表达式
+     * 
+     * @param jsonInputs JSON 格式的输入值列表
+     * @param javaTypes 对应的 Java 类型列表
+     * @return 形如 "arg1, arg2, arg3" 的参数表达式
      */
-
-    private static String normalize(String typeName) {
-        return typeName == null ? "" : typeName.trim();
-    }
-
-    /**
-     * 根据类型和值，生成可直接写入 Java 源码中的表达式（作为形参传入 Solution 方法）。
-     * 支持：
-     * - 原始类型与包装类型（boolean/Boolean、整型/浮点型等）
-     * - String/char/Character
-     * - 一维/多维数组（如 int[]、String[][]），数组输入必须为合法 JSON 数组
-     *
-     * @param typeName 目标 Java 类型名
-     * @param rawValue 原始文本值
-     * @return Java 源码中的字面量/初始化表达式
-     * @throws IllegalArgumentException 当数组输入不是合法 JSON 数组，或与目标类型不匹配时抛出
-     */
-    public static String buildJavaExpression(String typeName, String rawValue) {
-        String t = normalize(typeName);
-        if (t.isEmpty())
-            throw new IllegalArgumentException("typeName 不能为空");
-
-        if (isArrayLike(t)) {
-            // 严格模式：输入必须是合法 JSON 数组
-            String json = formatArrayLiteral(rawValue == null ? "[]" : rawValue, t);
-            try {
-                JsonNode node = MAPPER.readTree(json);
-                if (!node.isArray()) {
-                    throw new IllegalArgumentException("期望数组 JSON，但得到：" + json);
-                }
-                return buildArrayInit(t, node);
-            } catch (Exception e) {
-                throw new IllegalArgumentException("无法解析为数组：" + e.getMessage(), e);
-            }
+    public static String buildParameterList(List<String> jsonInputs, List<JavaType> javaTypes) {
+        if (jsonInputs == null || javaTypes == null || jsonInputs.size() != javaTypes.size()) {
+            throw new IllegalArgumentException("输入列表与类型列表长度不匹配");
         }
 
-        // 非数组
-        return buildNonArrayLiteral(t, rawValue);
-    }
-
-    /**
-     * 生成多参数调用的参数列表表达式，形如：arg1 , arg2 , arg3。
-     *
-     * @param inputs 各参数的原始文本值，顺序与 types 对应
-     * @param types  各参数的 Java 类型名，顺序与 inputs 对应
-     * @return 用于 Java 源码的方法调用参数表达式
-     * @throws IllegalArgumentException 当 inputs 或 types 为空，或两者长度不一致时抛出
-     */
-    public static String buildArgumentList(List<String> inputs, List<String> types) {
-        if (inputs == null || types == null || inputs.size() != types.size()) {
-            throw new IllegalArgumentException("inputs 与 types 为空或大小不一致");
-        }
-        List<String> args = new ArrayList<>();
-        for (int i = 0; i < inputs.size(); i++) {
-            args.add(buildJavaExpression(types.get(i), inputs.get(i)));
-        }
-        return String.join(" , ", args);
-    }
-
-    // =============== internal generators ===============
-
-    /**
-     * 基于JsonNode构建Java数组初始化表达式
-     * 递归处理多维数组，确保类型安全和格式正确
-     */
-    private static String buildArrayInit(String arrayTypeName, JsonNode arrayNode) {
-        if (!arrayNode.isArray()) {
-            throw new IllegalArgumentException(
-                    String.format("期望数组节点，但得到 %s: %s",
-                            arrayNode.getNodeType(), arrayNode));
-        }
-
-        String elemType = elementTypeOfArray(arrayTypeName);
-        StringBuilder sb = new StringBuilder();
-        sb.append("new ").append(normalize(arrayTypeName));
-        sb.append("{ ");
-
-        for (int i = 0; i < arrayNode.size(); i++) {
-            JsonNode item = arrayNode.get(i);
+        StringBuilder params = new StringBuilder();
+        for (int i = 0; i < jsonInputs.size(); i++) {
             if (i > 0) {
-                sb.append(" , ");
+                params.append(", ");
             }
+            params.append(jsonToJavaLiteral(jsonInputs.get(i), javaTypes.get(i)));
+        }
+        return params.toString();
+    }
 
-            if (isArrayLike(elemType)) {
-                // 多维数组递归处理
-                if (!item.isArray()) {
-                    throw new IllegalArgumentException(
-                            String.format("多维数组类型 '%s' 的子项必须为数组，但得到 %s: %s",
-                                    elemType, item.getNodeType(), item));
+    /**
+     * 获取类型的 Java 导入语句
+     */
+    public static String getRequiredImports(List<JavaType> types) {
+        boolean needUtilImport = types.stream().anyMatch(type -> 
+            type.isList() || type.isArray() && type != JavaType.INT_ARRAY && type != JavaType.DOUBLE_ARRAY
+        );
+        
+        return needUtilImport ? "import java.util.*;" : "";
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    /**
+     * 验证 JsonNode 是否符合指定的 JavaType
+     */
+    private static void validateJsonNodeType(JsonNode node, JavaType javaType) {
+        switch (javaType) {
+            case INTEGER:
+                if (!node.isIntegralNumber()) {
+                    throw new IllegalArgumentException("期望整数类型，但输入为: " + node.getNodeType());
                 }
-                sb.append(buildArrayInit(elemType, item));
-            } else {
-                // 基础类型元素处理
-                sb.append(nonArrayLiteralFromNode(elemType, item));
+                break;
+                
+            case DOUBLE:
+                if (!node.isNumber()) {
+                    throw new IllegalArgumentException("期望数值类型，但输入为: " + node.getNodeType());
+                }
+                break;
+                
+            case STRING:
+                if (!node.isTextual()) {
+                    throw new IllegalArgumentException("期望字符串类型，但输入为: " + node.getNodeType());
+                }
+                break;
+                
+            case BOOLEAN:
+                if (!node.isBoolean()) {
+                    throw new IllegalArgumentException("期望布尔类型，但输入为: " + node.getNodeType());
+                }
+                break;
+                
+            case INT_ARRAY:
+            case DOUBLE_ARRAY:
+            case STRING_ARRAY:
+            case BOOLEAN_ARRAY:
+            case INT_2D_ARRAY:
+            case STRING_2D_ARRAY:
+            case BOOLEAN_2D_ARRAY:
+            case LIST_INTEGER:
+            case LIST_STRING:
+            case LIST_LIST_INTEGER:
+            case LIST_LIST_STRING:
+                if (!node.isArray()) {
+                    throw new IllegalArgumentException("期望数组类型，但输入为: " + node.getNodeType());
+                }
+                validateArrayElements(node, javaType);
+                break;
+                
+            case VOID:
+                throw new IllegalArgumentException("VOID 类型不能用于输入验证");
+        }
+    }
+
+    /**
+     * 验证数组元素类型
+     */
+    private static void validateArrayElements(JsonNode arrayNode, JavaType javaType) {
+        for (JsonNode element : arrayNode) {
+            switch (javaType) {
+                case INT_ARRAY:
+                case LIST_INTEGER:
+                    if (!element.isIntegralNumber()) {
+                        throw new IllegalArgumentException("整数数组元素必须为整数，但发现: " + element.getNodeType());
+                    }
+                    break;
+                    
+                case DOUBLE_ARRAY:
+                    if (!element.isNumber()) {
+                        throw new IllegalArgumentException("浮点数组元素必须为数值，但发现: " + element.getNodeType());
+                    }
+                    break;
+                    
+                case STRING_ARRAY:
+                case LIST_STRING:
+                    if (!element.isTextual()) {
+                        throw new IllegalArgumentException("字符串数组元素必须为字符串，但发现: " + element.getNodeType());
+                    }
+                    break;
+                    
+                case BOOLEAN_ARRAY:
+                    if (!element.isBoolean()) {
+                        throw new IllegalArgumentException("布尔数组元素必须为布尔值，但发现: " + element.getNodeType());
+                    }
+                    break;
+                    
+                case INT_2D_ARRAY:
+                    if (!element.isArray()) {
+                        throw new IllegalArgumentException("二维数组元素必须为数组，但发现: " + element.getNodeType());
+                    }
+                    validateArrayElements(element, JavaType.INT_ARRAY);
+                    break;
+                    
+                case STRING_2D_ARRAY:
+                    if (!element.isArray()) {
+                        throw new IllegalArgumentException("二维数组元素必须为数组，但发现: " + element.getNodeType());
+                    }
+                    validateArrayElements(element, JavaType.STRING_ARRAY);
+                    break;
+                    
+                case BOOLEAN_2D_ARRAY:
+                    if (!element.isArray()) {
+                        throw new IllegalArgumentException("二维数组元素必须为数组，但发现: " + element.getNodeType());
+                    }
+                    validateArrayElements(element, JavaType.BOOLEAN_ARRAY);
+                    break;
+                    
+                case LIST_LIST_INTEGER:
+                    if (!element.isArray()) {
+                        throw new IllegalArgumentException("嵌套列表元素必须为数组，但发现: " + element.getNodeType());
+                    }
+                    validateArrayElements(element, JavaType.LIST_INTEGER);
+                    break;
+                    
+                case LIST_LIST_STRING:
+                    if (!element.isArray()) {
+                        throw new IllegalArgumentException("嵌套列表元素必须为数组，但发现: " + element.getNodeType());
+                    }
+                    validateArrayElements(element, JavaType.LIST_STRING);
+                    break;
+                    
+                // 基础类型不应该在数组元素验证中出现
+                case INTEGER:
+                case DOUBLE:
+                case STRING:
+                case BOOLEAN:
+                case VOID:
+                    throw new IllegalArgumentException("基础类型 " + javaType + " 不能用于数组元素验证");
             }
         }
-        sb.append(" }");
+    }
+
+    /**
+     * 将 JsonNode 转换为 Java 字面量表达式
+     */
+    private static String convertJsonNodeToJavaLiteral(JsonNode node, JavaType javaType) {
+        switch (javaType) {
+            case INTEGER:
+                return String.valueOf(node.asInt());
+                
+            case DOUBLE:
+                return String.valueOf(node.asDouble());
+                
+            case STRING:
+                try {
+                    return MAPPER.writeValueAsString(node.asText());
+                } catch (JsonProcessingException e) {
+                    throw new IllegalArgumentException("字符串序列化失败", e);
+                }
+                
+            case BOOLEAN:
+                return String.valueOf(node.asBoolean());
+                
+            case INT_ARRAY:
+                return buildArrayLiteral(node, "int", javaType);
+                
+            case DOUBLE_ARRAY:
+                return buildArrayLiteral(node, "double", javaType);
+                
+            case STRING_ARRAY:
+                return buildArrayLiteral(node, "String", javaType);
+                
+            case BOOLEAN_ARRAY:
+                return buildArrayLiteral(node, "boolean", javaType);
+                
+            case INT_2D_ARRAY:
+                return build2DArrayLiteral(node, "int", javaType);
+                
+            case STRING_2D_ARRAY:
+                return build2DArrayLiteral(node, "String", javaType);
+                
+            case BOOLEAN_2D_ARRAY:
+                return build2DArrayLiteral(node, "boolean", javaType);
+                
+            case LIST_INTEGER:
+                return buildListLiteral(node, "Integer");
+                
+            case LIST_STRING:
+                return buildListLiteral(node, "String");
+                
+            case LIST_LIST_INTEGER:
+                return buildNestedListLiteral(node, "Integer");
+                
+            case LIST_LIST_STRING:
+                return buildNestedListLiteral(node, "String");
+                
+            default:
+                throw new IllegalArgumentException("不支持的类型转换: " + javaType);
+        }
+    }
+
+    /**
+     * 构建一维数组字面量
+     */
+    private static String buildArrayLiteral(JsonNode arrayNode, String elementType, JavaType javaType) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("new ").append(elementType).append("[] {");
+        
+        for (int i = 0; i < arrayNode.size(); i++) {
+            if (i > 0) sb.append(", ");
+            JsonNode element = arrayNode.get(i);
+            
+            switch (elementType) {
+                case "int":
+                    sb.append(element.asInt());
+                    break;
+                case "double":
+                    sb.append(element.asDouble());
+                    break;
+                case "String":
+                    try {
+                        sb.append(MAPPER.writeValueAsString(element.asText()));
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException("字符串数组元素序列化失败", e);
+                    }
+                    break;
+                case "boolean":
+                    sb.append(element.asBoolean());
+                    break;
+            }
+        }
+        
+        sb.append("}");
         return sb.toString();
     }
 
     /**
-     * 构建非数组类型的Java字面量表达式
-     * 严格的类型验证和安全的值转换
+     * 构建二维数组字面量
      */
-    private static String buildNonArrayLiteral(String typeName, String rawValue) {
-        String v = rawValue == null ? "" : rawValue.trim();
-
-        if (isStringLike(typeName)) {
-            return toJavaStringLiteral(v);
-        }
-
-        if (isBooleanLike(typeName)) {
-            String normalized = v.toLowerCase();
-            if ("true".equals(normalized)) {
-                return "true";
-            }
-            if ("false".equals(normalized)) {
-                return "false";
-            }
-            throw new IllegalArgumentException(
-                    String.format("无效的布尔值 '%s'，期望 'true' 或 'false'", rawValue));
-        }
-
-        if ("char".equals(typeName) || "Character".equals(typeName)) {
-            if (v.isEmpty()) {
-                return "'\\0'";
-            }
-            char c = v.charAt(0);
-            return "'" + escapeJavaChar(c) + "'";
-        }
-
-        // 数字类型验证：确保输入是有效的数字格式
-        if (isNumericType(typeName)) {
-            if (v.isEmpty()) {
-                return "0";
-            }
-            // 基本数字格式验证
-            try {
-                Double.parseDouble(v); // 基础数字格式验证
-                return v;
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException(
-                        String.format("数字类型 '%s' 的值格式无效: %s", typeName, rawValue), e);
-            }
-        }
-
-        // 其他类型直接返回
-        return v;
-    }
-
-    /**
-     * 从JsonNode构建非数组类型的Java字面量
-     * 基于节点类型进行安全的值提取和转换
-     */
-    private static String nonArrayLiteralFromNode(String typeName, JsonNode node) {
-        if (isStringLike(typeName)) {
-            String value = node.isTextual() ? node.asText() : node.toString();
-            return toJavaStringLiteral(value);
-        }
-
-        if (isBooleanLike(typeName)) {
-            if (node.isBoolean()) {
-                return node.asBoolean() ? "true" : "false";
-            } else if (node.isTextual()) {
-                String text = node.asText().toLowerCase();
-                if ("true".equals(text))
-                    return "true";
-                if ("false".equals(text))
-                    return "false";
-                throw new IllegalArgumentException(
-                        String.format("JsonNode 文本值无法转换为布尔类型: %s", node.asText()));
-            }
-            throw new IllegalArgumentException(
-                    String.format("JsonNode 类型 %s 无法转换为布尔类型", node.getNodeType()));
-        }
-
-        if ("char".equals(typeName) || "Character".equals(typeName)) {
-            String s = node.isTextual() ? node.asText() : node.toString();
-            if (s.isEmpty()) {
-                return "'\\0'";
-            }
-            char c = s.charAt(0);
-            return "'" + escapeJavaChar(c) + "'";
-        }
-
-        // 数字和其他类型
-        if (node.isNumber()) {
-            return node.asText();
-        } else if (node.isTextual()) {
-            return node.asText();
-        } else {
-            return node.toString();
-        }
-    }
-
-    /**
-     * Java字符转义处理
-     * 处理特殊字符的转义序列
-     */
-    private static String escapeJavaChar(char c) {
-        return switch (c) {
-            case '\\' -> "\\\\";
-            case '\'' -> "\\'";
-            case '\n' -> "\\n";
-            case '\r' -> "\\r";
-            case '\t' -> "\\t";
-            case '\b' -> "\\b";
-            case '\f' -> "\\f";
-            case '"' -> "\\\"";
-            default -> {
-                // 处理不可打印字符
-                if (c < 32 || c > 126) {
-                    yield String.format("\\u%04x", (int) c);
+    private static String build2DArrayLiteral(JsonNode arrayNode, String elementType, JavaType javaType) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("new ").append(elementType).append("[][] {");
+        
+        for (int i = 0; i < arrayNode.size(); i++) {
+            if (i > 0) sb.append(", ");
+            JsonNode subArray = arrayNode.get(i);
+            
+            sb.append("{");
+            for (int j = 0; j < subArray.size(); j++) {
+                if (j > 0) sb.append(", ");
+                JsonNode element = subArray.get(j);
+                
+                switch (elementType) {
+                    case "int":
+                        sb.append(element.asInt());
+                        break;
+                    case "String":
+                        try {
+                            sb.append(MAPPER.writeValueAsString(element.asText()));
+                        } catch (JsonProcessingException e) {
+                            throw new IllegalArgumentException("字符串二维数组元素序列化失败", e);
+                        }
+                        break;
+                    case "boolean":
+                        sb.append(element.asBoolean());
+                        break;
                 }
-                yield String.valueOf(c);
             }
-        };
+            sb.append("}");
+        }
+        
+        sb.append("}");
+        return sb.toString();
     }
 
     /**
-     * 检查是否为数字类型
+     * 构建 List 字面量
      */
-    private static boolean isNumericType(String typeName) {
-        if (typeName == null)
-            return false;
-        String normalized = typeName.trim();
-        return "byte".equals(normalized) || "Byte".equals(normalized) ||
-                "short".equals(normalized) || "Short".equals(normalized) ||
-                "int".equals(normalized) || "Integer".equals(normalized) ||
-                "long".equals(normalized) || "Long".equals(normalized) ||
-                "float".equals(normalized) || "Float".equals(normalized) ||
-                "double".equals(normalized) || "Double".equals(normalized);
+    private static String buildListLiteral(JsonNode arrayNode, String elementType) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Arrays.asList(");
+        
+        for (int i = 0; i < arrayNode.size(); i++) {
+            if (i > 0) sb.append(", ");
+            JsonNode element = arrayNode.get(i);
+            
+            switch (elementType) {
+                case "Integer":
+                    sb.append(element.asInt());
+                    break;
+                case "String":
+                    try {
+                        sb.append(MAPPER.writeValueAsString(element.asText()));
+                    } catch (JsonProcessingException e) {
+                        throw new IllegalArgumentException("字符串列表元素序列化失败", e);
+                    }
+                    break;
+            }
+        }
+        
+        sb.append(")");
+        return sb.toString();
+    }
+
+    /**
+     * 构建嵌套 List 字面量
+     */
+    private static String buildNestedListLiteral(JsonNode arrayNode, String elementType) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Arrays.asList(");
+        
+        for (int i = 0; i < arrayNode.size(); i++) {
+            if (i > 0) sb.append(", ");
+            sb.append(buildListLiteral(arrayNode.get(i), elementType));
+        }
+        
+        sb.append(")");
+        return sb.toString();
     }
 }
