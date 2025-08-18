@@ -27,7 +27,8 @@ public interface ProblemMapper extends BaseMapper<Problem> {
         @Param("keyword") String keyword,
         @Param("difficulty") ProblemDifficulty difficulty,
         @Param("category") CategoryType category,
-        @Param("isVisible") Boolean isVisible
+        @Param("isVisible") Boolean isVisible,
+        @Param("sort") String sort
     );
 
 	CompareDescription selectCompareDescription(@Param("problemId") Long problemId);

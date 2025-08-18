@@ -1,7 +1,7 @@
 package com.david.usercontent;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 import com.baomidou.mybatisplus.annotation.*;
+import com.david.solution.enums.ContentType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 /**
  * 用户对内容（题目/题解）的独立浏览记录实体
@@ -43,11 +42,6 @@ public class UserContentView implements Serializable {
 	@TableField("content_id")
 	private Long contentId;
 
-	/**
-	 * 首次浏览时间
-	 */
-	@Builder.Default
-	@JSONField(format = "yyyy-MM-dd HH:mm:ss")
-	@TableField(value = "created_at", fill = FieldFill.INSERT)
-	private LocalDateTime createdAt = LocalDateTime.now();
+	@TableField("content_type")
+	private ContentType contentType;
 }

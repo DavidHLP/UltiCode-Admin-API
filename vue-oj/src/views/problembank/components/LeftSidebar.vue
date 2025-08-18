@@ -3,7 +3,7 @@
     <BigTageFilter @category="categoryHandle"></BigTageFilter>
     <!-- 题目表格区域 -->
     <div class="content-section">
-      <QuestionSearch @search="questionHandleSearch"></QuestionSearch>
+      <QuestionSearch @search="questionHandleSearch" @sort="questionHandleSort"></QuestionSearch>
       <QuestionTable ref="questionTableRef" :has-more="hasMore" :loading="loading" :questions="questions"
         @load-more="loadMoreQuestions" />
     </div>
@@ -25,11 +25,18 @@ const questionBankQuery = ref<ProblemPageQuery>({
   category: '',
   difficulty: '',
   keyword: '',
+  sort: ''
 })
 
 const questionHandleSearch = (title: string) => {
   // 后端参数为 keyword
   questionBankQuery.value.keyword = title || ''
+  questionBankQuery.value.page = 1
+  fetchQuestions(false)
+}
+
+const questionHandleSort = (sort: ProblemPageQuery['sort']) => {
+  questionBankQuery.value.sort = sort || ''
   questionBankQuery.value.page = 1
   fetchQuestions(false)
 }
@@ -103,7 +110,8 @@ watch(
     if (
       newVal.category !== oldVal.category ||
       newVal.difficulty !== oldVal.difficulty ||
-      newVal.keyword !== oldVal.keyword
+      newVal.keyword !== oldVal.keyword ||
+      newVal.sort !== oldVal.sort
     ) {
       fetchQuestions(false)
     }

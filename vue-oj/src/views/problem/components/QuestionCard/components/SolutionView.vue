@@ -2,7 +2,7 @@
   <div class="solution-content">
     <div class="solution-header">
       <div class="header-left">
-        <el-button type="text" link class="back-button" @click="handleBack">
+        <el-button link class="back-button" @click="handleBack">
           <el-icon>
             <ElIconBack />
           </el-icon>
@@ -22,38 +22,39 @@
       </div>
     </div>
     <el-divider v-if="solution" />
+
     <div v-loading="loading" class="markdown-content">
       <template v-if="solution">
         <MdPreview :model-value="solution.content" :previewTheme="'github'" :theme="'light'" :preview="true" />
       </template>
     </div>
 
-    <div class="solution-footer" v-if="solution">
-      <el-button-group>
-        <el-button :type="userVote === 'up' ? 'primary' : 'default'" @click="handleVote('up')">
-          <el-icon>
-            <ElIconCaretTop />
-          </el-icon>
-          <span>赞同 {{ solution.upvotes || 0 }}</span>
-        </el-button>
-        <el-button :type="userVote === 'down' ? 'primary' : 'default'" @click="handleVote('down')">
-          <el-icon>
-            <ElIconCaretBottom />
-          </el-icon>
-          <span>反对 {{ solution.downvotes || 0 }}</span>
-        </el-button>
-      </el-button-group>
+    <!-- 修复：将点赞组件移动到内容区域内，并调整样式 -->
+    <div class="solution-actions" v-if="solution">
+      <SolutionLikeComponent
+        targetType="SOLUTION"
+        :targetId="solution.id"
+        :initial="{
+          userAction: 'NONE',
+          likeCount: solution.upvotes || 0,
+          dislikeCount: solution.downvotes || 0,
+          totalCount: (solution.upvotes || 0) + (solution.downvotes || 0),
+        }"
+        @changed="onLikeChanged"
+        @error="onLikeError"
+      />
     </div>
+
     <CommentComponent v-if="solution" :comments="comments" :solutionId="solution.id"
       @comment-submitted="fetchComments" />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, defineEmits } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Back as ElIconBack, CaretTop as ElIconCaretTop, CaretBottom as ElIconCaretBottom } from '@element-plus/icons-vue'
+import { Back as ElIconBack } from '@element-plus/icons-vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
 import { getSolutionById } from '@/api/solution'
@@ -62,6 +63,8 @@ import type { SolutionCommentVo } from '@/types/solution'
 import { config } from 'md-editor-v3'
 import { lineNumbers } from '@codemirror/view'
 import CommentComponent from '@/components/CommentComponent.vue'
+import SolutionLikeComponent from '@/components/SolutionLikeComponent.vue'
+import type { LikeDislikeRecordVo } from '@/types/like.d'
 
 config({
   codeMirrorExtensions(_theme, extensions) {
@@ -69,16 +72,11 @@ config({
   },
 })
 
-const emit = defineEmits<{
-  (e: 'vote', solution: SolutionVo, type: 'up' | 'down'): void;
-}>()
-
 const route = useRoute()
 const router = useRouter()
 
 const solution = ref<SolutionVo | null>(null)
 const loading = ref(false)
-const userVote = ref<'up' | 'down' | null>(null)
 const comments = ref<SolutionCommentVo[]>([])
 
 // 获取题解详情
@@ -140,39 +138,15 @@ const handleBack = () => {
   })
 }
 
-const handleVote = (type: 'up' | 'down') => {
+function onLikeChanged(v: LikeDislikeRecordVo) {
   if (!solution.value) return
+  solution.value.upvotes = v.likeCount
+  solution.value.downvotes = v.dislikeCount
+}
 
-  // 这里直接触发父组件的投票处理
-  emit('vote', solution.value, type)
-
-  // 本地更新UI
-  if (userVote.value === type) {
-    // 取消投票
-    userVote.value = null
-    if (type === 'up') {
-      solution.value.upvotes = Math.max(0, (solution.value.upvotes || 0) - 1)
-    } else {
-      solution.value.downvotes = Math.max(0, (solution.value.downvotes || 0) - 1)
-    }
-  } else {
-    // 新投票或切换投票
-    const oldVote = userVote.value
-    userVote.value = type
-
-    // 更新计数
-    if (oldVote === 'up') {
-      solution.value.upvotes = Math.max(0, (solution.value.upvotes || 0) - 1)
-    } else if (oldVote === 'down') {
-      solution.value.downvotes = Math.max(0, (solution.value.downvotes || 0) - 1)
-    }
-
-    if (type === 'up') {
-      solution.value.upvotes = (solution.value.upvotes || 0) + 1
-    } else {
-      solution.value.downvotes = (solution.value.downvotes || 0) + 1
-    }
-  }
+function onLikeError(err: unknown) {
+  // 简单提示，保留服务器错误提示由拦截器处理
+  console.error('Like error:', err)
 }
 
 defineExpose({
@@ -193,6 +167,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   position: relative;
+  /* 移除底部padding，因为点赞组件不再固定定位 */
 }
 
 .solution-header {
@@ -244,14 +219,79 @@ defineExpose({
   }
 }
 
-.solution-footer {
+/* 修复：点赞组件的新样式 */
+.solution-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0 8px;
+  padding: 0;
+}
+
+/* 极简风格：在本区域内将按钮样式弱化为透明背景、无边框 */
+.solution-actions :deep(.el-button-group) {
+  box-shadow: none;
+}
+
+.solution-actions :deep(.el-button) {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #64748b;
+  padding: 6px 10px;
+}
+
+.solution-actions :deep(.el-button:hover) {
+  background-color: #f2f4f7 !important;
+  color: #334155;
+}
+
+/* 激活态（primary）也保持透明，仅强调文字颜色与字重 */
+.solution-actions :deep(.el-button--primary) {
+  background-color: transparent !important;
+  border: none !important;
+  color: #2563eb !important;
+  font-weight: 600;
+}
+
+.solution-actions :deep(.el-button--primary:hover) {
+  background-color: rgba(37, 99, 235, 0.08) !important;
+}
+
+.solution-actions :deep(.el-icon) {
+  margin-right: 4px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .solution-content {
+    padding: 16px;
+  }
+
+  .solution-actions {
+    margin: 12px 0 4px;
+    padding: 0;
+  }
+}
+
+/* 如果您希望保留固定定位的选项，可以添加一个修饰类 */
+.solution-actions.floating {
   position: fixed;
-  bottom: 20px;
-  right: 40px;
+  bottom: 16px;
+  right: 24px;
   z-index: 100;
   background-color: white;
-  padding: 8px;
-  border-radius: 8px;
+  margin: 0;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .solution-actions.floating {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    bottom: 12px;
+  }
 }
 </style>

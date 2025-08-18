@@ -78,7 +78,7 @@ public class TestCaseServiceImpl {
     }
 
     public List<TestCaseVo> getTestCaseVoByProblemId(Long problemId) {
-        List<TestCaseOutput> testCaseInputs = ITestCaseOutputService.getByProblemId(problemId);
+        List<TestCaseOutput> testCaseInputs = ITestCaseOutputService.getByProblemId(problemId).stream().filter(TestCaseOutput::getIsSample).toList();
         List<TestCaseVo> testCaseVos = new ArrayList<>();
         for (TestCaseOutput testCaseOutput : testCaseInputs) {
             testCaseVos.add(

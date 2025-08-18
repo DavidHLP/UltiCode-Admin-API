@@ -7,6 +7,15 @@ export type CategoryType =
   | 'JAVASCRIPT'
   | 'PANDAS'
 
+// 排序方式需要与后端 ProblemViewController/Page 接口的 sort 参数保持一致
+export type ProblemSort =
+  | 'default'
+  | 'id'
+  | 'difficulty'
+  | 'acceptance'
+  | 'number'
+  | 'recent_submit'
+
 export interface ProblemVo {
   id: number
   title: string
@@ -22,6 +31,7 @@ export interface ProblemPageQuery {
   keyword?: string
   difficulty?: ProblemDifficulty | ''
   category?: CategoryType | ''
+  sort?: ProblemSort | ''
 }
 
 export interface ProblemDetailVo {

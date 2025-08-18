@@ -46,8 +46,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
             String keyword,
             ProblemDifficulty difficulty,
             CategoryType category,
-            Boolean isVisible) {
-        return problemMapper.pageProblems(page, keyword, difficulty, category, isVisible);
+            Boolean isVisible,
+            String sort) {
+        return problemMapper.pageProblems(page, keyword, difficulty, category, isVisible, sort);
     }
 
     @Override
@@ -55,9 +56,10 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
             Page<Problem> page,
             String keyword,
             ProblemDifficulty difficulty,
-            CategoryType category) {
+            CategoryType category,
+            String sort) {
         Page<Problem> problemPage =
-                problemMapper.pageProblems(page, keyword, difficulty, category, true);
+                problemMapper.pageProblems(page, keyword, difficulty, category, true, sort);
         Page<ProblemCardVo> result =
                 new Page<>(problemPage.getCurrent(), problemPage.getSize(), problemPage.getTotal());
         result.setRecords(

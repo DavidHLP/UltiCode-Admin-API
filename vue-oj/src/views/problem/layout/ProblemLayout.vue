@@ -49,6 +49,23 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 
+// 类型与工具：安全解析 Splitpanes 的 resize 事件负载
+type PaneSizeObj = { size: number }
+type ResizePayload = number | PaneSizeObj | Array<number | PaneSizeObj>
+const isPaneSizeObj = (v: unknown): v is PaneSizeObj =>
+  typeof v === 'object' && v !== null && typeof (v as Record<string, unknown>).size === 'number'
+const getFirstSize = (payload: unknown): number | undefined => {
+  if (Array.isArray(payload)) {
+    const first: unknown = payload[0]
+    if (typeof first === 'number') return first
+    if (isPaneSizeObj(first)) return first.size
+    return undefined
+  }
+  if (typeof payload === 'number') return payload
+  if (isPaneSizeObj(payload)) return payload.size
+  return undefined
+}
+
 // Props 定义
 interface Props {
   initialLeftPaneSize?: number
@@ -104,16 +121,22 @@ const saveLayout = () => {
   }
 }
 
-// 处理主分割线调整
-const handleResize = (event: Array<{ size: number }>) => {
-  leftPaneSize.value = event[0].size
-  saveLayout()
+// 处理主分割线调整（兼容不同事件负载格式）
+const handleResize = (payload: ResizePayload | unknown) => {
+  const firstSize = getFirstSize(payload)
+  if (typeof firstSize === 'number' && !Number.isNaN(firstSize)) {
+    leftPaneSize.value = firstSize
+    saveLayout()
+  }
 }
 
-// 处理工作区分割线调整
-const handleWorkspaceResize = (event: Array<{ size: number }>) => {
-  topPaneSize.value = event[0].size
-  saveLayout()
+// 处理工作区分割线调整（兼容不同事件负载格式）
+const handleWorkspaceResize = (payload: ResizePayload | unknown) => {
+  const firstSize = getFirstSize(payload)
+  if (typeof firstSize === 'number' && !Number.isNaN(firstSize)) {
+    topPaneSize.value = firstSize
+    saveLayout()
+  }
 }
 
 // 重置布局

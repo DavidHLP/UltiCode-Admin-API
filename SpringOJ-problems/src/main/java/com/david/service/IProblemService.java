@@ -24,16 +24,18 @@ public interface IProblemService extends IService<Problem> {
                                String keyword,
                                ProblemDifficulty difficulty,
                                CategoryType category,
-                               Boolean isVisible);
+                               Boolean isVisible,
+                               String sort);
 
-	Page<ProblemCardVo> pageProblemVos(Page<Problem> page,
-	                                   String keyword,
-	                                   ProblemDifficulty difficulty,
-	                                   CategoryType category);
+    Page<ProblemCardVo> pageProblemVos(Page<Problem> page,
+                                       String keyword,
+                                       ProblemDifficulty difficulty,
+                                       CategoryType category,
+                                       String sort);
 
-	ProblemDetailVo getProblemDetailVoById(Long id);
+    ProblemDetailVo getProblemDetailVoById(Long id);
 
-	String getCodeTemplate(Long problemId, LanguageType language);
+    String getCodeTemplate(Long problemId, LanguageType language);
 
-	CompareDescription getCompareDescription(Long id);
+    CompareDescription getCompareDescription(Long id);
 }

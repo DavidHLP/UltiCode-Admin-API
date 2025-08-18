@@ -10,11 +10,14 @@
         <result property="contentView" column="content"/>
         <result property="title" column="title"/>
         <result property="language" column="language"/>
-        <result property="upvotes" column="upvotes"/>
-        <result property="downvotes" column="downvotes"/>
         <result property="views" column="views"/>
         <result property="comments" column="comments"/>
     </resultMap>
+    <update id="updateViews">
+        UPDATE solutions
+        SET views = views + 1
+        WHERE id = #{id}
+    </update>
     <select id="pageSolutionsCardVos" resultMap="SolutionCardVoResultMap">
         SELECT
         *

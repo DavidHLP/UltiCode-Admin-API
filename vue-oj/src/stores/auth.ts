@@ -106,7 +106,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => !!token.value)
   const username = computed(() => user.value?.username || '用户')
   const userAvatar = computed(
-    () => 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
+    () => 'https://prettyavatars.com/api/pixel-art/100ng',
   )
   const sendCodeText = computed(() => {
     return isSendingCode.value ? `${countdown.value}秒后重试` : '发送验证码'

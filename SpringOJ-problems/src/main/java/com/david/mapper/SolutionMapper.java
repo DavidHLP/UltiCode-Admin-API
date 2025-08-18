@@ -19,4 +19,5 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface SolutionMapper extends BaseMapper<Solution> {
 	Page<SolutionCardVo> pageSolutionsCardVos(Page<SolutionCardVo> page, @Param("problemId") Long problemId, @Param("keyword") String keyword);
+	Boolean updateViews(@Param("id") Long id);
 }

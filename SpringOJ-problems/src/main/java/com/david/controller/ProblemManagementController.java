@@ -25,9 +25,10 @@ public class ProblemManagementController {
 	public ResponseResult<Page<Problem>> pageProblems(@RequestParam long page, @RequestParam long size,
 			@RequestParam(required = false) String keyword,
 			@RequestParam(required = false) ProblemDifficulty difficulty,
-			@RequestParam(required = false) CategoryType category, @RequestParam(required = false) Boolean isVisible) {
+			@RequestParam(required = false) CategoryType category, @RequestParam(required = false) Boolean isVisible,
+			@RequestParam(required = false) String sort) {
 		Page<Problem> p = new Page<>(page, size);
-		Page<Problem> result = problemService.pageProblems(p, keyword, difficulty, category, isVisible);
+		Page<Problem> result = problemService.pageProblems(p, keyword, difficulty, category, isVisible, sort);
 		return ResponseResult.success("成功获取题目分页", result);
 	}
 

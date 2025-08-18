@@ -26,9 +26,10 @@ public class ProblemViewController {
             @RequestParam long size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProblemDifficulty difficulty,
-            @RequestParam(required = false) CategoryType category) {
+            @RequestParam(required = false) CategoryType category,
+            @RequestParam(required = false) String sort) {
         Page<Problem> p = new Page<>(page, size);
-        Page<ProblemCardVo> result = problemService.pageProblemVos(p, keyword, difficulty, category);
+        Page<ProblemCardVo> result = problemService.pageProblemVos(p, keyword, difficulty, category, sort);
         return ResponseResult.success("成功获取题目分页", result);
     }
 

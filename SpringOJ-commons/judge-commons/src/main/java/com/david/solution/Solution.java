@@ -4,16 +4,15 @@ import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.david.solution.enums.SolutionStatus;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
+import lombok.*;
 
 import java.util.List;
 
 /** 题解实体类 */
 @Data
-@EqualsAndHashCode(callSuper = false)
-@Accessors(chain = true)
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @TableName("solutions")
 public class Solution {
 
@@ -50,11 +49,11 @@ public class Solution {
     private Integer views;
 
     /** 点赞数 */
-    @TableField("upvotes")
+	@TableField(exist = false)
     private Integer upvotes;
 
     /** 点踩数 */
-    @TableField("downvotes")
+    @TableField(exist = false)
     private Integer downvotes;
 
     /** 评论数 */

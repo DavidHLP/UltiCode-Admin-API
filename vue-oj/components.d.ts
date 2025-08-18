@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     CodeComponent: typeof import('./src/components/CodeComponent.vue')['default']
     CommentComponent: typeof import('./src/components/CommentComponent.vue')['default']
+    CommentLikeComponent: typeof import('./src/components/CommentLikeComponent.vue')['default']
     ElAffix: typeof import('element-plus/es')['ElAffix']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElBadge: typeof import('element-plus/es')['ElBadge']
@@ -54,8 +55,10 @@ declare module 'vue' {
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ErrorCodeComponent: typeof import('./src/components/ErrorCodeComponent.vue')['default']
     ReplyComponent: typeof import('./src/components/ReplyComponent.vue')['default']
+    ReplyLikeComponent: typeof import('./src/components/ReplyLikeComponent.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SolutionLikeComponent: typeof import('./src/components/SolutionLikeComponent.vue')['default']
   }
   export interface GlobalDirectives {
     vInfiniteScroll: typeof import('element-plus/es')['ElInfiniteScroll']

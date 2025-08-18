@@ -21,7 +21,7 @@ public class SolutionViewController extends BaseController {
 
     @PostMapping
     public ResponseResult<Void> createSolution(@RequestBody Solution solution) {
-		solution.setUserId(getCurrentUserId());
+        solution.setUserId(getCurrentUserId());
         if (solutionService.save(solution)) {
             return ResponseResult.success("题解创建成功");
         }
@@ -46,7 +46,8 @@ public class SolutionViewController extends BaseController {
 
     @GetMapping
     public ResponseResult<SolutionDetailVo> getSolution(@RequestParam Long solutionId) {
-        SolutionDetailVo solutionDetailVo = solutionService.getSolutionDetailVoBy(solutionId);
+        SolutionDetailVo solutionDetailVo =
+                solutionService.getSolutionDetailVoBy(solutionId, getCurrentUserId());
         if (solutionDetailVo == null) {
             return ResponseResult.fail(404, "题解不存在");
         }

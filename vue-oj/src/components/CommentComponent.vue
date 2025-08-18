@@ -25,7 +25,22 @@
           <AComment :author="item.username" :avatar="item.avatar || 'https://prettyavatars.com/api/pixel-art/100'"
             :content="item.content" :datetime="formatDate(item.createdAt)">
             <template #actions>
-              <span @click="showReply(item.id)">回复</span>
+              <span class="action-like">
+                <CommentLikeComponent
+                  targetType="COMMENT"
+                  :targetId="item.id"
+                  :initial="{
+                    userAction: 'NONE',
+                    likeCount: item.upvotes || 0,
+                    dislikeCount: item.downvotes || 0,
+                    totalCount: (item.upvotes || 0) + (item.downvotes || 0),
+                  }"
+                  @changed="onCommentLikeChanged(item, $event)"
+                  @error="onCommentLikeError"
+                />
+              </span>
+              <span class="action-sep">·</span>
+              <span class="action-reply" @click="showReply(item.id)">回复</span>
             </template>
             <div v-if="replyingTo === item.id" class="reply-container">
               <ReplyComponent :reply-to-username="item.username"
@@ -56,6 +71,7 @@ import {
   Button as AButton
 } from 'ant-design-vue';
 import ReplyComponent from './ReplyComponent.vue';
+import type { LikeDislikeRecordVo } from '@/types/like';
 import type { SolutionCommentVo } from '@/types/solution';
 import { createComment } from '@/api/comment';
 
@@ -121,6 +137,17 @@ const handleSubmitReply = async (parentId: number, replyToUserId: number, conten
     throw error;
   }
 };
+
+const onCommentLikeChanged = (target: SolutionCommentVo, v: LikeDislikeRecordVo) => {
+  target.upvotes = v.likeCount;
+  target.downvotes = v.dislikeCount;
+};
+
+const onCommentLikeError = () => {
+  // 全局拦截器会处理错误提示，这里仅记录
+  // 控制台日志可在开发调试时启用
+  // console.error('Comment like error:', err)
+};
 </script>
 
 <style scoped>
@@ -144,5 +171,27 @@ const handleSubmitReply = async (parentId: number, replyToUserId: number, conten
   margin-top: 16px;
   padding-left: 16px;
   border-left: 2px solid #f0f0f0;
+}
+
+/* 极简风格的操作区 */
+.action-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #64748b;
+}
+
+.action-sep {
+  margin: 0 6px;
+  color: #cbd5e1;
+}
+
+.action-reply {
+  color: #64748b;
+  cursor: pointer;
+}
+
+.action-reply:hover {
+  color: #334155;
 }
 </style>

@@ -10,24 +10,49 @@
 
     <select id="pageProblems" resultMap="ProblemResultMap">
         SELECT
-        *
+        p.*
         FROM
-        problems
+        problems p
+        <if test="sort != null and sort == 'recent_submit'">
+            LEFT JOIN submissions s ON s.problem_id = p.id
+        </if>
         <where>
             <if test="keyword != null and keyword != ''">
-                AND title LIKE CONCAT('%', #{keyword}, '%')
+                AND p.title LIKE CONCAT('%', #{keyword}, '%')
             </if>
             <if test="difficulty != null">
-                AND difficulty = #{difficulty}
+                AND p.difficulty = #{difficulty}
             </if>
             <if test="category != null">
-                AND category = #{category}
+                AND p.category = #{category}
             </if>
             <if test="isVisible != null">
-                AND is_visible = #{isVisible}
+                AND p.is_visible = #{isVisible}
             </if>
         </where>
-        ORDER BY id ASC
+        <if test="sort != null and sort == 'recent_submit'">
+            GROUP BY p.id
+        </if>
+        <choose>
+            <when test="sort == 'id'">
+                ORDER BY p.id DESC
+            </when>
+            <when test="sort == 'difficulty'">
+                ORDER BY p.difficulty ASC
+            </when>
+            <when test="sort == 'acceptance'">
+                ORDER BY (CASE WHEN p.submission_count = 0 THEN 0 ELSE p.solved_count / p.submission_count END) DESC
+            </when>
+            <when test="sort == 'number'">
+                ORDER BY p.id ASC
+            </when>
+            <when test="sort == 'recent_submit'">
+                ORDER BY MAX(s.created_at) DESC, p.id DESC
+            </when>
+            <otherwise>
+                ORDER BY p.id ASC
+            </otherwise>
+        </choose>
     </select>
     <select id="selectSolutionFunctionName" resultType="String">
         select distinct solution_function_name
