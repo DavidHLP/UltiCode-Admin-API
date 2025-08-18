@@ -9,15 +9,17 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * <p>
  * 题解Mapper 接口
- * </p>
  *
  * @author david
  * @since 2025-07-28
  */
 @Mapper
 public interface SolutionMapper extends BaseMapper<Solution> {
-	Page<SolutionCardVo> pageSolutionsCardVos(Page<SolutionCardVo> page, @Param("problemId") Long problemId, @Param("keyword") String keyword);
-	Boolean updateViews(@Param("id") Long id);
+    Page<SolutionCardVo> pageSolutionsCardVos(
+            Page<SolutionCardVo> page,
+            @Param("problemId") Long problemId,
+            @Param("keyword") String keyword);
+
+    Boolean updateViews(@Param("id") Long id);
 }

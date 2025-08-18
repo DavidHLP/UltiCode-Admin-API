@@ -20,16 +20,20 @@
         <template v-else>
           <SubmissionTable :submissions="submissions" @row-click="handleRowClick" />
           <div class="pager">
-            <el-pagination
-              background
-              layout="prev, pager, next, sizes, total"
-              :total="total"
-              :current-page="page"
-              :page-size="size"
-              :page-sizes="[5, 10, 20, 50]"
-              @current-change="onPageChange"
-              @size-change="onSizeChange"
-            />
+            <el-config-provider :locale="zhCn">
+              <el-pagination
+                background
+                layout="prev, pager, next, sizes, total"
+                :total="total"
+                :current-page="page"
+                :page-size="size"
+                :page-sizes="[5, 10, 20, 50]"
+                prev-text="上一页"
+                next-text="下一页"
+                @current-change="onPageChange"
+                @size-change="onSizeChange"
+              />
+            </el-config-provider>
           </div>
         </template>
       </template>
@@ -42,8 +46,9 @@
 import { ref, watch, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { fetchSubmissionPage, fetchSubmissionDetail } from '@/api/submission'
-import type { SubmissionCardVo, SubmissionDetailVo } from '@/types/submission'
+import type { SubmissionCardVo, SubmissionDetailVo } from '@/types/submission.d'
 import SubmissionTable from './components/SubmissionTable.vue'
 import SubmissionView from './components/SubmissionView.vue'
 import HeaderComponent from '../components/HeaderComponent.vue'

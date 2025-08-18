@@ -42,5 +42,6 @@ public interface LikeDislikeRecordMapper extends BaseMapper<LikeDislikeRecord> {
             @Param("actionType") ActionType actionType,
             @Param("updatedAt") LocalDateTime updatedAt);
 
-	List<UpDownCounts> selectUpDownCountsByTargetTypeAndTargetIds(@Param("targetType") TargetType targetType , @Param("targetIds") List<Long> targetIds);
+    List<UpDownCounts> selectUpDownCountsByTargetTypeAndTargetIds(
+            @Param("targetType") TargetType targetType, @Param("targetIds") List<Long> targetIds);
 }

@@ -11,7 +11,9 @@ import java.util.List;
 
 @Mapper
 public interface TestCaseInputMapper extends BaseMapper<TestCaseInput> {
-	Boolean deleteByTestCaseOutputId(@Param("testCaseOutputId") Long testCaseOutputId);
-	List<TestCaseInput> getByTestCaseOutputId(@Param("testCaseOutputId") Long testCaseOutputId);
-	List<TestCaseInputDto> getTestCaseInputDtoByTestCaseId(@Param("testCaseId") Long testCaseId);
+    Boolean deleteByTestCaseOutputId(@Param("testCaseOutputId") Long testCaseOutputId);
+
+    List<TestCaseInput> getByTestCaseOutputId(@Param("testCaseOutputId") Long testCaseOutputId);
+
+    List<TestCaseInputDto> getTestCaseInputDtoByTestCaseId(@Param("testCaseId") Long testCaseId);
 }

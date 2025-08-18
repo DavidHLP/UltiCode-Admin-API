@@ -16,57 +16,59 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/problems/api/management/problem")
 public class ProblemManagementController {
-	private final IProblemService problemService;
+    private final IProblemService problemService;
 
-	/**
-	 * 分页获取题目列表（管理端）
-	 */
-	@GetMapping("/page")
-	public ResponseResult<Page<Problem>> pageProblems(@RequestParam long page, @RequestParam long size,
-			@RequestParam(required = false) String keyword,
-			@RequestParam(required = false) ProblemDifficulty difficulty,
-			@RequestParam(required = false) CategoryType category, @RequestParam(required = false) Boolean isVisible,
-			@RequestParam(required = false) String sort) {
-		Page<Problem> p = new Page<>(page, size);
-		Page<Problem> result = problemService.pageProblems(p, keyword, difficulty, category, isVisible, sort);
-		return ResponseResult.success("成功获取题目分页", result);
-	}
+    /** 分页获取题目列表（管理端） */
+    @GetMapping("/page")
+    public ResponseResult<Page<Problem>> pageProblems(
+            @RequestParam long page,
+            @RequestParam long size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ProblemDifficulty difficulty,
+            @RequestParam(required = false) CategoryType category,
+            @RequestParam(required = false) Boolean isVisible,
+            @RequestParam(required = false) String sort) {
+        Page<Problem> p = new Page<>(page, size);
+        Page<Problem> result =
+                problemService.pageProblems(p, keyword, difficulty, category, isVisible, sort);
+        return ResponseResult.success("成功获取题目分页", result);
+    }
 
-	@PostMapping
-	public ResponseResult<Void> createProblem(@RequestBody Problem problem) {
-		if (problemService.save(problem)) {
-			return ResponseResult.success("题目创建成功");
-		}
-		return ResponseResult.fail(500, "题目创建失败");
-	}
+    @PostMapping
+    public ResponseResult<Void> createProblem(@RequestBody Problem problem) {
+        if (problemService.save(problem)) {
+            return ResponseResult.success("题目创建成功");
+        }
+        return ResponseResult.fail(500, "题目创建失败");
+    }
 
-	@PutMapping
-	public ResponseResult<Void> updateProblem(@RequestBody Problem problem) {
-		if (problemService.updateById(problem)) {
-			return ResponseResult.success("题目更新成功");
-		}
-		return ResponseResult.fail(500, "题目更新失败");
-	}
+    @PutMapping
+    public ResponseResult<Void> updateProblem(@RequestBody Problem problem) {
+        if (problemService.updateById(problem)) {
+            return ResponseResult.success("题目更新成功");
+        }
+        return ResponseResult.fail(500, "题目更新失败");
+    }
 
-	@DeleteMapping("/{id}")
-	public ResponseResult<Void> deleteProblem(@PathVariable Long id) {
-		if (problemService.removeById(id)) {
-			return ResponseResult.success("题目删除成功");
-		}
-		return ResponseResult.fail(500, "题目删除失败");
-	}
+    @DeleteMapping("/{id}")
+    public ResponseResult<Void> deleteProblem(@PathVariable Long id) {
+        if (problemService.removeById(id)) {
+            return ResponseResult.success("题目删除成功");
+        }
+        return ResponseResult.fail(500, "题目删除失败");
+    }
 
-	@GetMapping("/{id}")
-	public ResponseResult<Problem> getProblemById(@PathVariable Long id) {
-		Problem problem = problemService.getById(id);
-		if (problem == null) {
-			return ResponseResult.fail(404, "题目不存在");
-		}
-		return ResponseResult.success("成功获取题目", problem);
-	}
+    @GetMapping("/{id}")
+    public ResponseResult<Problem> getProblemById(@PathVariable Long id) {
+        Problem problem = problemService.getById(id);
+        if (problem == null) {
+            return ResponseResult.fail(404, "题目不存在");
+        }
+        return ResponseResult.success("成功获取题目", problem);
+    }
 
-	@GetMapping("/compareDescription")
-	public ResponseResult<CompareDescription> getCompareDescription(@RequestParam Long id){
-		return ResponseResult.success("成功获取题目函数名", problemService.getCompareDescription(id));
-	}
+    @GetMapping("/compareDescription")
+    public ResponseResult<CompareDescription> getCompareDescription(@RequestParam Long id) {
+        return ResponseResult.success("成功获取题目函数名", problemService.getCompareDescription(id));
+    }
 }

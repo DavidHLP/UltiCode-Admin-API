@@ -2,7 +2,7 @@
   <el-table :data="submissions" style="width: 100%" @row-click="onRowClick">
     <el-table-column label="状态" prop="status">
       <template #default="{ row }">
-        <el-tag :type="getStatusTagType(row.status)">{{ row.status }}</el-tag>
+        <el-tag v-bind="getJudgeStatusTagProps(row.status)">{{ getJudgeStatusChinese(row.status) }}</el-tag>
       </template>
     </el-table-column>
     <el-table-column label="语言" prop="language" />
@@ -18,8 +18,8 @@
 
 <script lang="ts" setup>
 import { defineProps, defineEmits } from 'vue'
-import type { SubmissionCardVo } from '@/types/submission'
-import { getStatusTagType } from '@/utils/status'
+import type { SubmissionCardVo } from '@/types/submission.d'
+import { getJudgeStatusTagProps, getJudgeStatusChinese } from '@/utils/tag'
 
 defineProps<{
   submissions: SubmissionCardVo[]

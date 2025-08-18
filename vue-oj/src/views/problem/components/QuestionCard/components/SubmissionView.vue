@@ -7,8 +7,8 @@
         </el-icon>
         <h1>提交详情 #{{ submission.id }}</h1>
       </div>
-      <el-tag :type="getStatusTagType(submission.status)">
-        {{ submission.status }}
+      <el-tag :type="getJudgeStatusTagType(submission.status)">
+        {{ getJudgeStatusChinese(submission.status) }}
       </el-tag>
     </div>
 
@@ -46,8 +46,8 @@ import { defineEmits, defineProps, ref } from 'vue'
 import { Back as ElIconBack } from '@element-plus/icons-vue'
 import CodeComponent from '@/components/CodeComponent.vue'
 import ErrorCodeComponent from '@/components/ErrorCodeComponent.vue'
-import type { SubmissionDetailVo } from '@/types/submission'
-import { getStatusTagType } from '@/utils/status'
+import type { SubmissionDetailVo } from '@/types/submission.d'
+import { getJudgeStatusTagType, getJudgeStatusChinese } from '@/utils/tag'
 
 const activeTab = ref('code')
 
@@ -60,7 +60,7 @@ const emit = defineEmits<{
   (e: 'back'): void
 }>()
 
-// 状态颜色映射使用全局工具 getStatusTagType
+// 状态展示使用 getJudgeStatusTagType 与 getJudgeStatusChinese（来自 utils/tag）
 
 const handleBack = () => {
   emit('back')

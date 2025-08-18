@@ -11,25 +11,22 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * <p>
- *  Mapper 接口
- * </p>
+ * Mapper 接口
  *
  * @author david
  * @since 2025-07-21
  */
 @Mapper
 public interface ProblemMapper extends BaseMapper<Problem> {
-	String selectSolutionFunctionName(Long problemId);
+    String selectSolutionFunctionName(Long problemId);
 
-	Page<Problem> pageProblems(
-        Page<Problem> page,
-        @Param("keyword") String keyword,
-        @Param("difficulty") ProblemDifficulty difficulty,
-        @Param("category") CategoryType category,
-        @Param("isVisible") Boolean isVisible,
-        @Param("sort") String sort
-    );
+    Page<Problem> pageProblems(
+            Page<Problem> page,
+            @Param("keyword") String keyword,
+            @Param("difficulty") ProblemDifficulty difficulty,
+            @Param("category") CategoryType category,
+            @Param("isVisible") Boolean isVisible,
+            @Param("sort") String sort);
 
-	CompareDescription selectCompareDescription(@Param("problemId") Long problemId);
+    CompareDescription selectCompareDescription(@Param("problemId") Long problemId);
 }

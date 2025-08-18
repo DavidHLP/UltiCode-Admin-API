@@ -15,7 +15,7 @@
         <el-table-column label="题目" min-width="200" prop="title">
           <template #default="{ row }">
             <router-link :to="`/problem/${row.id}`" class="question-title">
-              {{ row.title }}
+              {{ row.id }}. {{ row.title }}
             </router-link>
           </template>
         </el-table-column>

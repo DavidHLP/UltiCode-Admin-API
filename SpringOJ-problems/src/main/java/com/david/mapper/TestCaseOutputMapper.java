@@ -11,6 +11,7 @@ import java.util.List;
 
 @Mapper
 public interface TestCaseOutputMapper extends BaseMapper<TestCaseOutput> {
-	List<TestCaseOutput> selectByProblemId(Long problemId);
-	TestCaseOutputDto selectTestCaseOutputDtoFirstByProblemId(@Param("problemId") Long problemId);
+    List<TestCaseOutput> selectByProblemId(Long problemId);
+
+    TestCaseOutputDto selectTestCaseOutputDtoFirstByProblemId(@Param("problemId") Long problemId);
 }

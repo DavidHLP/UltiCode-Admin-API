@@ -29,7 +29,8 @@ public class ProblemViewController {
             @RequestParam(required = false) CategoryType category,
             @RequestParam(required = false) String sort) {
         Page<Problem> p = new Page<>(page, size);
-        Page<ProblemCardVo> result = problemService.pageProblemVos(p, keyword, difficulty, category, sort);
+        Page<ProblemCardVo> result =
+                problemService.pageProblemVos(p, keyword, difficulty, category, sort);
         return ResponseResult.success("成功获取题目分页", result);
     }
 
@@ -42,12 +43,13 @@ public class ProblemViewController {
         return ResponseResult.success("成功获取题目详情", problemDetailVo);
     }
 
-	@GetMapping("/codetemplate")
-	public ResponseResult<String> getCodeTemplate(@RequestParam Long problemId, @RequestParam LanguageType language) {
-		String codeTemplate = problemService.getCodeTemplate(problemId, language);
-		if (codeTemplate == null) {
-			return ResponseResult.fail(404, "代码模板不存在");
-		}
-		return ResponseResult.success("成功获取代码模板", codeTemplate);
-	}
+    @GetMapping("/codetemplate")
+    public ResponseResult<String> getCodeTemplate(
+            @RequestParam Long problemId, @RequestParam LanguageType language) {
+        String codeTemplate = problemService.getCodeTemplate(problemId, language);
+        if (codeTemplate == null) {
+            return ResponseResult.fail(404, "代码模板不存在");
+        }
+        return ResponseResult.success("成功获取代码模板", codeTemplate);
+    }
 }

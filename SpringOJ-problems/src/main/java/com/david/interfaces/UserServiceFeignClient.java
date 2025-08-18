@@ -11,9 +11,9 @@ import java.util.List;
 
 @FeignClient(name = "user-service", path = "/user/api/user")
 public interface UserServiceFeignClient {
-	@GetMapping("/ids")
-	ResponseResult<List<User>> getUserByIds(@RequestParam List<Long> ids);
+    @GetMapping("/ids")
+    ResponseResult<List<User>> getUserByIds(@RequestParam List<Long> ids);
 
-	@GetMapping("/id")
-	ResponseResult<User> getUserById(@RequestParam Long id);
+    @GetMapping("/id")
+    ResponseResult<User> getUserById(@RequestParam Long id);
 }

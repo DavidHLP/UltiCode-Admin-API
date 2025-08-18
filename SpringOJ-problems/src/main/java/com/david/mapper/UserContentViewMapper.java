@@ -8,5 +8,5 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface UserContentViewMapper extends BaseMapper<UserContentView> {
-	Boolean userHasViewedContent(@Param("userId") Long userId, @Param("contentId") Long contentId);
+    Boolean userHasViewedContent(@Param("userId") Long userId, @Param("contentId") Long contentId);
 }

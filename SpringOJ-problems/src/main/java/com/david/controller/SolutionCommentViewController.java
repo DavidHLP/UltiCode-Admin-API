@@ -13,29 +13,30 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/problems/api/view/solution/comment")
 public class SolutionCommentViewController extends BaseController {
-	private final ISolutionCommentService solutionCommentService;
-	@PostMapping
-	public ResponseResult<Void> createComment(@RequestBody  SolutionComments solutionComments) {
-		solutionComments.setUserId(getCurrentUserId());
-		if (!solutionCommentService.save(solutionComments)){
-			throw new RuntimeException("创建评论失败");
-		}
-		return ResponseResult.success("成功创建评论");
-	}
+    private final ISolutionCommentService solutionCommentService;
 
-	@PutMapping
-	public ResponseResult<Void> updateComment(@RequestBody SolutionComments solutionComments) {
-		if (!solutionCommentService.updateById(solutionComments)){
-			throw new RuntimeException("更新评论失败");
-		}
-		return ResponseResult.success("成功更新评论");
-	}
+    @PostMapping
+    public ResponseResult<Void> createComment(@RequestBody SolutionComments solutionComments) {
+        solutionComments.setUserId(getCurrentUserId());
+        if (!solutionCommentService.save(solutionComments)) {
+            throw new RuntimeException("创建评论失败");
+        }
+        return ResponseResult.success("成功创建评论");
+    }
 
-	@DeleteMapping
-	public ResponseResult<Void> deleteComment(@RequestBody SolutionComments solutionComments) {
-		if (!solutionCommentService.removeById(solutionComments)){
-			throw new RuntimeException("删除评论失败");
-		}
-		return ResponseResult.success("成功删除评论");
-	}
+    @PutMapping
+    public ResponseResult<Void> updateComment(@RequestBody SolutionComments solutionComments) {
+        if (!solutionCommentService.updateById(solutionComments)) {
+            throw new RuntimeException("更新评论失败");
+        }
+        return ResponseResult.success("成功更新评论");
+    }
+
+    @DeleteMapping
+    public ResponseResult<Void> deleteComment(@RequestBody SolutionComments solutionComments) {
+        if (!solutionCommentService.removeById(solutionComments)) {
+            throw new RuntimeException("删除评论失败");
+        }
+        return ResponseResult.success("成功删除评论");
+    }
 }

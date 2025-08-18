@@ -3,7 +3,7 @@
     <div v-if="problem" class="problem-header">
       <h1>{{ problem.title }}</h1>
       <el-tag :type="difficultyType" size="small" effect="light">
-        {{ TransformDifficulty(problem.difficulty) }}
+        {{ difficultyLabel }}
       </el-tag>
     </div>
     <el-divider v-if="problem" />
@@ -22,6 +22,7 @@ import { ElMessage } from 'element-plus';
 import 'md-editor-v3/lib/preview.css';
 import type { ProblemDetailVo } from '@/types/problem';
 import { getProblemDetailVoById } from '@/api/problem';
+import { getDifficultyTagType, getDifficultyChinese } from '@/utils/tag';
 
 const route = useRoute();
 const problem = ref<ProblemDetailVo | null>(null);
@@ -49,32 +50,8 @@ const fetchProblem = async () => {
   }
 };
 
-const difficultyType = computed(() => {
-  if (!problem.value) return 'info';
-  switch (problem.value.difficulty) {
-    case 'EASY':
-      return 'success';
-    case 'MEDIUM':
-      return 'warning';
-    case 'HARD':
-      return 'danger';
-    default:
-      return 'info';
-  }
-});
-
-const TransformDifficulty = (difficulty: string) => {
-  switch (difficulty) {
-    case 'EASY':
-      return '简单';
-    case 'MEDIUM':
-      return '中等';
-    case 'HARD':
-      return '困难';
-    default:
-      return '未知';
-  }
-};
+const difficultyType = computed(() => getDifficultyTagType(problem.value?.difficulty));
+const difficultyLabel = computed(() => getDifficultyChinese(problem.value?.difficulty));
 
 // 监听路由参数变化
 onMounted(() => {

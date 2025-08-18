@@ -16,9 +16,10 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/problems/api/calculate")
 public class CalculationController {
-	private final CalculationServiceImpl calculationService;
-	@GetMapping("/submission/calendar")
-	public ResponseResult<List<CalendarVo>> getSubmissionCalendar(Long userId) {
-		return ResponseResult.success("获取日历成功",calculationService.getSubmissionCalendar(userId));
-	}
+    private final CalculationServiceImpl calculationService;
+
+    @GetMapping("/submission/calendar")
+    public ResponseResult<List<CalendarVo>> getSubmissionCalendar(Long userId) {
+        return ResponseResult.success("获取日历成功", calculationService.getSubmissionCalendar(userId));
+    }
 }
