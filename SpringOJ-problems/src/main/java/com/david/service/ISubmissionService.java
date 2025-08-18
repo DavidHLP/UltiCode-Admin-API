@@ -16,4 +16,13 @@ public interface ISubmissionService extends IService<Submission> {
 	List<JudgeStatus> getSubmissionsStatusByProblemId(Long problemId);
 
 	List<CalendarVo> getSubmissionCalendar(Long userId);
+
+	// 用户统计相关
+	long countUserSubmissions(Long userId);
+
+	long countUserAcceptedSubmissions(Long userId);
+
+	long countUserAttemptedProblems(Long userId);
+
+	long countUserSolvedProblems(Long userId);
 }

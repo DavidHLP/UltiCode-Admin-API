@@ -12,6 +12,9 @@ export interface SubmissionDetailVo extends SubmissionCardVo {
   sourceCode?: string
   compileInfo?: string
   judgeInfo?: string
+  errorTestCaseId?: number
+  errorTestCaseOutput?: string
+  errorTestCaseExpectOutput?: string
 }
 
 export type JudgeStatus =

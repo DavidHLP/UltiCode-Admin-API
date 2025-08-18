@@ -43,4 +43,25 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
     public List<CalendarVo> getSubmissionCalendar(Long userId) {
         return submissionMapper.getSubmissionCalendar(userId);
     }
+
+    @Override
+    public long countUserSubmissions(Long userId) {
+        return submissionMapper.countUserSubmissions(userId);
+    }
+
+    @Override
+    public long countUserAcceptedSubmissions(Long userId) {
+        return submissionMapper.countUserAcceptedSubmissions(userId);
+    }
+
+    @Override
+    public long countUserAttemptedProblems(Long userId) {
+        return submissionMapper.countUserAttemptedProblems(userId);
+    }
+
+    @Override
+    public long countUserSolvedProblems(Long userId) {
+        return submissionMapper.countUserSolvedProblems(userId);
+    }
 }
+

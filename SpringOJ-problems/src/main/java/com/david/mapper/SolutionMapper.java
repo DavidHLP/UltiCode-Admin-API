@@ -22,4 +22,5 @@ public interface SolutionMapper extends BaseMapper<Solution> {
             @Param("keyword") String keyword);
 
     Boolean updateViews(@Param("id") Long id);
+	Page<SolutionCardVo> pageSolutionCardVosByUserId( Page<SolutionCardVo> page, @Param("userId") Long userId);
 }

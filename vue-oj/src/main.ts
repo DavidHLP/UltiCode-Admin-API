@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import 'ant-design-vue/dist/reset.css'
 import ElTableInfiniteScroll from 'el-table-infinite-scroll'
 
 import App from './App.vue'

@@ -83,6 +83,18 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         // 1. 查询分页数据
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionsCardVos(page, problemId, keyword);
+        return fillInMissingContent(pageSolutions);
+    }
+
+    @Override
+    public Page<SolutionCardVo> pageSolutionCardVosByUserId(
+            Page<SolutionCardVo> page, Long userId) {
+        Page<SolutionCardVo> pageSolutions =
+                solutionMapper.pageSolutionCardVosByUserId(page, userId);
+        return fillInMissingContent(pageSolutions);
+    }
+
+    private Page<SolutionCardVo> fillInMissingContent(Page<SolutionCardVo> pageSolutions) {
         List<SolutionCardVo> records = pageSolutions.getRecords();
 
         // 2. 处理空集合情况

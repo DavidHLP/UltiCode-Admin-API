@@ -20,17 +20,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column align="center" label="标签" prop="tags" width="200">
+        <el-table-column align="center" label="标签" prop="tags" width="300">
           <template #default="{ row }">
-            <el-tag
-              v-for="tag in row.tags"
-              :key="tag"
-              effect="light"
-              size=""
-              style="margin-right: 8px"
-            >
-              {{ tag }}
-            </el-tag>
+            <div class="tags-cell">
+              <el-tag
+                v-for="tag in row.tags"
+                :key="tag"
+                effect="light"
+                size="small"
+                class="tag-chip"
+              >
+                {{ tag }}
+              </el-tag>
+            </div>
           </template>
         </el-table-column>
 
@@ -169,5 +171,31 @@ const handleRowClick = (row: ProblemVo) => {
   border-radius: 16px;
   font-size: 12px;
   color: #8c8c8c;
+}
+
+/* 标签列：单行水平排列，超出横向滚动 */
+.tags-cell {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.tags-cell::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tags-cell::-webkit-scrollbar-thumb {
+  background-color: #dcdfe6;
+  border-radius: 3px;
+}
+
+.tag-chip {
+  flex: 0 0 auto;
 }
 </style>

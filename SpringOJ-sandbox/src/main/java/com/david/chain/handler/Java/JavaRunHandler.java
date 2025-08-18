@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 
 /**
  * Java 代码运行处理器
@@ -36,6 +38,13 @@ public class JavaRunHandler extends Handler {
     private static final int RUN_TIMEOUT_SECONDS = 10;
     private static final String TEMP_DIR_PREFIX = "springoj-run-";
     private static final String MAIN_CLASS_NAME = "Main";
+    // 限制输出，防止输出泛洪导致宿主 OOM（每个流 1MB）
+    private static final int MAX_STREAM_BYTES = 1_000_000;
+    // ulimit 限制：文件描述符/线程数（作为 fork/线程爆炸防护）
+    private static final int ULIMIT_NOFILE = 64;
+    private static final int ULIMIT_NPROC = 64;
+    // ulimit 虚拟内存上限（KB），与 -Xmx 共同限制——此值略大于堆大小，给运行时与线程栈预留
+    private static final int ULIMIT_VMEM_KB = 512 * 1024; // 512MB
 
     @Override
     public Boolean handleRequest(JudgmentContext judgmentContext) {
@@ -124,7 +133,7 @@ public class JavaRunHandler extends Handler {
         command.add("-encoding");
         command.add("UTF-8");
         command.add("-cp");
-        command.add(buildClasspath());
+        command.add(buildSafeClasspath(tempDir));
         command.add(sourceFile.toString());
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
@@ -146,21 +155,28 @@ public class JavaRunHandler extends Handler {
     /** 执行 Java 程序 */
     private RunResult executeJavaProgram(Path tempDir) {
         try {
-            // 构建运行命令
+            // 仅暴露用户代码与 Jackson 依赖到 classpath，避免访问服务端依赖
+            String classpath = buildSafeClasspath(tempDir);
+
+            // 通过 bash + ulimit 进行资源约束
+            String ulimitCmd = String.format(
+                    "ulimit -t %d -v %d -n %d -u %d; exec java -XX:+UseSerialGC -Xmx256m -Xss1m -cp '%s' %s",
+                    RUN_TIMEOUT_SECONDS + 1, ULIMIT_VMEM_KB, ULIMIT_NOFILE, ULIMIT_NPROC, classpath, MAIN_CLASS_NAME);
+
             List<String> command = new ArrayList<>();
-            command.add("java");
-            command.add("-Xmx256m"); // 限制最大堆内存
-            command.add("-Xss1m"); // 限制栈大小
-            command.add("-cp");
-            command.add(buildClasspath() + File.pathSeparator + tempDir.toString());
-            command.add(MAIN_CLASS_NAME);
+            command.add("bash");
+            command.add("-lc");
+            command.add(ulimitCmd);
 
-            log.debug("运行命令: {}", String.join(" ", command));
+            log.debug("运行命令(bash -lc): {}", ulimitCmd);
 
-            // 创建进程
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             processBuilder.directory(tempDir.toFile());
-            processBuilder.redirectErrorStream(false); // 分别处理输出和错误流
+            processBuilder.redirectErrorStream(false);
+            // 收紧环境变量，避免泄露宿主信息
+            processBuilder.environment().clear();
+            processBuilder.environment().put("LANG", "C.UTF-8");
+            processBuilder.environment().put("PATH", "/usr/bin:/bin");
 
             // 启动运行进程
             Process process = processBuilder.start();
@@ -168,13 +184,19 @@ public class JavaRunHandler extends Handler {
             // 使用线程池处理超时和IO
             ExecutorService executor = Executors.newFixedThreadPool(3);
 
+            // 监控子进程内存（峰值 RSS）
+            AtomicLong peakRssKb = new AtomicLong(0);
+            Thread memWatcher = new Thread(() -> monitorProcessMemory(process, peakRssKb));
+            memWatcher.setDaemon(true);
+            memWatcher.start();
+
             // 异步读取输出流
             Future<String> outputFuture =
-                    executor.submit(() -> readStream(process.getInputStream()));
+                    executor.submit(() -> readStream(process.getInputStream(), MAX_STREAM_BYTES));
 
             // 异步读取错误流
             Future<String> errorFuture =
-                    executor.submit(() -> readStream(process.getErrorStream()));
+                    executor.submit(() -> readStream(process.getErrorStream(), MAX_STREAM_BYTES));
 
             // 异步等待进程结束
             Future<Integer> processFuture =
@@ -206,11 +228,11 @@ public class JavaRunHandler extends Handler {
                         output,
                         error,
                         endTime - startTime,
-                        estimateMemoryUsage());
+                        Math.max(0, peakRssKb.get() / 1024)); // 转换为 MB
 
             } catch (TimeoutException e) {
                 log.warn("程序运行超时，强制终止进程");
-                process.destroyForcibly();
+                destroyProcessTree(process);
 
                 // 取消所有异步任务
                 outputFuture.cancel(true);
@@ -224,7 +246,7 @@ public class JavaRunHandler extends Handler {
                         "",
                         "程序运行超时（超过 " + RUN_TIMEOUT_SECONDS + " 秒）",
                         RUN_TIMEOUT_SECONDS * 1000L,
-                        0L);
+                        Math.max(0, peakRssKb.get() / 1024));
             }
 
         } catch (Exception e) {
@@ -234,44 +256,89 @@ public class JavaRunHandler extends Handler {
     }
 
     /** 读取流内容 */
-    private String readStream(InputStream inputStream) {
-        StringBuilder output = new StringBuilder();
-        try (BufferedReader reader =
-                new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
+    private String readStream(InputStream inputStream, int maxBytes) {
+        byte[] buffer = new byte[8192];
+        int read;
+        int total = 0;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (InputStream in = inputStream) {
+            while ((read = in.read(buffer)) != -1) {
+                int allowed = Math.min(read, Math.max(0, maxBytes - total));
+                if (allowed > 0) {
+                    baos.write(buffer, 0, allowed);
+                    total += allowed;
+                }
+                if (total >= maxBytes) {
+                    break;
+                }
             }
         } catch (IOException e) {
             log.warn("读取流内容时发生错误", e);
         }
-        return output.toString().trim();
+        String content = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+        if (total >= maxBytes) {
+            return content + "\n...[TRUNCATED OUTPUT]";
+        }
+        return content.trim();
     }
 
     /** 构建类路径 */
-    private String buildClasspath() {
-        List<String> classpaths = new ArrayList<>();
+    private String buildSafeClasspath(Path tempDir) {
+        List<String> cps = new ArrayList<>();
+        // 用户编译产物所在目录
+        cps.add(tempDir.toString());
 
-        // 系统类路径
-        String systemClasspath = System.getProperty("java.class.path");
-        if (systemClasspath != null && !systemClasspath.isEmpty()) {
-            classpaths.add(systemClasspath);
+        // 仅引入 Jackson 依赖，满足生成代码的 JSON 需求
+        String sysCp = System.getProperty("java.class.path");
+        if (sysCp != null && !sysCp.isEmpty()) {
+            String[] entries = sysCp.split(Pattern.quote(File.pathSeparator));
+            for (String e : entries) {
+                String name = new File(e).getName();
+                if (name.startsWith("jackson-") || name.startsWith("jackson-databind")
+                        || name.startsWith("jackson-core") || name.startsWith("jackson-annotations")) {
+                    cps.add(e);
+                }
+            }
         }
-
-        // 当前目录
-        classpaths.add(".");
-
-        return String.join(File.pathSeparator, classpaths);
+        return String.join(File.pathSeparator, cps);
     }
 
-    /** 估算内存使用量（简化实现） */
-    private long estimateMemoryUsage() {
-        // 简化的内存使用估算，实际应用中可以使用更精确的方法
-        Runtime runtime = Runtime.getRuntime();
-        long totalMemory = runtime.totalMemory();
-        long freeMemory = runtime.freeMemory();
-        return (totalMemory - freeMemory) / (1024 * 1024); // 转换为MB
+    /** 监控子进程内存峰值（读取 /proc/<pid>/status 的 VmRSS） */
+    private void monitorProcessMemory(Process process, AtomicLong peakRssKb) {
+        long pid = process.pid();
+        Path status = Path.of("/proc", String.valueOf(pid), "status");
+        while (process.isAlive()) {
+            try {
+                List<String> lines = Files.readAllLines(status);
+                for (String l : lines) {
+                    if (l.startsWith("VmRSS:")) {
+                        String[] parts = l.trim().split("\\s+");
+                        if (parts.length >= 2) {
+                            long kb = Long.parseLong(parts[1]);
+                            peakRssKb.updateAndGet(prev -> Math.max(prev, kb));
+                        }
+                        break;
+                    }
+                }
+                Thread.sleep(50);
+            } catch (Exception ignored) {
+                try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); return; }
+            }
+        }
+    }
+
+    /** 强制销毁进程树，避免子进程遗留 */
+    private void destroyProcessTree(Process process) {
+        try {
+            ProcessHandle handle = process.toHandle();
+            handle.descendants().forEach(ph -> {
+                try { ph.destroyForcibly(); } catch (Exception ignored) {}
+            });
+            handle.destroyForcibly();
+        } catch (Exception e) {
+            log.warn("销毁进程树失败，回退到直接销毁", e);
+            process.destroyForcibly();
+        }
     }
 
     /** 处理运行结果 */

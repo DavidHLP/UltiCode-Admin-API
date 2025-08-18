@@ -37,12 +37,28 @@
       <el-tab-pane v-if="submission.judgeInfo" label="判题信息" name="judge">
         <ErrorCodeComponent :message="submission.judgeInfo" type="error" />
       </el-tab-pane>
+      <el-tab-pane v-if="hasErrorCase" label="错误用例" name="error">
+        <div class="error-case">
+          <div class="meta-item">
+            <span class="meta-label">错误用例ID</span>
+            <span class="meta-value">{{ submission.errorTestCaseId ?? '-' }}</span>
+          </div>
+          <div class="error-case-block">
+            <h4>实际输出</h4>
+            <pre class="error-pre">{{ submission.errorTestCaseOutput }}</pre>
+          </div>
+          <div class="error-case-block">
+            <h4>期望输出</h4>
+            <pre class="error-pre expected">{{ submission.errorTestCaseExpectOutput }}</pre>
+          </div>
+        </div>
+      </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { defineEmits, defineProps, ref } from 'vue'
+import { defineEmits, defineProps, ref, computed } from 'vue'
 import { Back as ElIconBack } from '@element-plus/icons-vue'
 import CodeComponent from '@/components/CodeComponent.vue'
 import ErrorCodeComponent from '@/components/ErrorCodeComponent.vue'
@@ -61,6 +77,13 @@ const emit = defineEmits<{
 }>()
 
 // 状态展示使用 getJudgeStatusTagType 与 getJudgeStatusChinese（来自 utils/tag）
+const hasErrorCase = computed(() =>
+  Boolean(
+    submission.errorTestCaseId ||
+      submission.errorTestCaseOutput ||
+      submission.errorTestCaseExpectOutput,
+  ),
+)
 
 const handleBack = () => {
   emit('back')
@@ -157,5 +180,37 @@ h1 {
 .submission-tabs :deep(.el-tab-pane) .code-component {
   max-height: none;
   height: auto;
+}
+
+.error-case {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.error-case-block h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.error-pre {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #374151;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.error-pre.expected {
+  background: #f5f7fa;
 }
 </style>

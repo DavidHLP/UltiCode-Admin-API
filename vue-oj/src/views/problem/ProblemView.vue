@@ -1,7 +1,11 @@
 <template>
-  <ProblemLayout ref="problemLayoutRef" :initial-left-pane-size="50" :initial-top-pane-size="60" :save-layout="true"
-    layout-key="problem-view">
-
+  <ProblemLayout
+    ref="problemLayoutRef"
+    :initial-left-pane-size="50"
+    :initial-top-pane-size="60"
+    :save-layout="true"
+    layout-key="problem-view"
+  >
     <!-- Header 插槽 -->
     <template #header-left>
       <el-breadcrumb class="header-breadcrumb" :separator-icon="Right">
@@ -17,8 +21,13 @@
 
     <template #header-center>
       <div v-if="problem" class="problem-title-section">
-        <el-button type="primary" size="default" @click="handleSubmitCode" :loading="isSubmitting"
-          class="submit-button">
+        <el-button
+          type="primary"
+          size="default"
+          @click="handleSubmitCode"
+          :loading="isSubmitting"
+          class="submit-button"
+        >
           <el-icon>
             <SubmitIcon />
           </el-icon>
@@ -28,7 +37,7 @@
     </template>
 
     <template #header-right>
-      <div class="header-actions">
+      <!-- <div class="header-actions">
         <el-space size="small" alignment="center">
           <el-tooltip content="运行样例" placement="bottom">
             <el-button text :loading="isRunning" @click="handleRun">
@@ -48,7 +57,7 @@
             </el-button>
           </el-tooltip>
         </el-space>
-      </div>
+      </div> -->
     </template>
 
     <!-- 题目描述插槽 -->
@@ -58,13 +67,22 @@
 
     <!-- 代码编辑器插槽 -->
     <template #code>
-      <CodeCard v-if="problem" ref="codeCardRef" :initial-code="initialCodeMap" :problem-id="problem.id"
-        @submit="handleSubmit" />
+      <CodeCard
+        v-if="problem"
+        ref="codeCardRef"
+        :initial-code="initialCodeMap"
+        :problem-id="problem.id"
+        @submit="handleSubmit"
+      />
     </template>
 
     <!-- 调试面板插槽 -->
     <template #debug>
-      <DebugCard v-if="problem" :submission-result="submissionResult" :test-cases="clientTestCases" />
+      <DebugCard
+        v-if="problem"
+        :submission-result="submissionResult"
+        :test-cases="clientTestCases"
+      />
     </template>
   </ProblemLayout>
 </template>
@@ -98,19 +116,21 @@ const isRunning = ref(false)
 
 // 新类型：代码模板映射与测试用例（前端展示结构）
 const initialCodeMap = ref<{ [key: string]: string }>({})
-const clientTestCases = ref<Array<{
-  id: number
-  inputs: Array<{ inputName: string; input: string }>
-  output: string
-  sample: boolean
-  score: number
-}>>([])
+const clientTestCases = ref<
+  Array<{
+    id: number
+    inputs: Array<{ inputName: string; input: string }>
+    output: string
+    sample: boolean
+    score: number
+  }>
+>([])
 
 const mapTestCaseVoToClient = (vo: TestCaseVo) => {
   const inputs = Array.isArray(vo.testCaseInputs)
     ? [...vo.testCaseInputs]
-      .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
-      .map((inp) => ({ inputName: inp.testCaseName, input: inp.inputContent }))
+        .sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+        .map((inp) => ({ inputName: inp.testCaseName, input: inp.inputContent }))
     : []
 
   const output = vo.testCaseOutput?.output ?? ''
@@ -145,10 +165,13 @@ const fetchProblem = async () => {
 
     // 构建代码模板映射，传递给 CodeCard
     initialCodeMap.value = Array.isArray(res.initialCode)
-      ? res.initialCode.reduce((acc, curr) => {
-        acc[curr.language] = curr.code
-        return acc
-      }, {} as { [key: string]: string })
+      ? res.initialCode.reduce(
+          (acc, curr) => {
+            acc[curr.language] = curr.code
+            return acc
+          },
+          {} as { [key: string]: string },
+        )
       : {}
 
     // 拉取测试用例并映射为前端模型
@@ -210,8 +233,6 @@ const pollSubmissionResult = (submissionId: number) => {
   }, 2000)
 }
 
-
-
 // 处理提交代码：触发 CodeCard 暴露的 submit()，由 handleSubmit 统一处理提交流程
 const handleSubmitCode = () => {
   if (!codeCardRef.value || !problem.value) {
@@ -239,7 +260,8 @@ const handleRun = async () => {
   try {
     isRunning.value = true
     // 展开下方调试面板，便于查看结果
-    const topRef = (problemLayoutRef.value as unknown as { topPaneSize: Ref<number> } | undefined)?.topPaneSize
+    const topRef = (problemLayoutRef.value as unknown as { topPaneSize: Ref<number> } | undefined)
+      ?.topPaneSize
     if (topRef && typeof topRef.value === 'number') {
       topRef.value = 45
     }

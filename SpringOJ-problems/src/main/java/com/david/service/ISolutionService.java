@@ -18,4 +18,5 @@ public interface ISolutionService extends IService<Solution> {
 	SolutionDetailVo getSolutionDetailVoBy(Long solutionId , Long userId);
 
 	Page<SolutionCardVo> pageSolutionCardVos(Page<SolutionCardVo> p, Long problemId, String keyword);
+	Page<SolutionCardVo> pageSolutionCardVosByUserId(Page<SolutionCardVo> p, Long userId);
 }

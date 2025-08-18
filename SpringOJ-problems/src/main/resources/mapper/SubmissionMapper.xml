@@ -13,8 +13,14 @@
     <select id="pageSubmissionCardVos" resultMap="SubmissionCardVoResultMap">
         select id, problem_id, user_id, language, status, time_used, memory_used
         from submissions
-        where problem_id = #{problemId}
-          and user_id = #{userId}
+        <where>
+            <if test="problemId != null">
+                and problem_id = #{problemId}
+            </if>
+            <if test="userId != null">
+                and user_id = #{userId}
+            </if>
+        </where>
     </select>
     <resultMap id="CalendarVoResultMap" type="com.david.calendar.vo.CalendarVo">
         <id property="date" column="date"/>
@@ -26,5 +32,21 @@
         where user_id = #{userId}
         group by date(created_at)
         order by date
+    </select>
+    <!-- 用户统计：提交总数 -->
+    <select id="countUserSubmissions" resultType="long">
+        select count(*) from submissions where user_id = #{userId}
+    </select>
+    <!-- 用户统计：通过提交总数（按提交数量计） -->
+    <select id="countUserAcceptedSubmissions" resultType="long">
+        select count(*) from submissions where user_id = #{userId} and status = 'ACCEPTED'
+    </select>
+    <!-- 用户统计：尝试过的题目数量（去重） -->
+    <select id="countUserAttemptedProblems" resultType="long">
+        select count(distinct problem_id) from submissions where user_id = #{userId}
+    </select>
+    <!-- 用户统计：通过的题目数量（按题目去重） -->
+    <select id="countUserSolvedProblems" resultType="long">
+        select count(distinct problem_id) from submissions where user_id = #{userId} and status = 'ACCEPTED'
     </select>
 </mapper>

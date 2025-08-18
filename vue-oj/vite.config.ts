@@ -16,7 +16,11 @@ export default defineConfig({
         ElementPlusResolver({
           importStyle: false, // 如果您需要自定义主题，请设置为true
         }),
-        AntDesignVueResolver(),
+        AntDesignVueResolver(
+          {
+            importStyle: false, // 如果您需要自定义主题，请设置为true
+          }
+        ),
       ],
       dts: true, // 自动生成组件类型声明文件
       include: [/\.vue$/, /\.vue\?vue/, /\.md$/],

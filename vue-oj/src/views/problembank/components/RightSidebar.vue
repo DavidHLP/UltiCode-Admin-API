@@ -55,7 +55,7 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { Refresh } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { getSubmissionCalendar } from '@/api/calculate'
-import type { SubmissionCalendar } from '@/types/calculate.d.ts'
+import type { CalendarVo } from '@/types/calculate.d.ts'
 
 // 定义接口
 interface RecommendedQuestion {
@@ -69,7 +69,7 @@ const router = useRouter()
 
 // 响应式数据
 const calendarValue = ref(new Date())
-const submissionData = ref<SubmissionCalendar[]>([])
+const submissionData = ref<CalendarVo[]>([])
 
 // 推荐题目数据
 const recommendedQuestions = ref<RecommendedQuestion[]>([
@@ -119,7 +119,7 @@ const getCalendarDayClass = (day: string) => {
 }
 
 const getCalendarDayStyle = (day: string) => {
-  const data = submissionData.value.find((item) => item.date === day)
+  const data = submissionData.value.find((item: CalendarVo) => item.date === day)
   if (!data) return {}
 
   const count = data.count

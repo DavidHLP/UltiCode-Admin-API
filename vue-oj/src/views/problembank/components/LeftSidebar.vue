@@ -35,8 +35,8 @@ const questionHandleSearch = (title: string) => {
   fetchQuestions(false)
 }
 
-const questionHandleSort = (sort: ProblemPageQuery['sort']) => {
-  questionBankQuery.value.sort = sort || ''
+const questionHandleSort = (sort: string) => {
+  questionBankQuery.value.sort = (sort || '') as ProblemPageQuery['sort']
   questionBankQuery.value.page = 1
   fetchQuestions(false)
 }

@@ -1,8 +1,13 @@
 package com.david.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.calculate.vo.UserOverviewVo;
 import com.david.calendar.vo.CalendarVo;
 import com.david.enums.JudgeStatus;
+import com.david.service.ISolutionService;
 import com.david.service.ISubmissionService;
+import com.david.solution.vo.SolutionCardVo;
+import com.david.submission.vo.SubmissionCardVo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,6 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CalculationServiceImpl {
     private final ISubmissionService submissionService;
+    private final ISolutionService solutionService;
 
     public Integer submissionPassRate(Long problemId) {
         List<JudgeStatus> judgeStatuses =
@@ -31,4 +37,30 @@ public class CalculationServiceImpl {
     public List<CalendarVo> getSubmissionCalendar(Long userId) {
         return submissionService.getSubmissionCalendar(userId);
     }
+
+    public Page<SubmissionCardVo> getSubmissionUserInfo(Long userId, Page<SubmissionCardVo> page) {
+        return submissionService.pageSubmissionCardVos(page, null, userId);
+    }
+
+    public Page<SolutionCardVo> getSolutionUserInfo(
+            Long currentUserId, Page<SolutionCardVo> pages) {
+        return solutionService.pageSolutionCardVosByUserId(pages, currentUserId);
+    }
+
+    public UserOverviewVo getUserOverview(Long userId) {
+        long total = submissionService.countUserSubmissions(userId);
+        long accepted = submissionService.countUserAcceptedSubmissions(userId);
+        long attemptedProblems = submissionService.countUserAttemptedProblems(userId);
+        long solvedProblems = submissionService.countUserSolvedProblems(userId);
+        int passRate = total == 0 ? 0 : (int) ((accepted * 100) / total);
+        return UserOverviewVo.builder()
+                .userId(userId)
+                .totalSubmissions(total)
+                .acceptedSubmissions(accepted)
+                .attemptedProblems(attemptedProblems)
+                .solvedProblems(solvedProblems)
+                .passRate(passRate)
+                .build();
+    }
 }
+

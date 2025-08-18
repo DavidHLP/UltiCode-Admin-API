@@ -91,12 +91,12 @@ const router = createRouter({
           name: 'problembank',
           component: ProblemBank,
         },
-        {
-          path: '/profile',
-          name: 'profile',
-          component: () => import('@/views/userinfo/UserInfoView.vue'),
-        },
       ],
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/views/userinfo/UserInfoView.vue'),
     },
     {
       path: '/problems',

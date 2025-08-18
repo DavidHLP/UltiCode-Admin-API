@@ -27,6 +27,22 @@
       <h4>判题信息</h4>
       <pre class="error-message">{{ submissionResult.judgeInfo }}</pre>
     </div>
+
+    <div v-if="hasErrorCase" class="error-case-section">
+      <h4>错误测试用例</h4>
+      <div class="stat-item">
+        <span class="stat-label">错误用例ID:</span>
+        <span class="stat-value">{{ submissionResult?.errorTestCaseId ?? '-' }}</span>
+      </div>
+      <div class="error-block">
+        <h5>实际输出</h5>
+        <pre class="error-pre">{{ submissionResult?.errorTestCaseOutput }}</pre>
+      </div>
+      <div class="error-block">
+        <h5>期望输出</h5>
+        <pre class="error-pre expected">{{ submissionResult?.errorTestCaseExpectOutput }}</pre>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -58,6 +74,13 @@ const statusTagType = computed(() => {
     default:
       return 'info';
   }
+});
+
+const hasErrorCase = computed(() => {
+  const r = props.submissionResult;
+  return Boolean(
+    r && (r.errorTestCaseId || r.errorTestCaseOutput || r.errorTestCaseExpectOutput),
+  );
 });
 </script>
 
@@ -217,4 +240,40 @@ const statusTagType = computed(() => {
 }
 
 /* 移除动画，保持简洁 */
+
+.error-case-section {
+  margin-top: 24px;
+}
+
+.error-case-section h4 {
+  font-size: 14px;
+  color: #606266;
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
+.error-block h5 {
+  margin: 12px 0 8px 0;
+  font-size: 13px;
+  color: #606266;
+}
+
+.error-pre {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #374151;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.error-pre.expected {
+  background: #f5f7fa;
+}
 </style>

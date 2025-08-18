@@ -125,7 +125,7 @@ const handleShare = () => {
 
 <style scoped>
 .main-layout {
-  min-height: 100vh;
+  min-height: 98vh;
   display: flex;
   flex-direction: column;
 }

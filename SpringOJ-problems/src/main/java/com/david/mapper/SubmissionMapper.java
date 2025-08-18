@@ -19,4 +19,13 @@ public interface SubmissionMapper extends BaseMapper<Submission> {
             @Param("userId") Long currentUserId);
 
     List<CalendarVo> getSubmissionCalendar(@Param("userId") Long userId);
+
+    // 用户统计相关
+    long countUserSubmissions(@Param("userId") Long userId);
+
+    long countUserAcceptedSubmissions(@Param("userId") Long userId);
+
+    long countUserAttemptedProblems(@Param("userId") Long userId);
+
+    long countUserSolvedProblems(@Param("userId") Long userId);
 }
