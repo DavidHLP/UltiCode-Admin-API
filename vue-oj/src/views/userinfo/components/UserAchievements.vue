@@ -2,13 +2,13 @@
   <div class="user-achievements">
     <div class="section-title">成就徽章</div>
     <div class="achievements">
-      <div 
-        v-for="achievement in achievements" 
-        :key="achievement.id" 
+      <div
+        v-for="achievement in achievements"
+        :key="achievement.id"
         class="achievement-item"
       >
-        <div 
-          class="achievement-icon" 
+        <div
+          class="achievement-icon"
           :style="{ background: achievement.color }"
         >
           {{ achievement.icon }}
@@ -34,36 +34,32 @@ defineProps<{
   .section-title {
     font-size: 16px;
     font-weight: 600;
-    margin: 24px 0 16px 0;
+    margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid #d0d7de;
     color: #24292f;
   }
 
-  .achievements {
-    margin: 16px 0;
+  .achievement-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    color: #656d76;
+    font-size: 14px;
 
-    .achievement-item {
+    .achievement-icon {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      border-radius: 3px;
       display: flex;
       align-items: center;
-      margin: 8px 0;
-      color: #656d76;
-      font-size: 14px;
+      justify-content: center;
+      font-size: 10px;
+    }
 
-      .achievement-icon {
-        width: 16px;
-        height: 16px;
-        margin-right: 8px;
-        border-radius: 3px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-      }
-
-      .achievement-text {
-        flex: 1;
-      }
+    .achievement-text {
+      flex: 1;
     }
   }
 }

@@ -11,6 +11,7 @@ import SubmissionCard from '@/views/problem/components/QuestionCard/SubmissionCa
 import SolutionEditOrAdd from '@/views/problem/components/QuestionCard/components/SolutionEditOrAdd.vue'
 import SolutionView from '@/views/problem/components/QuestionCard/components/SolutionView.vue'
 import SolutionTable from '@/views/problem/components/QuestionCard/components/SolutionTable.vue'
+import UserInfoView from '@/views/userinfo/UserInfoView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -91,12 +92,12 @@ const router = createRouter({
           name: 'problembank',
           component: ProblemBank,
         },
+        {
+          path: '/profile',
+          name: 'profile',
+          component: UserInfoView,
+        },
       ],
-    },
-    {
-      path: '/profile',
-      name: 'profile',
-      component: () => import('@/views/userinfo/UserInfoView.vue'),
     },
     {
       path: '/problems',

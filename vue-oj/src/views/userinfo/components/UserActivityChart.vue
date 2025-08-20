@@ -1,5 +1,5 @@
 <template>
-  <el-card class="activity-chart">
+  <div class="activity-chart">
     <div class="chart-header">
       <span>过去一年共提交 {{ totalSubmissions }} 次</span>
       <span class="chart-subtitle">
@@ -36,7 +36,7 @@
       </div>
       <span class="legend-label">较多</span>
     </div>
-  </el-card>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -72,12 +72,11 @@ const handleDayClick = (day: ActivityDay) => {
 
 <style scoped lang="scss">
 .activity-chart {
-  :deep(.el-card__body) {
-    padding: 16px;
-    background: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-  }
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   .chart-header {
     display: flex;

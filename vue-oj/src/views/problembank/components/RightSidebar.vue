@@ -120,7 +120,8 @@ const getCalendarDayClass = (day: string) => {
 
 const getCalendarDayStyle = (day: string) => {
   const data = submissionData.value.find((item: CalendarVo) => item.date === day)
-  if (!data) return {}
+  if (!data) return {
+  }
 
   const count = data.count
   let opacity = 0

@@ -1,17 +1,17 @@
 <template>
   <div class="user-projects">
     <div class="tabs">
-      <a 
+      <button 
         v-for="tab in tabs" 
         :key="tab.key" 
         :class="['tab', { active: tab.active }]"
         @click="handleTabClick(tab)"
       >
         {{ tab.icon }} {{ tab.label }}
-      </a>
+      </button>
     </div>
 
-    <el-card class="projects-list">
+    <div class="projects-list">
       <div 
         v-for="project in projects" 
         :key="project.id" 
@@ -19,29 +19,27 @@
         @click="handleProjectClick(project)"
       >
         <div class="project-info">
-          <a class="project-title">{{ project.title }}</a>
+          <h3 class="project-title">{{ project.title }}</h3>
           <div v-if="project.tags" class="project-tags">
-            <el-tag 
+            <span 
               v-for="tag in project.tags" 
               :key="tag" 
-              size="small"
-              effect="dark"
+              class="tag"
             >
               {{ tag }}
-            </el-tag>
+            </span>
           </div>
           <div v-if="project.difficulty" class="project-difficulty">
-            <el-tag 
-              :type="getDifficultyType(project.difficulty)"
-              size="small"
+            <span 
+              :class="['difficulty-tag', getDifficultyClass(project.difficulty)]"
             >
               {{ getDifficultyText(project.difficulty) }}
-            </el-tag>
+            </span>
           </div>
         </div>
         <div class="project-time">{{ project.time }}</div>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -73,16 +71,16 @@ const handleProjectClick = (project: ProjectItem) => {
   ElMessage.info(`点击了题目：${project.title}`)
 }
 
-const getDifficultyType = (difficulty: 'easy' | 'medium' | 'hard') => {
+const getDifficultyClass = (difficulty: 'easy' | 'medium' | 'hard') => {
   switch (difficulty) {
     case 'easy':
-      return 'success'
+      return 'easy'
     case 'medium':
-      return 'warning'
+      return 'medium'
     case 'hard':
-      return 'danger'
+      return 'hard'
     default:
-      return 'info'
+      return 'unknown'
   }
 }
 
@@ -110,8 +108,9 @@ const getDifficultyText = (difficulty: 'easy' | 'medium' | 'hard') => {
     padding-bottom: 8px;
 
     .tab {
+      background: none;
+      border: none;
       color: #656d76;
-      text-decoration: none;
       padding: 4px 0;
       border-bottom: 2px solid transparent;
       cursor: pointer;
@@ -130,12 +129,10 @@ const getDifficultyText = (difficulty: 'easy' | 'medium' | 'hard') => {
   }
 
   .projects-list {
-    :deep(.el-card__body) {
-      padding: 0;
-      background: #ffffff;
-      border: 1px solid #d0d7de;
-      border-radius: 6px;
-    }
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
     .project-item {
       padding: 16px;
@@ -159,10 +156,9 @@ const getDifficultyText = (difficulty: 'easy' | 'medium' | 'hard') => {
 
         .project-title {
           color: #0969da;
-          text-decoration: none;
+          font-size: 16px;
           font-weight: 500;
-          margin-bottom: 4px;
-          display: block;
+          margin: 0 0 4px 0;
           cursor: pointer;
 
           &:hover {
@@ -176,19 +172,48 @@ const getDifficultyText = (difficulty: 'easy' | 'medium' | 'hard') => {
           gap: 4px;
           flex-wrap: wrap;
 
-          :deep(.el-tag) {
+          .tag {
             background-color: #f6f8fa;
-            border-color: #d0d7de;
+            border: 1px solid #d0d7de;
             color: #656d76;
             font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
           }
         }
 
         .project-difficulty {
           margin-top: 4px;
 
-          :deep(.el-tag) {
+          .difficulty-tag {
             font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid;
+
+            &.easy {
+              background-color: #dcfce7;
+              border-color: #16a34a;
+              color: #15803d;
+            }
+
+            &.medium {
+              background-color: #fef3c7;
+              border-color: #d97706;
+              color: #b45309;
+            }
+
+            &.hard {
+              background-color: #fee2e2;
+              border-color: #dc2626;
+              color: #b91c1c;
+            }
+
+            &.unknown {
+              background-color: #f3f4f6;
+              border-color: #6b7280;
+              color: #4b5563;
+            }
           }
         }
       }

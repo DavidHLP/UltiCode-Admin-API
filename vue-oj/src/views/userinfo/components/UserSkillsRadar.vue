@@ -91,7 +91,7 @@ onMounted(() => {
   .section-title {
     font-size: 16px;
     font-weight: 600;
-    margin: 24px 0 16px 0;
+    margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid #d0d7de;
     color: #24292f;
@@ -103,22 +103,20 @@ onMounted(() => {
     margin: 16px auto;
   }
 
-  .skill-list {
-    .skill-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 8px 0;
-      color: #656d76;
-      font-size: 14px;
+  .skill-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+    color: #656d76;
+    font-size: 14px;
 
-      .skill-name {
-        flex: 1;
-      }
+    .skill-name {
+      flex: 1;
+    }
 
-      .skill-level {
-        font-style: italic;
-      }
+    .skill-level {
+      font-style: italic;
     }
   }
 }

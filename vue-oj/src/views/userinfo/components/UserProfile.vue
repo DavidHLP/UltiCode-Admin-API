@@ -1,13 +1,13 @@
 <template>
-  <el-card class="user-profile-card">
+  <div class="user-profile">
     <div class="avatar">{{ profile.avatar }}</div>
     <div class="username">{{ profile.username }}</div>
     <div class="handle">{{ profile.handle }}</div>
-    <div class="followers-info">
+    <div class="ranking">
       全站排名: {{ profile.ranking.toLocaleString() }}
     </div>
-    <el-button class="follow-btn" type="success">+ 关注</el-button>
-  </el-card>
+    <button class="follow-btn">+ 关注</button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -19,13 +19,12 @@ defineProps<{
 </script>
 
 <style scoped lang="scss">
-.user-profile-card {
-  :deep(.el-card__body) {
-    padding: 16px;
-    background: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-  }
+.user-profile {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
   .avatar {
     width: 80px;
@@ -53,7 +52,7 @@ defineProps<{
     margin-bottom: 16px;
   }
 
-  .followers-info {
+  .ranking {
     margin-bottom: 16px;
     font-size: 14px;
     color: #24292f;
@@ -61,12 +60,16 @@ defineProps<{
 
   .follow-btn {
     width: 100%;
+    padding: 8px 16px;
     background: #1a7f37;
     color: white;
     border: none;
+    border-radius: 6px;
     font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
     
-    &:hover, &:focus {
+    &:hover {
       background: #2da44e;
     }
   }

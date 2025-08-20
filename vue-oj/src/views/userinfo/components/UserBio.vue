@@ -23,25 +23,23 @@ defineProps<{
   .section-title {
     font-size: 16px;
     font-weight: 600;
-    margin: 24px 0 16px 0;
+    margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid #d0d7de;
     color: #24292f;
   }
 
-  .bio-section {
-    .bio-item {
-      display: flex;
-      align-items: center;
-      margin: 8px 0;
-      color: #656d76;
-      font-size: 14px;
+  .bio-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+    color: #656d76;
+    font-size: 14px;
 
-      .bio-icon {
-        margin-right: 8px;
-        width: 16px;
-        text-align: center;
-      }
+    .bio-icon {
+      margin-right: 8px;
+      width: 16px;
+      text-align: center;
     }
   }
 }

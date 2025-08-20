@@ -40,7 +40,7 @@ defineProps<{
   .section-title {
     font-size: 16px;
     font-weight: 600;
-    margin: 24px 0 16px 0;
+    margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid #d0d7de;
     color: #24292f;
@@ -65,28 +65,26 @@ defineProps<{
     }
   }
 
-  .language-list {
-    .language-item {
-      display: flex;
-      align-items: center;
-      margin: 6px 0;
-      font-size: 12px;
-      color: #656d76;
+  .language-item {
+    display: flex;
+    align-items: center;
+    margin: 6px 0;
+    font-size: 12px;
+    color: #656d76;
 
-      .language-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
+    .language-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
 
-      .language-name {
-        flex: 1;
-      }
+    .language-name {
+      flex: 1;
+    }
 
-      .language-percentage {
-        font-weight: 500;
-      }
+    .language-percentage {
+      font-weight: 500;
     }
   }
 }
