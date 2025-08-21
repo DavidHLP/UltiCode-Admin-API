@@ -8,11 +8,13 @@ import com.david.testcase.TestCaseOutput;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class TestCaseOutputServiceImpl extends ServiceImpl<TestCaseOutputMapper, TestCaseOutput> implements ITestCaseOutputService {
 	private final TestCaseOutputMapper testCaseOutputMapper;
 	@Override

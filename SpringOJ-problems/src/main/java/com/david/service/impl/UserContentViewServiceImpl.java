@@ -8,9 +8,11 @@ import com.david.usercontent.UserContentView;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class UserContentViewServiceImpl extends ServiceImpl<UserContentViewMapper, UserContentView>
         implements IUserContentViewService {
     private final UserContentViewMapper userContentViewMapper;

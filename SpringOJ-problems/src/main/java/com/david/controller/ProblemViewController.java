@@ -9,21 +9,26 @@ import com.david.problem.vo.ProblemCardVo;
 import com.david.problem.vo.ProblemDetailVo;
 import com.david.service.IProblemService;
 import com.david.utils.ResponseResult;
+import com.david.exception.BizException;
 
 import lombok.RequiredArgsConstructor;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/problems/api/view/problem")
 public class ProblemViewController {
     private final IProblemService problemService;
 
     @GetMapping("/page")
     public ResponseResult<Page<ProblemCardVo>> pageProblemVos(
-            @RequestParam long page,
-            @RequestParam long size,
+            @RequestParam @Min(1) long page,
+            @RequestParam @Min(1) long size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProblemDifficulty difficulty,
             @RequestParam(required = false) CategoryType category,
@@ -35,20 +40,20 @@ public class ProblemViewController {
     }
 
     @GetMapping("/detail")
-    public ResponseResult<ProblemDetailVo> getProblemDetailVoById(@RequestParam long id) {
+    public ResponseResult<ProblemDetailVo> getProblemDetailVoById(@RequestParam @Min(1) long id) {
         ProblemDetailVo problemDetailVo = problemService.getProblemDetailVoById(id);
         if (problemDetailVo == null) {
-            return ResponseResult.fail(404, "题目不存在");
+            throw BizException.of(404, "题目不存在");
         }
         return ResponseResult.success("成功获取题目详情", problemDetailVo);
     }
 
     @GetMapping("/codetemplate")
     public ResponseResult<String> getCodeTemplate(
-            @RequestParam Long problemId, @RequestParam LanguageType language) {
+            @RequestParam @NotNull @Min(1) Long problemId, @RequestParam @NotNull LanguageType language) {
         String codeTemplate = problemService.getCodeTemplate(problemId, language);
         if (codeTemplate == null) {
-            return ResponseResult.fail(404, "代码模板不存在");
+            throw BizException.of(404, "代码模板不存在");
         }
         return ResponseResult.success("成功获取代码模板", codeTemplate);
     }

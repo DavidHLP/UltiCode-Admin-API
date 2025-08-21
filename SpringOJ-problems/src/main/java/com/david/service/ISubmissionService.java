@@ -8,21 +8,27 @@ import com.david.submission.Submission;
 import com.david.submission.vo.SubmissionCardVo;
 
 import java.util.List;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
+@Validated
 public interface ISubmissionService extends IService<Submission> {
 
-	Page<SubmissionCardVo> pageSubmissionCardVos(Page<SubmissionCardVo> p, Long problemId, Long currentUserId);
+    Page<SubmissionCardVo> pageSubmissionCardVos(@NotNull Page<SubmissionCardVo> p,
+                                                 @Min(1) Long problemId,
+                                                 @NotNull @Min(1) Long currentUserId);
 
-	List<JudgeStatus> getSubmissionsStatusByProblemId(Long problemId);
+    List<JudgeStatus> getSubmissionsStatusByProblemId(@NotNull @Min(1) Long problemId);
 
-	List<CalendarVo> getSubmissionCalendar(Long userId);
+    List<CalendarVo> getSubmissionCalendar(@NotNull @Min(1) Long userId);
 
-	// 用户统计相关
-	long countUserSubmissions(Long userId);
+    // 用户统计相关
+    long countUserSubmissions(@NotNull @Min(1) Long userId);
 
-	long countUserAcceptedSubmissions(Long userId);
+    long countUserAcceptedSubmissions(@NotNull @Min(1) Long userId);
 
-	long countUserAttemptedProblems(Long userId);
+    long countUserAttemptedProblems(@NotNull @Min(1) Long userId);
 
-	long countUserSolvedProblems(Long userId);
+    long countUserSolvedProblems(@NotNull @Min(1) Long userId);
 }

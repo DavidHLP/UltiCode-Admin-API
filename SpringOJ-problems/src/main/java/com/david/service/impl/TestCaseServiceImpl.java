@@ -5,17 +5,21 @@ import com.david.service.ITestCaseOutputService;
 import com.david.testcase.TestCase;
 import com.david.testcase.TestCaseOutput;
 import com.david.testcase.vo.TestCaseVo;
+import com.david.exception.BizException;
+import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class TestCaseServiceImpl {
     private final ITestCaseInputService testCaseInputService;
     private final ITestCaseOutputService ITestCaseOutputService;
@@ -25,7 +29,7 @@ public class TestCaseServiceImpl {
         if (testCase == null
                 || testCase.getTestCaseOutput() == null
                 || testCase.getTestCaseInput() == null) {
-            throw new IllegalArgumentException("测试用例参数不完整");
+            throw BizException.of(ResponseCode.RC400);
         }
 
         // 补全输出的 problemId
@@ -34,12 +38,12 @@ public class TestCaseServiceImpl {
         }
 
         if (!ITestCaseOutputService.save(testCase.getTestCaseOutput())) {
-            throw new RuntimeException("保存输出数据失败");
+            throw BizException.of(ResponseCode.RC500);
         }
         Long outputId = testCase.getTestCaseOutput().getId();
         testCase.getTestCaseInput().forEach(t -> t.setTestCaseOutputId(outputId));
         if (!testCaseInputService.saveBatch(testCase.getTestCaseInput())) {
-            throw new RuntimeException("保存输入数据失败");
+            throw BizException.of(ResponseCode.RC500);
         }
         return true;
     }
@@ -47,15 +51,15 @@ public class TestCaseServiceImpl {
     @Transactional
     public Boolean update(TestCase testCase) {
         if (!ITestCaseOutputService.updateById(testCase.getTestCaseOutput()))
-            throw new RuntimeException("更新输出数据失败");
+            throw BizException.of(ResponseCode.RC500);
         if (!testCaseInputService.updateBatchById(testCase.getTestCaseInput()))
-            throw new RuntimeException("更新输入数据失败");
+            throw BizException.of(ResponseCode.RC500);
         return true;
     }
 
     @Transactional
     public Boolean delete(Long id) {
-        if (!ITestCaseOutputService.removeById(id)) throw new RuntimeException("删除输出数据失败");
+        if (!ITestCaseOutputService.removeById(id)) throw BizException.of(ResponseCode.RC500);
         testCaseInputService.deleteByTestCaseOutputId(id);
         return true;
     }

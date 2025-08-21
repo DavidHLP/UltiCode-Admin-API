@@ -10,27 +10,32 @@ import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/problems/api/calculate")
 public class CalculationController extends BaseController {
     private final CalculationServiceImpl calculationService;
 
     @GetMapping("/submission/calendar")
-    public ResponseResult<List<CalendarVo>> getSubmissionCalendar(Long userId) {
+    public ResponseResult<List<CalendarVo>> getSubmissionCalendar(
+            @RequestParam @NotNull @Min(1) Long userId) {
         return ResponseResult.success("获取日历成功", calculationService.getSubmissionCalendar(userId));
     }
 
     @GetMapping("/submission/userInfo")
     public ResponseResult<Page<SubmissionCardVo>> getSubmissionPassRate(
-            @RequestParam long page, @RequestParam long size) {
+            @RequestParam @Min(1) long page, @RequestParam @Min(1) long size) {
         Page<SubmissionCardVo> pages = new Page<>(page, size);
         return ResponseResult.success(
                 "成功获取提交信息", calculationService.getSubmissionUserInfo(getCurrentUserId(), pages));
@@ -38,7 +43,7 @@ public class CalculationController extends BaseController {
 
     @GetMapping("/solution/userInfo")
     public ResponseResult<Page<SolutionCardVo>> getSolutionPassRate(
-            @RequestParam long page, @RequestParam long size) {
+            @RequestParam @Min(1) long page, @RequestParam @Min(1) long size) {
         Page<SolutionCardVo> pages = new Page<>(page, size);
         return ResponseResult.success(
                 "成功获取提交信息", calculationService.getSolutionUserInfo(getCurrentUserId(), pages));

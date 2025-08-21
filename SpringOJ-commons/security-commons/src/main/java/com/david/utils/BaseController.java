@@ -1,6 +1,8 @@
 package com.david.utils;
 
 import com.david.entity.user.AuthUser;
+import com.david.exception.BizException;
+import com.david.utils.enums.ResponseCode;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -31,7 +33,8 @@ public class BaseController {
             }
         }
 
-        throw new RuntimeException("用户信息未找到，请检查认证状态");
+        // 统一改为业务异常，由全局异常处理器返回标准 JSON
+        throw BizException.of(ResponseCode.RC401);
     }
 
     /**

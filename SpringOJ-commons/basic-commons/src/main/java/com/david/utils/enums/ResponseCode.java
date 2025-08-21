@@ -1,13 +1,10 @@
 package com.david.utils.enums;
 
-import lombok.Getter;
-
 import java.util.Arrays;
 
 /**
  * 响应码枚举，遵循 Spring Boot 3.0+ 的 sealed 接口设计规范
  */
-@Getter
 public enum ResponseCode {
     /**操作失败**/
     RC999(999,"操作XXX失败"),
@@ -21,11 +18,14 @@ public enum ResponseCode {
     RC203(203,"系统规则不满足要求,请稍后再试!"),
     /**授权规则不通过**/
     RC204(204,"授权规则不通过,请稍后再试!"),
+    /**参数错误*/
+    RC400(400,"请求参数错误"),
     /**access_denied**/
     RC403(403,"无访问权限,请联系管理员授予权限"),
     /**access_denied**/
     RC401(401,"匿名用户访问无权限资源时的异常"),
     RC404(404,"404页面找不到的异常"),
+    RC405(405,"请求方法不被允许"),
     /**服务异常**/
     RC500(500,"系统异常，请稍后重试"),
     RC375(375,"数学运算异常，请稍后重试"),
@@ -55,7 +55,7 @@ public enum ResponseCode {
         return message;
     }
 
-    public static ResponseCode valueOf(Integer code) {
+	public static ResponseCode valueOf(Integer code) {
         return Arrays.stream(ResponseCode.values()).filter(c -> c.getCode().equals(code)).findAny().orElseGet(() -> null);
     }
 }

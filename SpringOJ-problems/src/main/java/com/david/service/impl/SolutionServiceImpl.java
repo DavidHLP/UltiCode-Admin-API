@@ -20,11 +20,14 @@ import com.david.solution.vo.SolutionManagementCardVo;
 import com.david.usercontent.UserContentView;
 import com.david.utils.MarkdownUtils;
 import com.david.utils.ResponseResult;
+import com.david.exception.BizException;
+import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +44,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Validated
 public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         implements ISolutionService {
     private final SolutionMapper solutionMapper;
@@ -51,20 +55,30 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
 
     @Override
     @Transactional
-    public SolutionDetailVo getSolutionDetailVoBy(Long solutionId, Long userId) {
-        // Only fetch approved solution; return null if not approved or not exists
+    public SolutionDetailVo getSolutionDetailVoBy(
+            Long solutionId,
+            Long userId) {
+        if (userId != null && userId < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    "用户ID必须>=1，当前值：" + userId);
+        }
         Solution solution = solutionMapper.selectApprovedById(solutionId);
         if (solution == null) {
-            return null;
+            throw BizException.of(ResponseCode.RC404.getCode(), "题解不存在，ID：" + solutionId);
         }
-        // Record view and increment views only for approved solutions
-        if (!userContentViewService.userHasViewedContent(userId, solutionId)) {
-            userContentViewService.save(
-                    UserContentView.builder()
-                            .userId(userId)
-                            .contentId(solutionId)
-                            .contentType(ContentType.SOLUTION)
-                            .build());
+        if (userId != null && userId >= 1) {
+            if (!userContentViewService.userHasViewedContent(userId, solutionId)) {
+                userContentViewService.save(
+                        UserContentView.builder()
+                                .userId(userId)
+                                .contentId(solutionId)
+                                .contentType(ContentType.SOLUTION)
+                                .build());
+                solutionMapper.updateViews(solutionId);
+            }
+        } else {
+            // 匿名或无效用户ID：不记录用户浏览记录，仅增加浏览量
             solutionMapper.updateViews(solutionId);
         }
         User user = userServiceFeignClient.getUserById(solution.getUserId()).getData();
@@ -76,8 +90,8 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                 .title(solution.getTitle())
                 .comments(solution.getComments())
                 .views(solution.getViews())
-                .authorUsername(user.getUsername())
-                .authorAvatar(user.getAvatar())
+                .authorUsername(user != null ? user.getUsername() : null)
+                .authorAvatar(user != null ? user.getAvatar() : null)
                 .solutionComments(solutionCommentService.getSolutionCommentVos(solution.getId()))
                 .language(solution.getLanguage())
                 .build();
@@ -85,7 +99,14 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
 
     @Override
     public Page<SolutionCardVo> pageSolutionCardVos(
-            Page<SolutionCardVo> page, Long problemId, String keyword) {
+            Page<SolutionCardVo> page,
+            Long problemId,
+            String keyword) {
+        if (page.getCurrent() < 1 || page.getSize() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    String.format("分页参数无效：current=%d, size=%d", page.getCurrent(), page.getSize()));
+        }
         // 1. 查询分页数据
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionsCardVos(page, problemId, keyword);
@@ -94,7 +115,13 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
 
     @Override
     public Page<SolutionCardVo> pageSolutionCardVosByUserId(
-            Page<SolutionCardVo> page, Long userId) {
+            Page<SolutionCardVo> page,
+            Long userId) {
+        if (page.getCurrent() < 1 || page.getSize() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    String.format("分页参数无效：current=%d, size=%d", page.getCurrent(), page.getSize()));
+        }
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionCardVosByUserId(page, userId);
         return fillInMissingContent(pageSolutions);
@@ -107,6 +134,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             String keyword,
             Long userId,
             SolutionStatus status) {
+        if (page.getCurrent() < 1 || page.getSize() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    String.format("分页参数无效：current=%d, size=%d", page.getCurrent(), page.getSize()));
+        }
         Page<SolutionManagementCardVo> pages =
                 solutionMapper.pageSolutionManagementCardVos(page, problemId, keyword, userId, status);
         List<SolutionManagementCardVo> records = pages.getRecords();

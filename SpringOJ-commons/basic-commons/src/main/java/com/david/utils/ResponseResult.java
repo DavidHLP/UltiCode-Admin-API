@@ -1,10 +1,6 @@
 package com.david.utils;
 
 import com.david.utils.enums.ResponseCode;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -12,35 +8,60 @@ import java.time.format.DateTimeFormatter;
 /**
  * 响应结果封装，遵循统一响应格式规范
  */
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor(force = true)
 public class ResponseResult<T> {
     private Integer code;
     private String message;
     private T data;
     private String timestamp;
 
-    public static <Void> ResponseResult<Void> success() {
-        return ResponseResult.<Void>builder().code(ResponseCode.RC200.getCode()).data(null).message(ResponseCode.RC200.getMessage()).timestamp(getCurrentTimestamp()).build();
+    public ResponseResult() {}
+
+    public ResponseResult(Integer code, String message, T data, String timestamp) {
+        this.code = code;
+        this.message = message;
+        this.data = data;
+        this.timestamp = timestamp;
+    }
+
+    public Integer getCode() { return code; }
+    public void setCode(Integer code) { this.code = code; }
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }
+    public T getData() { return data; }
+    public void setData(T data) { this.data = data; }
+    public String getTimestamp() { return timestamp; }
+    public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+
+    public static ResponseResult<Void> success() {
+        return new ResponseResult<>(ResponseCode.RC200.getCode(), ResponseCode.RC200.getMessage(), null, getCurrentTimestamp());
     }
 
     public static <T> ResponseResult<T> success(String message, T data) {
-        return ResponseResult.<T>builder().code(ResponseCode.RC200.getCode()).data(data).message(message).timestamp(getCurrentTimestamp()).build();
+        return new ResponseResult<>(ResponseCode.RC200.getCode(), message, data, getCurrentTimestamp());
     }
 
-    public static <Void> ResponseResult<Void> success(String message) {
-        return ResponseResult.<Void>builder().code(ResponseCode.RC200.getCode()).data(null).message(message).timestamp(getCurrentTimestamp()).build();
+    public static ResponseResult<Void> success(String message) {
+        return new ResponseResult<>(ResponseCode.RC200.getCode(), message, null, getCurrentTimestamp());
     }
 
     public static <T> ResponseResult<T> fail(Integer code, String message) {
-        return ResponseResult.<T>builder().code(code).data(null).message(message).timestamp(getCurrentTimestamp()).build();
+        return new ResponseResult<>(code, message, null, getCurrentTimestamp());
     }
 
     public static <T> ResponseResult<T> fail(Integer code) {
         ResponseCode responseCode = ResponseCode.valueOf(code);
-        return ResponseResult.<T>builder().code(responseCode.getCode()).data(null).message(responseCode.getMessage()).timestamp(getCurrentTimestamp()).build();
+        if (responseCode == null) {
+            return new ResponseResult<>(code, "未知错误", null, getCurrentTimestamp());
+        }
+        return new ResponseResult<>(responseCode.getCode(), responseCode.getMessage(), null, getCurrentTimestamp());
+    }
+
+    public static <T> ResponseResult<T> fail(ResponseCode responseCode) {
+        return new ResponseResult<>(responseCode.getCode(), responseCode.getMessage(), null, getCurrentTimestamp());
+    }
+
+    public static <T> ResponseResult<T> fail(ResponseCode responseCode, String customMessage) {
+        return new ResponseResult<>(responseCode.getCode(), customMessage, null, getCurrentTimestamp());
     }
 
     private static String getCurrentTimestamp() {

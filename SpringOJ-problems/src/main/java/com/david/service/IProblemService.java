@@ -9,6 +9,10 @@ import com.david.problem.enums.ProblemDifficulty;
 import com.david.problem.vo.ProblemCardVo;
 import com.david.problem.vo.ProblemDetailVo;
 import com.david.submission.dto.CompareDescription;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 /**
  * <p>
@@ -18,24 +22,25 @@ import com.david.submission.dto.CompareDescription;
  * @author david
  * @since 2025-07-21
  */
+@Validated
 public interface IProblemService extends IService<Problem> {
 
-    Page<Problem> pageProblems(Page<Problem> page,
-                               String keyword,
+    Page<Problem> pageProblems(@NotNull Page<Problem> page,
+                               @Size(max = 100) String keyword,
                                ProblemDifficulty difficulty,
                                CategoryType category,
                                Boolean isVisible,
-                               String sort);
+                               @Size(max = 20) String sort);
 
-    Page<ProblemCardVo> pageProblemVos(Page<Problem> page,
-                                       String keyword,
+    Page<ProblemCardVo> pageProblemVos(@NotNull Page<Problem> page,
+                                       @Size(max = 100) String keyword,
                                        ProblemDifficulty difficulty,
                                        CategoryType category,
-                                       String sort);
+                                       @Size(max = 20) String sort);
 
-    ProblemDetailVo getProblemDetailVoById(Long id);
+    ProblemDetailVo getProblemDetailVoById(@NotNull @Min(1) Long id);
 
-    String getCodeTemplate(Long problemId, LanguageType language);
+    String getCodeTemplate(@NotNull @Min(1) Long problemId, @NotNull LanguageType language);
 
-    CompareDescription getCompareDescription(Long id);
+    CompareDescription getCompareDescription(@NotNull @Min(1) Long id);
 }

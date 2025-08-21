@@ -12,11 +12,13 @@ import com.david.submission.vo.SubmissionCardVo;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Validated
 public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submission>
         implements ISubmissionService {
 

@@ -17,10 +17,13 @@ import com.david.testcase.dto.TestCaseInputDto;
 import com.david.testcase.dto.TestCaseOutputDto;
 import com.david.utils.CodeUtils;
 import com.david.utils.SolutionDto;
+import com.david.exception.BizException;
+import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
@@ -32,6 +35,7 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
+@Validated
 public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
         implements IProblemService {
     private final ProblemMapper problemMapper;
@@ -48,6 +52,11 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
             CategoryType category,
             Boolean isVisible,
             String sort) {
+        if (page.getCurrent() < 1 || page.getSize() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    "分页参数不合法：current和size必须≥1，当前current=" + page.getCurrent() + ", size=" + page.getSize());
+        }
         return problemMapper.pageProblems(page, keyword, difficulty, category, isVisible, sort);
     }
 
@@ -58,6 +67,11 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
             ProblemDifficulty difficulty,
             CategoryType category,
             String sort) {
+        if (page.getCurrent() < 1 || page.getSize() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    "分页参数不合法：current和size必须≥1，当前current=" + page.getCurrent() + ", size=" + page.getSize());
+        }
         Page<Problem> problemPage =
                 problemMapper.pageProblems(page, keyword, difficulty, category, true, sort);
         Page<ProblemCardVo> result =
@@ -84,7 +98,7 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     public ProblemDetailVo getProblemDetailVoById(Long id) {
         Problem problem = this.getById(id);
         if (problem == null) {
-            throw new RuntimeException("题目不存在");
+            throw BizException.of(ResponseCode.RC404.getCode(), "题目不存在，id=" + id);
         }
         return ProblemDetailVo.builder()
                 .id(problem.getId())
@@ -95,20 +109,21 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    public String getCodeTemplate(Long problemId, LanguageType language) {
+    public String getCodeTemplate(Long problemId,
+                                  LanguageType language) {
         String solutionFunctionName = problemMapper.selectSolutionFunctionName(problemId);
         if (solutionFunctionName == null || solutionFunctionName.isEmpty()) {
-            throw new IllegalArgumentException("问题不存在");
+            throw BizException.of(ResponseCode.RC404.getCode(), "未找到题目或函数名为空，problemId=" + problemId);
         }
         TestCaseOutputDto testCaseOutput =
                 testCaseOutputMapper.selectTestCaseOutputDtoFirstByProblemId(problemId);
         if (testCaseOutput == null) {
-            throw new IllegalArgumentException("问题不存在");
+            throw BizException.of(ResponseCode.RC404.getCode(), "未配置输出用例，problemId=" + problemId);
         }
         List<TestCaseInputDto> testCaseInputDtoList =
                 testCaseInputMapper.getTestCaseInputDtoByTestCaseId(testCaseOutput.getId());
         if (testCaseInputDtoList == null || testCaseInputDtoList.isEmpty()) {
-            throw new IllegalArgumentException("问题不存在");
+            throw BizException.of(ResponseCode.RC404.getCode(), "未配置输入用例，testCaseOutputId=" + testCaseOutput.getId());
         }
         SolutionDto solutionDto =
                 SolutionDto.builder()
@@ -120,11 +135,11 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
         return codeUtils.generateSolutionClass(language, solutionDto);
     }
 
-	@Override
+    @Override
 	public CompareDescription getCompareDescription(Long id) {
 		CompareDescription compareDescription = problemMapper.selectCompareDescription(id);
 		if (compareDescription == null){
-			throw new IllegalArgumentException("获取题目信息失败");
+			throw BizException.of(ResponseCode.RC404.getCode(), "未找到题目比对描述，problemId=" + id);
 		}
 		return compareDescription;
 	}

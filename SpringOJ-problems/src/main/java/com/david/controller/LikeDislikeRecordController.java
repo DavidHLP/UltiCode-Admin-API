@@ -9,11 +9,15 @@ import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
 /** 点赞点踩记录控制器 处理用户对内容的点赞/点踩操作 */
 @RestController
 @RequiredArgsConstructor
+@Validated
 @RequestMapping("/problems/api/likeDislike")
 public class LikeDislikeRecordController extends BaseController {
     private final ILikeDislikeRecordService likeDislikeRecordService;
@@ -27,7 +31,7 @@ public class LikeDislikeRecordController extends BaseController {
      */
     @GetMapping("/status")
     public ResponseResult<LikeDislikeRecordVo> getUserActionStatus(
-            @RequestParam TargetType targetType, @RequestParam Long targetId) {
+            @RequestParam @NotNull TargetType targetType, @RequestParam @NotNull @Min(1) Long targetId) {
         return ResponseResult.success(
                 "获取用户操作状态成功",
                 likeDislikeRecordService.getUserActionStatus(
@@ -44,9 +48,9 @@ public class LikeDislikeRecordController extends BaseController {
      */
     @PostMapping("/action")
     public ResponseResult<LikeDislikeRecordVo> performAction(
-            @RequestParam TargetType targetType,
-            @RequestParam Long targetId,
-            @RequestParam ActionType actionType) {
+            @RequestParam @NotNull TargetType targetType,
+            @RequestParam @NotNull @Min(1) Long targetId,
+            @RequestParam @NotNull ActionType actionType) {
         return ResponseResult.success(
                 "操作执行成功",
                 likeDislikeRecordService.performAction(
@@ -62,7 +66,7 @@ public class LikeDislikeRecordController extends BaseController {
      */
     @DeleteMapping("/cancel")
     public ResponseResult<LikeDislikeRecordVo> cancelAction(
-            @RequestParam TargetType targetType, @RequestParam Long targetId) {
+            @RequestParam @NotNull TargetType targetType, @RequestParam @NotNull @Min(1) Long targetId) {
         return ResponseResult.success(
                 "取消操作成功",
                 likeDislikeRecordService.cancelAction(getCurrentUserId(), targetType, targetId));
@@ -77,7 +81,7 @@ public class LikeDislikeRecordController extends BaseController {
      */
     @GetMapping("/stats")
     public ResponseResult<LikeDislikeRecordVo> getStats(
-            @RequestParam TargetType targetType, @RequestParam Long targetId) {
+            @RequestParam @NotNull TargetType targetType, @RequestParam @NotNull @Min(1) Long targetId) {
         return ResponseResult.success(
                 "获取统计数据成功", likeDislikeRecordService.getStats(targetType, targetId));
     }
