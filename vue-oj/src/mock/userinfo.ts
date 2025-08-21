@@ -1,195 +1,304 @@
-import type { UserInfoData } from '@/types/userinfo'
+import type { DeveloperProfile } from '@/types/userinfo'
 
-export const mockUserInfoData: UserInfoData = {
-  profile: {
+/**
+ * 生成贡献热力图数据
+ */
+function generateContributionHeatmap() {
+  const contributions = []
+  const now = new Date()
+  const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate())
+
+  for (let d = new Date(oneYearAgo); d <= now; d.setDate(d.getDate() + 1)) {
+    const random = Math.random()
+    let level: 0 | 1 | 2 | 3 | 4 = 0
+
+    if (random > 0.85) level = 4
+    else if (random > 0.7) level = 3
+    else if (random > 0.5) level = 2
+    else if (random > 0.3) level = 1
+
+    contributions.push({
+      date: d.toISOString().split('T')[0],
+      count: level * Math.floor(Math.random() * 5),
+      level
+    })
+  }
+
+  return contributions
+}
+
+/**
+ * 生成贡献趋势图数据
+ */
+function generateContributionChart() {
+  const points = []
+  for (let i = 0; i < 12; i++) {
+    const date = new Date(2023, i, 1)
+    points.push({
+      date: date.toISOString().split('T')[0],
+      value: Math.floor(Math.random() * 200) + 50
+    })
+  }
+  return points
+}
+
+/**
+ * 开发者档案 Mock 数据
+ */
+export const mockDeveloperProfile: DeveloperProfile = {
+  userProfile: {
     username: 'David',
-    handle: 'github.com/david',
-    avatar: 'D',
-    ranking: 100000,
+    handle: '@david.yang@xm',
+    avatar: { type: 'char', value: 'D' },
+    globalRank: 100000,
+    bio: '无',
     location: '重庆',
-    education: '博士',
     gender: '男',
-    school: '深圳信息职业学院',
-    skills: ['Java', 'Python']
+    school: '洛阳师范学院',
+    primaryLanguages: ['Java', 'Python'],
+    isFollowing: false
   },
-  bio: [
-    { icon: '📍', content: '重庆' },
-    { icon: '🏢', content: '博士' },
-    { icon: '👤', content: '男' },
-    { icon: '🎓', content: '深圳信息职业学院' },
-    { icon: '💼', content: 'Java, Python' }
-  ],
+
   achievements: [
     {
-      id: 'contribution',
-      name: '贡献徽章 青木',
+      name: '贡献奖章',
       icon: '🏆',
-      value: '青木',
+      iconColor: '#fd7e14',
+      count: 1,
+      type: 'contribution'
+    },
+    {
+      name: '点赞奖章',
+      icon: '💙',
+      iconColor: '#58a6ff',
+      count: 177,
+      type: 'like'
+    },
+    {
+      name: '评论奖章',
+      icon: '💬',
+      iconColor: '#39d353',
+      count: 1,
+      type: 'comment'
+    },
+    {
+      name: '获得收藏',
+      icon: '⭐',
+      iconColor: '#fd7e14',
+      count: 0,
+      type: 'favorite'
+    }
+  ],
+
+  languageSkills: [
+    {
+      name: 'Java',
+      solvedCount: 278,
       color: '#58a6ff'
     },
     {
-      id: 'activity',
-      name: '活动徽章',
-      icon: '📊',
-      value: 176,
+      name: 'Python3',
+      solvedCount: 11,
       color: '#39d353'
     },
     {
-      id: 'streak',
-      name: '连续徽章',
-      icon: '🔥',
-      value: 1,
+      name: 'C++',
+      solvedCount: 5,
       color: '#fd7e14'
-    },
-    {
-      id: 'opensource',
-      name: '开源徽章',
-      icon: '⭐',
-      value: 0,
-      color: '#f85149'
     }
   ],
-  languages: [
-    { name: 'JavaScript', color: '#f1e05a', percentage: 35 },
-    { name: 'Python', color: '#3572a5', percentage: 30 },
-    { name: 'HTML', color: '#e34c26', percentage: 20 },
-    { name: 'CSS', color: '#563d7c', percentage: 15 }
-  ],
-  skills: [
-    { name: '算法', level: '一分靠运气', value: 60 },
-    { name: '数学', level: '只剩脑', value: 75 },
-    { name: '计算', level: '还能行', value: 80 },
-    { name: '前端', level: '熟练', value: 85 },
-    { name: '后端', level: '精通', value: 90 },
-    { name: '数据库', level: '良好', value: 70 }
-  ],
-  stats: [
+
+  skillTags: [
     {
-      title: '累计热度',
-      value: 1557,
-      change: '218.7% ↑ 51,127 平均排名',
-      percentage: '34.67%',
-      type: 'heat'
+      name: '前端开发',
+      level: 'intermediate',
+      backgroundColor: '#238636'
     },
     {
-      title: '已解题数',
-      value: 262,
-      change: '本月新增 12 题',
-      type: 'solved'
-    },
-    {
-      title: '全站排名',
-      value: 15432,
-      change: '↑ 1,234',
-      type: 'ranking'
-    },
-    {
-      title: '最长连击',
-      value: 45,
-      change: '当前连击 12 天',
-      type: 'streak'
+      name: '设计',
+      level: 'beginner',
+      backgroundColor: '#238636'
     }
   ],
-  activity: generateActivityData(),
-  projects: [
+
+  foundationSkill: {
+    categories: ['数组', '二分查找', '计算', '哈希表', '贪心', '堆优先队列', '滑动窗口', '栈', '递归', '模拟', '体系'],
+    skillPoints: [
+      { name: '数组', value: 85, color: '#fd7e14' },
+      { name: '二分查找', value: 70, color: '#238636' },
+      { name: '计算', value: 90, color: '#58a6ff' },
+      { name: '哈希表', value: 75, color: '#fd7e14' },
+      { name: '贪心', value: 60, color: '#238636' },
+      { name: '堆优先队列', value: 65, color: '#58a6ff' }
+    ]
+  },
+
+  statistics: {
+    contributionScore: 1557,
+    globalRanking: {
+      current: 51127,
+      total: 219796,
+      percentage: 34.67
+    },
+    topPercentage: 34.67
+  },
+
+  contributionChart: generateContributionChart(),
+
+  contributionHeatmap: {
+    year: 2024,
+    dailyContributions: generateContributionHeatmap(),
+    totalContributions: 282,
+    yearContributions: 104
+  },
+
+  activities: [
     {
       id: '1',
-      title: '100501. 仅含置位的所有非零数',
-      time: '9 个月前',
-      difficulty: 'hard',
-      tags: ['位运算', '数学']
+      type: 'solution',
+      icon: '📝',
+      text: '10050! 夜宴哪位的新小菜谱',
+      time: '2024-02-21T10:30:00Z',
+      relativeTime: '9个月前'
     },
     {
       id: '2',
-      title: '3386. 插入间隔',
-      time: '9 个月前',
-      difficulty: 'medium',
-      tags: ['数组', '排序']
+      type: 'solution',
+      icon: '📝',
+      text: '3366. 最小数组和',
+      time: '2024-02-20T15:45:00Z',
+      relativeTime: '9个月前'
     },
     {
       id: '3',
-      title: '3385. 重新安排数组里的数字并删除子字符串',
-      time: '9 个月前',
-      difficulty: 'hard',
-      tags: ['字符串', '动态规划']
+      type: 'solution',
+      icon: '📝',
+      text: '3365. 重新排列后的最大子数组大小',
+      time: '2024-02-19T09:20:00Z',
+      relativeTime: '9个月前'
     },
     {
       id: '4',
-      title: '3341. 判定是否一个词的问题没定义！',
-      time: '9 个月前',
-      difficulty: 'easy',
-      tags: ['字符串']
+      type: 'solution',
+      icon: '📝',
+      text: '3341. 找出符合条件路径的最小代价',
+      time: '2024-01-15T14:10:00Z',
+      relativeTime: '10个月前'
     },
     {
       id: '5',
-      title: '3340. 检查平衡字符串',
-      time: '9 个月前',
-      difficulty: 'medium',
-      tags: ['字符串', '哈希表']
+      type: 'solution',
+      icon: '📝',
+      text: '3340. 检查是否平行令符',
+      time: '2024-01-14T11:25:00Z',
+      relativeTime: '10个月前'
     },
     {
       id: '6',
-      title: '3335. 字符串的原生长度！',
-      time: '10 个月前',
-      difficulty: 'easy',
-      tags: ['字符串']
+      type: 'solution',
+      icon: '📝',
+      text: '3335. 字符串的K长度子串 I',
+      time: '2024-01-13T16:40:00Z',
+      relativeTime: '10个月前'
     },
     {
       id: '7',
-      title: '3336. 字符串的原生长度！',
-      time: '10 个月前',
-      difficulty: 'medium',
-      tags: ['字符串', '前缀和']
+      type: 'solution',
+      icon: '📝',
+      text: '3326. 敵戦哨斥候的最小操作秒数据',
+      time: '2024-01-12T13:15:00Z',
+      relativeTime: '10个月前'
     },
     {
       id: '8',
-      title: '3326. 改数组进来的数字就是和子数组个数',
-      time: '10 个月前',
-      difficulty: 'hard',
-      tags: ['数组', '前缀和']
+      type: 'solution',
+      icon: '📝',
+      text: '3325. 字符串至少需要 K 次字符的操作 I',
+      time: '2024-01-11T12:30:00Z',
+      relativeTime: '10个月前'
+    },
+    {
+      id: '9',
+      type: 'solution',
+      icon: '📝',
+      text: '1456. 定长子串中元音的最大数目',
+      time: '2024-01-10T08:45:00Z',
+      relativeTime: '10个月前'
+    },
+    {
+      id: '10',
+      type: 'solution',
+      icon: '📝',
+      text: '4296. 移山所需的最少秒数',
+      time: '2023-08-21T10:20:00Z',
+      relativeTime: '1年前'
+    },
+    {
+      id: '11',
+      type: 'solution',
+      icon: '📝',
+      text: '3281. 范围内整数的最大得分',
+      time: '2023-08-20T17:35:00Z',
+      relativeTime: '1年前'
     }
   ],
-  tabs: [
-    { key: 'problems', label: '最近温题', icon: '📊', active: true },
-    { key: 'solutions', label: '题解', icon: '📝', active: false },
-    { key: 'collections', label: '题单', icon: '📋', active: false },
-    { key: 'discussions', label: '讨论发表', icon: '🔗', active: false }
+
+  metricCards: [
+    {
+      name: '数据统计',
+      value: 2,
+      description: '数据统计',
+      icon: '📊',
+      iconBgColor: '#58a6ff'
+    },
+    {
+      name: '天成就徽章',
+      value: 100,
+      description: '天成就徽章',
+      icon: '⚡',
+      iconBgColor: '#fd7e14'
+    }
+  ],
+
+  activityTabs: [
+    {
+      key: 'overview',
+      name: '概况通知',
+      icon: '📋',
+      active: false
+    },
+    {
+      key: 'solutions',
+      name: '题解',
+      icon: '🔔',
+      active: false
+    },
+    {
+      key: 'qa',
+      name: '问答',
+      icon: '💬',
+      active: false
+    },
+    {
+      key: 'dynamic',
+      name: '动态条件',
+      icon: '🔍',
+      active: true
+    }
   ]
 }
 
-function generateActivityData() {
-  const data = []
-  const startDate = new Date()
-  startDate.setDate(startDate.getDate() - 365)
-  
-  for (let i = 0; i < 365; i++) {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + i)
-    
-    const activity = Math.random()
-    let level: 0 | 1 | 2 | 3 | 4 = 0
-    let count = 0
-    
-    if (activity > 0.8) {
-      level = 4
-      count = Math.floor(Math.random() * 10) + 10
-    } else if (activity > 0.6) {
-      level = 3
-      count = Math.floor(Math.random() * 8) + 5
-    } else if (activity > 0.3) {
-      level = 2
-      count = Math.floor(Math.random() * 5) + 2
-    } else if (activity > 0.1) {
-      level = 1
-      count = 1
-    }
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      level,
-      count
-    })
-  }
-  
-  return data
+/**
+ * 模拟 API 调用延迟
+ */
+export function mockApiDelay(ms = 1000): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * 获取开发者档案数据 (模拟 API)
+ */
+export async function getMockDeveloperProfile(): Promise<DeveloperProfile> {
+  await mockApiDelay()
+  return { ...mockDeveloperProfile }
 }

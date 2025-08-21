@@ -1,219 +1,262 @@
 <template>
   <div>
     <ManageComponent
-      :loading="loading"
-      :table-data="filteredSolutions"
-      :title-icon="Document"
-      add-button-text="添加题解"
-      empty-text="暂无题解数据"
-      search-placeholder="搜索题解标题或内容..."
       title="题解管理"
-      @add="openAddSolutionDialog"
+      :title-icon="Memo"
+      search-placeholder="搜索标题、内容或语言"
+      empty-text="暂无题解数据"
+      :table-data="solutions"
+      :loading="loading"
+      :total="total"
+      v-model:current-page="currentPage"
+      v-model:page-size="pageSize"
+      @search="applySearch"
       @refresh="refreshData"
-      @search="handleSearch"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
     >
-      <!-- 表格列定义 -->
+      <!-- 筛选器 -->
+      <template #filters>
+        <el-input
+          v-model="problemIdText"
+          placeholder="题目ID"
+          clearable
+          class="id-filter"
+          @clear="applySearch"
+          @input="applySearchDebounced"
+        />
+
+        <el-input
+          v-model="userIdText"
+          placeholder="用户ID"
+          clearable
+          class="id-filter"
+          @clear="applySearch"
+          @input="applySearchDebounced"
+        />
+
+        <el-select
+          v-model="selectedStatus"
+          placeholder="筛选状态"
+          clearable
+          class="status-filter"
+          @change="onStatusChange"
+        >
+          <el-option label="待审核" :value="'PENDING'" />
+          <el-option label="通过" :value="'APPROVED'" />
+          <el-option label="不通过" :value="'REJECTED'" />
+        </el-select>
+      </template>
+
+      <!-- 表格列 -->
       <template #table-columns>
-        <el-table-column align="center" label="ID" prop="id" width="80">
-          <template #default="scope">
-            <el-tag class="id-tag" size="small" type="info"> #{{ scope.row.id }} </el-tag>
+        <el-table-column prop="id" label="ID" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag type="info" size="small">#{{ row.id }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column label="标题" min-width="200" prop="title">
-          <template #default="scope">
-            <span class="solution-title">{{ scope.row.title }}</span>
+        <el-table-column prop="problemId" label="题目ID" width="100" align="center" />
+
+        <el-table-column label="作者" min-width="180">
+          <template #default="{ row }">
+            <div class="author-cell">
+              <el-avatar
+                :src="row.authorAvatar || defaultUserAvatar"
+                size="small"
+                class="mr-8"
+              />
+              <span>{{ row.authorUsername || '匿名用户' }}</span>
+            </div>
           </template>
         </el-table-column>
 
-        <el-table-column align="center" label="题目ID" prop="problemId" width="100" />
-        <el-table-column align="center" label="用户ID" prop="userId" width="100" />
+        <el-table-column prop="title" label="标题" min-width="220" />
 
-        <el-table-column align="center" label="语言" prop="language" width="120">
-          <template #default="scope">
-            <el-tag size="small">{{ scope.row.language }}</el-tag>
+        <el-table-column prop="language" label="语言" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag type="info" size="small">{{ row.language }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column align="center" label="状态" prop="status" width="120">
-          <template #default="scope">
-            <el-tag :type="getStatusTagType(scope.row.status)" size="small">
-              {{ scope.row.status }}
+        <el-table-column prop="status" label="状态" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getStatusTagType(row.status)" size="small">
+              {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column align="center" fixed="right" label="操作" width="200">
-          <template #default="scope">
-            <div class="action-buttons">
-              <el-button
-                :icon="Edit"
-                class="action-btn"
-                plain
-                size="small"
-                type="primary"
-                @click="openEditSolutionDialog(scope.row)"
-              >
-                编辑
-              </el-button>
-              <el-button
-                :icon="Delete"
-                class="action-btn"
-                plain
-                size="small"
-                type="danger"
-                @click="handleDeleteSolution(scope.row.id)"
-              >
-                删除
-              </el-button>
-            </div>
+        <el-table-column label="操作" width="140" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="openDetail(row)">查看详情</el-button>
           </template>
         </el-table-column>
       </template>
     </ManageComponent>
-
-    <!-- 题解表单对话框 -->
-    <SolutionForm
-      :is-edit="isEdit"
-      :solution="currentSolution"
-      :visible="dialogVisible"
-      @save="handleSolutionSave"
-      @update:visible="dialogVisible = $event"
-    />
+    <!-- 详情页已改为独立路由页面 -->
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
-import ManageComponent from '@/components/management/ManageComponent.vue'
-import { deleteSolution, fetchSolutions } from '@/api/solution'
-import type { Solution } from '@/types/solution.d'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Delete, Document, Edit } from '@element-plus/icons-vue'
-import SolutionForm from './components/SolutionForm.vue'
+import { Memo } from '@element-plus/icons-vue'
+import ManageComponent from '@/components/management/ManageComponent.vue'
+import { fetchSolutionManagementPage } from '@/api/solution'
+import type { SolutionManagementCard, SolutionStatus } from '@/types/solution.d'
+import type { PageResult } from '@/types/commons'
 
-const solutions = ref<Solution[]>([])
+const router = useRouter()
+const solutions = ref<SolutionManagementCard[]>([])
 const loading = ref(false)
+const total = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
 const searchQuery = ref('')
+const selectedStatus = ref<SolutionStatus | undefined>(undefined)
+const problemIdText = ref('')
+const userIdText = ref('')
 
-const dialogVisible = ref(false)
-const isEdit = ref(false)
-const currentSolution = ref<Partial<Solution>>({})
+// 将环境变量读取放在脚本中，避免在模板中直接使用 import.meta
+// 统一使用 .env/.d.ts 中声明的 VITE_DEFAULT_USER_AVATAR
+const defaultUserAvatar: string = import.meta.env.VITE_DEFAULT_USER_AVATAR || ''
 
-const filteredSolutions = computed(() => {
-  let result = solutions.value
+// 独立详情页，不再在列表页维护详情状态
 
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (solution) =>
-        solution.title.toLowerCase().includes(query) ||
-        solution.content.toLowerCase().includes(query),
-    )
-  }
-
-  return result
-})
-
-const getStatusTagType = (status: string) => {
-  switch (status) {
-    case 'Approved':
-      return 'success'
-    case 'Pending':
-      return 'warning'
-    case 'Rejected':
-      return 'danger'
-    default:
-      return 'info'
-  }
+const toNumberOrUndefined = (s: string) => {
+  const v = Number((s || '').trim())
+  if (!Number.isFinite(v) || v <= 0) return undefined
+  return v
 }
 
-const handleSearch = (query: string) => {
-  searchQuery.value = query
-}
-
-const refreshData = async () => {
+const getPagedSolutions = async () => {
   loading.value = true
   try {
-    await getSolutions()
-    ElMessage.success('数据刷新成功！')
-  } catch (error) {
-    console.error('Error refreshing data:', error)
-    ElMessage.error('数据刷新失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-const getSolutions = async () => {
-  loading.value = true
-  try {
-    solutions.value = await fetchSolutions()
-  } catch (error) {
-    console.error('Error fetching solutions:', error)
+    const pid = toNumberOrUndefined(problemIdText.value)
+    const uid = toNumberOrUndefined(userIdText.value)
+    // 当使用 ID 精确筛选时，禁用关键词搜索，避免条件污染
+    const keywordParam = pid || uid ? undefined : (searchQuery.value || undefined)
+    const res: PageResult<SolutionManagementCard> = await fetchSolutionManagementPage({
+      page: currentPage.value,
+      size: pageSize.value,
+      keyword: keywordParam,
+      status: selectedStatus.value || undefined,
+      problemId: pid,
+      userId: uid
+    })
+    solutions.value = res.records
+    total.value = res.total
+  } catch (e) {
+    console.error(e)
     ElMessage.error('获取题解列表失败')
   } finally {
     loading.value = false
   }
 }
 
-const openAddSolutionDialog = () => {
-  isEdit.value = false
-  currentSolution.value = {
-    status: 'Pending',
+const applySearch = (query?: string) => {
+  if (typeof query === 'string') {
+    searchQuery.value = query
   }
-  dialogVisible.value = true
+  currentPage.value = 1
+  void getPagedSolutions()
 }
 
-const openEditSolutionDialog = (solution: Solution) => {
-  isEdit.value = true
-  currentSolution.value = { ...solution }
-  dialogVisible.value = true
+// 简易防抖，避免频繁请求
+const debounce = <T extends (...args: unknown[]) => void>(fn: T, delay = 300) => {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  return (...args: Parameters<T>) => {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => {
+      fn(...args)
+    }, delay)
+  }
 }
 
-const handleSolutionSave = () => {
-  getSolutions()
+const applySearchDebounced = debounce(() => applySearch(), 300)
+
+// 状态变更只触发刷新，不修改关键字，防止将状态字符串污染为 keyword
+const onStatusChange = () => {
+  currentPage.value = 1
+  void getPagedSolutions()
 }
 
-const handleDeleteSolution = async (solutionId: number) => {
+const refreshData = async () => {
+  loading.value = true
   try {
-    await deleteSolution(solutionId)
-    await getSolutions()
-    ElMessage.success('题解删除成功。')
-  } catch (error) {
-    console.error('Error deleting solution:', error)
-    ElMessage.error('删除题解失败。')
+    await getPagedSolutions()
+    ElMessage.success('数据刷新成功！')
+  } catch {
+    ElMessage.error('数据刷新失败')
+  } finally {
+    loading.value = false
   }
+}
+
+const handleSizeChange = (val: number) => {
+  pageSize.value = val
+  currentPage.value = 1
+  void getPagedSolutions()
+}
+
+const handleCurrentChange = (val: number) => {
+  currentPage.value = val
+  void getPagedSolutions()
+}
+
+const getStatusTagType = (status: SolutionStatus) => {
+  switch (status) {
+    case 'PENDING':
+      return 'warning'
+    case 'APPROVED':
+      return 'success'
+    case 'REJECTED':
+      return 'danger'
+    default:
+      return 'info'
+  }
+}
+
+const getStatusText = (status: SolutionStatus) => {
+  switch (status) {
+    case 'PENDING':
+      return '待审核'
+    case 'APPROVED':
+      return '通过'
+    case 'REJECTED':
+      return '不通过'
+    default:
+      return status
+  }
+}
+
+const openDetail = (row: SolutionManagementCard) => {
+  router.push({ name: 'solution-detail', params: { id: row.id } })
 }
 
 onMounted(() => {
-  getSolutions()
+  void getPagedSolutions()
 })
 </script>
 
 <style scoped>
-.solution-title {
-  font-weight: 500;
-  color: #303133;
+.status-filter {
+  width: 140px;
+  margin-right: 10px;
 }
-
-.action-buttons {
+.id-filter {
+  width: 140px;
+  margin-right: 10px;
+}
+.author-cell {
   display: flex;
+  align-items: center;
   gap: 8px;
-  justify-content: center;
+}
+.mr-8 {
+  margin-right: 8px;
 }
 
-.action-btn {
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.action-btn:hover {
-  transform: translateY(-1px);
-}
-
-.id-tag {
-  font-weight: 600;
-  border-radius: 6px;
-}
 </style>

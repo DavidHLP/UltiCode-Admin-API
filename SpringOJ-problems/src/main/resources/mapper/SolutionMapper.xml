@@ -17,30 +17,68 @@
         UPDATE solutions
         SET views = views + 1
         WHERE id = #{id}
+          AND status = 'APPROVED'
     </update>
     <select id="pageSolutionsCardVos" resultMap="SolutionCardVoResultMap">
-        SELECT
-        *
-        FROM
-        solutions
+        SELECT id, problem_id, user_id, tags, content, title, language, views, comments
+        FROM solutions
         <where>
             <if test="problemId != null">
                 AND problem_id = #{problemId}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND content LIKE CONCAT('%', #{keyword}, '%')
+                AND (
+                    content LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                    OR title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                    OR language LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                )
+            </if>
+            AND status = 'APPROVED'
+        </where>
+        ORDER BY id DESC
+    </select>
+    <select id="pageSolutionCardVosByUserId" resultMap="SolutionCardVoResultMap">
+        SELECT id, problem_id, user_id, tags, content, title, language, views, comments
+        FROM solutions
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <resultMap id="SolutionManagementCardVoResultMap" type="com.david.solution.vo.SolutionManagementCardVo">
+        <id property="id" column="id"/>
+        <result property="problemId" column="problem_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="language" column="language"/>
+        <result property="status" column="status" javaType="com.david.solution.enums.SolutionStatus"/>
+    </resultMap>
+    <select id="pageSolutionManagementCardVos" resultMap="SolutionManagementCardVoResultMap">
+        SELECT id, problem_id, user_id, title, language, status
+        FROM solutions
+        <where>
+            <if test="problemId != null">
+                AND problem_id = #{problemId}
+            </if>
+            <if test="userId != null">
+                AND user_id = #{userId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND title LIKE CONCAT('%', #{keyword}, '%')
-            </if>
-            <if test="keyword != null and keyword != ''">
-                AND language LIKE CONCAT('%', #{keyword}, '%')
+                AND (
+                    content LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                    OR title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                    OR language LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                )
             </if>
         </where>
+        ORDER BY id DESC
     </select>
-    <select id="pageSolutionCardVosByUserId" resultType="com.david.solution.vo.SolutionCardVo">
-        SELECT *
+    <select id="selectApprovedById" resultType="com.david.solution.Solution">
+        SELECT id, problem_id, user_id, tags, content, title, language, views, comments, status
         FROM solutions
-        where user_id = #{userId}
+        WHERE id = #{id}
+          AND status = 'APPROVED'
     </select>
 </mapper>

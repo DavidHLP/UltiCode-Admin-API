@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ACard: typeof import('ant-design-vue/es')['Card']
+    ATag: typeof import('ant-design-vue/es')['Tag']
     BaseEChart: typeof import('./src/components/charts/BaseEChart.vue')['default']
     CodeComponent: typeof import('./src/components/CodeComponent.vue')['default']
     CommentComponent: typeof import('./src/components/CommentComponent.vue')['default']
@@ -40,6 +41,7 @@ declare module 'vue' {
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElInput: typeof import('element-plus/es')['ElInput']
     ElLink: typeof import('element-plus/es')['ElLink']
+    ElLoading: typeof import('element-plus/es')['ElLoading']
     ElLoadingSpinner: typeof import('element-plus/es')['ElLoadingSpinner']
     ElMain: typeof import('element-plus/es')['ElMain']
     ElMenu: typeof import('element-plus/es')['ElMenu']
@@ -58,6 +60,7 @@ declare module 'vue' {
     ElTabPane: typeof import('element-plus/es')['ElTabPane']
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElTag: typeof import('element-plus/es')['ElTag']
+    ElText: typeof import('element-plus/es')['ElText']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ErrorCodeComponent: typeof import('./src/components/ErrorCodeComponent.vue')['default']
     PassRateDonut: typeof import('./src/components/charts/PassRateDonut.vue')['default']

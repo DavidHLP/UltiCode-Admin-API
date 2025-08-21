@@ -13,8 +13,10 @@ import com.david.service.IUserContentViewService;
 import com.david.solution.Solution;
 import com.david.solution.UpDownCounts;
 import com.david.solution.enums.ContentType;
+import com.david.solution.enums.SolutionStatus;
 import com.david.solution.vo.SolutionCardVo;
 import com.david.solution.vo.SolutionDetailVo;
+import com.david.solution.vo.SolutionManagementCardVo;
 import com.david.usercontent.UserContentView;
 import com.david.utils.MarkdownUtils;
 import com.david.utils.ResponseResult;
@@ -50,6 +52,12 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     @Override
     @Transactional
     public SolutionDetailVo getSolutionDetailVoBy(Long solutionId, Long userId) {
+        // Only fetch approved solution; return null if not approved or not exists
+        Solution solution = solutionMapper.selectApprovedById(solutionId);
+        if (solution == null) {
+            return null;
+        }
+        // Record view and increment views only for approved solutions
         if (!userContentViewService.userHasViewedContent(userId, solutionId)) {
             userContentViewService.save(
                     UserContentView.builder()
@@ -59,7 +67,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                             .build());
             solutionMapper.updateViews(solutionId);
         }
-        Solution solution = solutionMapper.selectById(solutionId);
         User user = userServiceFeignClient.getUserById(solution.getUserId()).getData();
         return SolutionDetailVo.builder()
                 .id(solution.getId())
@@ -79,7 +86,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     @Override
     public Page<SolutionCardVo> pageSolutionCardVos(
             Page<SolutionCardVo> page, Long problemId, String keyword) {
-
         // 1. 查询分页数据
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionsCardVos(page, problemId, keyword);
@@ -92,6 +98,29 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionCardVosByUserId(page, userId);
         return fillInMissingContent(pageSolutions);
+    }
+
+    @Override
+    public Page<SolutionManagementCardVo> pageSolutionManagementCardVo(
+            Page<SolutionManagementCardVo> page,
+            Long problemId,
+            String keyword,
+            Long userId,
+            SolutionStatus status) {
+        Page<SolutionManagementCardVo> pages =
+                solutionMapper.pageSolutionManagementCardVos(page, problemId, keyword, userId, status);
+        List<SolutionManagementCardVo> records = pages.getRecords();
+        if (records == null || records.isEmpty()) {
+            return pages;
+        }
+        List<Long> userIds = records.stream().map(SolutionManagementCardVo::getUserId).distinct().toList();
+        Map<Long, User> userMap = loadUsersMapByIds(userIds);
+        records.forEach(vo -> {
+            User u = userMap.getOrDefault(vo.getUserId(), new User());
+            vo.setAuthorUsername(u.getUsername());
+            vo.setAuthorAvatar(u.getAvatar());
+        });
+        return pages;
     }
 
     private Page<SolutionCardVo> fillInMissingContent(Page<SolutionCardVo> pageSolutions) {
@@ -108,17 +137,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         List<Long> userIds = records.stream().map(SolutionCardVo::getUserId).distinct().toList();
 
         // 4. 批量查询用户信息并转换为Map（增加空安全处理）
-        Map<Long, User> userMap =
-                Optional.ofNullable(userServiceFeignClient.getUserByIds(userIds))
-                        .map(ResponseResult::getData)
-                        .orElse(Collections.emptyList())
-                        .stream()
-                        .collect(
-                                Collectors.toMap(
-                                        User::getUserId,
-                                        Function.identity(),
-                                        (existing, replacement) -> existing // 处理可能的重复用户ID
-                                        ));
+        Map<Long, User> userMap = loadUsersMapByIds(userIds);
 
         // 5. 批量查询点赞点踩统计并转换为Map
         Map<Long, UpDownCounts> upDownCountsMap =
@@ -152,5 +171,20 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                     solutionCardVo.setDownvotes(counts.getDownvotes());
                 });
         return pageSolutions;
+    }
+
+    private Map<Long, User> loadUsersMapByIds(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return Optional.ofNullable(userServiceFeignClient.getUserByIds(userIds))
+                .map(ResponseResult::getData)
+                .orElse(Collections.emptyList())
+                .stream()
+                .collect(
+                        Collectors.toMap(
+                                User::getUserId,
+                                Function.identity(),
+                                (existing, replacement) -> existing));
     }
 }

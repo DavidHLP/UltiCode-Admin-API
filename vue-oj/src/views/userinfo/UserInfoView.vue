@@ -1,98 +1,122 @@
 <template>
-  <div class="user-info">
-    <aside class="sidebar">
-      <UserProfile :profile="userInfo.profile" />
-      <UserBio :bio="userInfo.bio" />
-      <UserAchievements :achievements="userInfo.achievements" />
-      <UserLanguages :languages="userInfo.languages" />
-      <UserSkillsRadar :skills="userInfo.skills" />
-    </aside>
+  <div class="developer-profile">
+    <div v-if="loading" class="loading-container">
+      <el-loading />
+    </div>
+    <div v-else-if="profile" class="container">
+      <!-- 左侧边栏 -->
+      <div class="sidebar">
+        <ProfileCard :user-profile="profile.userProfile" @follow="handleFollow" />
+        <InfoCard :profile="profile" />
+      </div>
 
-    <main class="main-content">
-      <UserStats :stats="userInfo.stats" />
-      <UserActivityChart :activity="userInfo.activity" />
-      <UserProjects
-        :projects="userInfo.projects"
-        :tabs="userInfo.tabs"
-        @tab-change="handleTabChange"
-      />
-    </main>
+      <!-- 主要内容 -->
+      <div class="main-content">
+        <StatisticsCards :statistics="profile.statistics" />
+        <ContributionChart :chart-data="profile.contributionChart" />
+        <ActivitySection
+          :heatmap="profile.contributionHeatmap"
+          :metric-cards="profile.metricCards"
+        />
+        <RecentActivity
+          :activities="profile.activities"
+          :tabs="profile.activityTabs"
+          @tab-change="handleTabChange"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { mockUserInfoData } from '@/mock/userinfo'
-import UserProfile from '@/views/userinfo/components/UserProfile.vue'
-import UserBio from '@/views/userinfo/components/UserBio.vue'
-import UserAchievements from '@/views/userinfo/components/UserAchievements.vue'
-import UserLanguages from '@/views/userinfo/components/UserLanguages.vue'
-import UserSkillsRadar from '@/views/userinfo/components/UserSkillsRadar.vue'
-import UserStats from '@/views/userinfo/components/UserStats.vue'
-import UserActivityChart from '@/views/userinfo/components/UserActivityChart.vue'
-import UserProjects from '@/views/userinfo/components/UserProjects.vue'
+import { ref, onMounted } from 'vue'
+import type { DeveloperProfile } from '@/types/userinfo'
+import { getMockDeveloperProfile } from '@/mock/userinfo'
+import ProfileCard from '@/views/userinfo/left/ProfileCard.vue'
+import InfoCard from '@/views/userinfo/left/InfoCard.vue'
+import StatisticsCards from '@/views/userinfo/right/StatisticsCards.vue'
+import ContributionChart from '@/views/userinfo/right/ContributionChart.vue'
+import ActivitySection from '@/views/userinfo/right/ActivitySection.vue'
+import RecentActivity from '@/views/userinfo/right/RecentActivity.vue'
 
-// 使用模拟数据
-const userInfo = ref(mockUserInfoData)
+// 响应式数据
+const profile = ref<DeveloperProfile | null>(null)
+const loading = ref(true)
 
-const handleTabChange = (key: string) => {
-  // 更新激活状态
-  userInfo.value.tabs.forEach((tab) => {
-    tab.active = tab.key === key
-  })
+// 生命周期
+onMounted(async () => {
+  try {
+    profile.value = await getMockDeveloperProfile()
+  } catch (error) {
+    console.error('加载开发者档案失败:', error)
+  } finally {
+    loading.value = false
+  }
+})
 
-  // 根据选中的标签更新项目列表
-  // 这里可以调用相应的API获取不同类型的数据
-  console.log('Tab changed to:', key)
+// 事件处理
+const handleFollow = () => {
+  if (!profile.value) return
+  profile.value.userProfile.isFollowing = !profile.value.userProfile.isFollowing
+}
+
+const handleTabChange = (tabKey: string) => {
+  if (!profile.value) return
+  profile.value.activityTabs = profile.value.activityTabs.map(tab => ({
+    ...tab,
+    active: tab.key === tabKey
+  }))
 }
 </script>
 
-<style scoped lang="scss">
-.user-info {
-  display: flex;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 32px 24px;
-  gap: 24px;
+<style scoped>
+.developer-profile {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  background-color: #ffffff;
   color: #24292f;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', sans-serif;
-  font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 296px 1fr;
+  gap: 24px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
 
   .sidebar {
-    width: 296px;
-    flex-shrink: 0;
-    align-self: flex-start;
-
-    > * + * {
-      margin-top: 16px;
-    }
-  }
-
-  .main-content {
-    flex: 1;
-    min-width: 0;
-    align-self: flex-start;
-
-    > * + * {
-      margin-top: 24px;
-    }
-  }
-
-  // 响应式设计
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 16px 12px;
-
-    .sidebar {
-      width: 100%;
-      order: 2;
-    }
-
-    .main-content {
-      order: 1;
-    }
+    position: static;
   }
 }
 </style>

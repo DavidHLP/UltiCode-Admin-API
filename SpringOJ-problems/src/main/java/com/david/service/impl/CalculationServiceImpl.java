@@ -1,7 +1,6 @@
 package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.calculate.vo.UserOverviewVo;
 import com.david.calendar.vo.CalendarVo;
 import com.david.enums.JudgeStatus;
 import com.david.service.ISolutionService;
@@ -45,22 +44,6 @@ public class CalculationServiceImpl {
     public Page<SolutionCardVo> getSolutionUserInfo(
             Long currentUserId, Page<SolutionCardVo> pages) {
         return solutionService.pageSolutionCardVosByUserId(pages, currentUserId);
-    }
-
-    public UserOverviewVo getUserOverview(Long userId) {
-        long total = submissionService.countUserSubmissions(userId);
-        long accepted = submissionService.countUserAcceptedSubmissions(userId);
-        long attemptedProblems = submissionService.countUserAttemptedProblems(userId);
-        long solvedProblems = submissionService.countUserSolvedProblems(userId);
-        int passRate = total == 0 ? 0 : (int) ((accepted * 100) / total);
-        return UserOverviewVo.builder()
-                .userId(userId)
-                .totalSubmissions(total)
-                .acceptedSubmissions(accepted)
-                .attemptedProblems(attemptedProblems)
-                .solvedProblems(solvedProblems)
-                .passRate(passRate)
-                .build();
     }
 }
 

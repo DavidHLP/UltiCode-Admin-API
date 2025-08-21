@@ -5,6 +5,7 @@ import RoleManagement from '@/views/role/RoleManagement.vue'
 import ProblemManagement from '@/views/problem/ProblemManagement.vue'
 import ProblemEditor from '@/views/problem/ProblemEditor.vue'
 import SolutionManagement from '@/views/solution/SolutionManagement.vue'
+import SolutionDetail from '@/views/solution/SolutionDetail.vue'
 import ProfileCenter from '@/views/profile/ProfileCenter.vue'
 import Login from '@/views/login/Login.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -53,6 +54,12 @@ export const router = createRouter({
           path: 'solutions',
           name: 'solutions',
           component: SolutionManagement,
+        },
+        {
+          path: 'solutions/:id',
+          name: 'solution-detail',
+          component: SolutionDetail,
+          meta: { title: '题解详情' },
         },
         {
           path: 'profile',

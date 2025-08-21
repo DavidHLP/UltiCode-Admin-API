@@ -1,7 +1,6 @@
 package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.calculate.vo.UserOverviewVo;
 import com.david.calendar.vo.CalendarVo;
 import com.david.service.impl.CalculationServiceImpl;
 import com.david.solution.vo.SolutionCardVo;
@@ -43,10 +42,5 @@ public class CalculationController extends BaseController {
         Page<SolutionCardVo> pages = new Page<>(page, size);
         return ResponseResult.success(
                 "成功获取提交信息", calculationService.getSolutionUserInfo(getCurrentUserId(), pages));
-    }
-
-    @GetMapping("/user/overview")
-    public ResponseResult<UserOverviewVo> getUserOverview() {
-        return ResponseResult.success("成功获取用户概览", calculationService.getUserOverview(getCurrentUserId()));
     }
 }

@@ -1,13 +1,12 @@
-export interface Solution {
+export type SolutionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
+
+export interface SolutionManagementCard {
   id: number
   problemId: number
   userId: number
+  authorUsername: string
+  authorAvatar: string
   title: string
-  content: string
   language: string
-  upvotes: number
-  downvotes: number
-  status: 'Pending' | 'Approved' | 'Rejected'
-  createdAt: string
-  updatedAt: string
+  status: SolutionStatus
 }
