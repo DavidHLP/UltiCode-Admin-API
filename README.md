@@ -56,6 +56,12 @@ CodeForge 是一个基于 Spring Cloud 微服务架构的在线编程评测系�
 
 ## 项目预览
 
+### 快速预览
+
+![img.png](images/problem.png)
+![img.png](images/home.png)
+![img.png](images/self.png)
+![img.png](images/admin.png)
 ### 业务端项目预览
 
 > [!NOTE]
