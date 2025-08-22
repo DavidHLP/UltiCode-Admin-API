@@ -58,11 +58,9 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     public SolutionDetailVo getSolutionDetailVoBy(
             Long solutionId,
             Long userId) {
-        if (userId != null && userId < 1) {
-            throw BizException.of(
-                    ResponseCode.RC400.getCode(),
-                    "用户ID必须>=1，当前值：" + userId);
-        }
+        // 基础参数校验
+        validateRequiredId("题解ID", solutionId);
+        validateOptionalId("用户ID", userId);
         Solution solution = solutionMapper.selectApprovedById(solutionId);
         if (solution == null) {
             throw BizException.of(ResponseCode.RC404.getCode(), "题解不存在，ID：" + solutionId);
@@ -102,11 +100,10 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             Page<SolutionCardVo> page,
             Long problemId,
             String keyword) {
-        if (page.getCurrent() < 1 || page.getSize() < 1) {
-            throw BizException.of(
-                    ResponseCode.RC400.getCode(),
-                    String.format("分页参数无效：current=%d, size=%d", page.getCurrent(), page.getSize()));
-        }
+        // 分页与参数校验
+        validateAndNormalizePage(page);
+        validateRequiredId("题目ID", problemId);
+        keyword = normalizeKeyword(keyword);
         // 1. 查询分页数据
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionsCardVos(page, problemId, keyword);
@@ -117,11 +114,9 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     public Page<SolutionCardVo> pageSolutionCardVosByUserId(
             Page<SolutionCardVo> page,
             Long userId) {
-        if (page.getCurrent() < 1 || page.getSize() < 1) {
-            throw BizException.of(
-                    ResponseCode.RC400.getCode(),
-                    String.format("分页参数无效：current=%d, size=%d", page.getCurrent(), page.getSize()));
-        }
+        // 分页与参数校验
+        validateAndNormalizePage(page);
+        validateRequiredId("用户ID", userId);
         Page<SolutionCardVo> pageSolutions =
                 solutionMapper.pageSolutionCardVosByUserId(page, userId);
         return fillInMissingContent(pageSolutions);
@@ -134,11 +129,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             String keyword,
             Long userId,
             SolutionStatus status) {
-        if (page.getCurrent() < 1 || page.getSize() < 1) {
-            throw BizException.of(
-                    ResponseCode.RC400.getCode(),
-                    String.format("分页参数无效：current=%d, size=%d", page.getCurrent(), page.getSize()));
-        }
+        // 分页与参数校验（problemId/userId 为可选，但若提供必须>=1）
+        validateAndNormalizePage(page);
+        validateOptionalId("题目ID", problemId);
+        validateOptionalId("用户ID", userId);
+        keyword = normalizeKeyword(keyword);
         Page<SolutionManagementCardVo> pages =
                 solutionMapper.pageSolutionManagementCardVos(page, problemId, keyword, userId, status);
         List<SolutionManagementCardVo> records = pages.getRecords();
@@ -218,5 +213,58 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                                 User::getUserId,
                                 Function.identity(),
                                 (existing, replacement) -> existing));
+    }
+
+    // --------------------------- 内部校验与标准化工具方法 ---------------------------
+    private void validateAndNormalizePage(Page<?> page) {
+        if (page == null) {
+            throw BizException.of(ResponseCode.RC400.getCode(), "分页对象不能为空");
+        }
+        if (page.getCurrent() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    "分页参数无效：current必须>=1，当前值：" + page.getCurrent());
+        }
+        if (page.getSize() < 1) {
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(),
+                    "分页参数无效：size必须>=1，当前值：" + page.getSize());
+        }
+        // 防御性上限，避免大页造成负担
+        if (page.getSize() > 100) {
+            page.setSize(100);
+        }
+    }
+
+    private void validateRequiredId(String fieldName, Long id) {
+        if (id == null) {
+            throw BizException.of(ResponseCode.RC400.getCode(), fieldName + "不能为空");
+        }
+        if (id < 1) {
+            throw BizException.of(ResponseCode.RC400.getCode(), fieldName + "必须>=1，当前值：" + id);
+        }
+    }
+
+    private void validateOptionalId(String fieldName, Long id) {
+        if (id == null) {
+            return;
+        }
+        if (id < 1) {
+            throw BizException.of(ResponseCode.RC400.getCode(), fieldName + "必须>=1，当前值：" + id);
+        }
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String k = keyword.trim();
+        if (k.isEmpty()) {
+            return null;
+        }
+        if (k.length() > 100) {
+            throw BizException.of(ResponseCode.RC400.getCode(), "关键词长度不能超过100字符，当前长度：" + k.length());
+        }
+        return k;
     }
 }

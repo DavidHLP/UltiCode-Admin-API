@@ -22,17 +22,18 @@ import jakarta.validation.constraints.Size;
  */
 @Validated
 public interface ISolutionService extends IService<Solution> {
-    SolutionDetailVo getSolutionDetailVoBy(@NotNull @Min(1) Long solutionId , @NotNull @Min(1) Long userId);
+    SolutionDetailVo getSolutionDetailVoBy(@NotNull(message = "题解ID不能为空") @Min(value = 1, message = "题解ID必须>=1") Long solutionId,
+                                           @Min(value = 1, message = "用户ID必须>=1") Long userId);
 
-    Page<SolutionCardVo> pageSolutionCardVos(@NotNull Page<SolutionCardVo> p,
-                                             @NotNull @Min(1) Long problemId,
-                                             @Size(max = 100) String keyword);
-    Page<SolutionCardVo> pageSolutionCardVosByUserId(@NotNull Page<SolutionCardVo> p,
-                                                     @NotNull @Min(1) Long userId);
+    Page<SolutionCardVo> pageSolutionCardVos(@NotNull(message = "分页对象不能为空") Page<SolutionCardVo> p,
+                                             @NotNull(message = "题目ID不能为空") @Min(value = 1, message = "题目ID必须>=1") Long problemId,
+                                             @Size(max = 100, message = "关键词长度不能超过100字符") String keyword);
+    Page<SolutionCardVo> pageSolutionCardVosByUserId(@NotNull(message = "分页对象不能为空") Page<SolutionCardVo> p,
+                                                     @NotNull(message = "用户ID不能为空") @Min(value = 1, message = "用户ID必须>=1") Long userId);
 
-    Page<SolutionManagementCardVo> pageSolutionManagementCardVo(@NotNull Page<SolutionManagementCardVo> page,
-                                                                @Min(1) Long problemId,
-                                                                @Size(max = 100) String keyword,
-                                                                @Min(1) Long userId,
+    Page<SolutionManagementCardVo> pageSolutionManagementCardVo(@NotNull(message = "分页对象不能为空") Page<SolutionManagementCardVo> page,
+                                                                @Min(value = 1, message = "题目ID必须>=1") Long problemId,
+                                                                @Size(max = 100, message = "关键词长度不能超过100字符") String keyword,
+                                                                @Min(value = 1, message = "用户ID必须>=1") Long userId,
                                                                 SolutionStatus status);
 }

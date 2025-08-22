@@ -10,7 +10,7 @@ import jakarta.validation.constraints.NotNull;
 
 @Validated
 public interface ITestCaseInputService extends IService<TestCaseInput> {
-    Boolean deleteByTestCaseOutputId(@NotNull @Min(1) Long testCaseOutputId);
+    Boolean deleteByTestCaseOutputId(@NotNull(message = "测试用例输出ID不能为空") @Min(value = 1, message = "测试用例输出ID必须>=1") Long testCaseOutputId);
 
-    List<TestCaseInput> selectByTestCaseOutputId(@NotNull @Min(1) Long testCaseOutputId);
+    List<TestCaseInput> selectByTestCaseOutputId(@NotNull(message = "测试用例输出ID不能为空") @Min(value = 1, message = "测试用例输出ID必须>=1") Long testCaseOutputId);
 }

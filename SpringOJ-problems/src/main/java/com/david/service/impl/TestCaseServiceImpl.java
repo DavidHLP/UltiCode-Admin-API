@@ -1,11 +1,11 @@
 package com.david.service.impl;
 
+import com.david.exception.BizException;
 import com.david.service.ITestCaseInputService;
 import com.david.service.ITestCaseOutputService;
 import com.david.testcase.TestCase;
 import com.david.testcase.TestCaseOutput;
 import com.david.testcase.vo.TestCaseVo;
-import com.david.exception.BizException;
 import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,8 @@ public class TestCaseServiceImpl {
     @Transactional
     public Boolean delete(Long id) {
         if (!ITestCaseOutputService.removeById(id)) throw BizException.of(ResponseCode.RC500);
-        testCaseInputService.deleteByTestCaseOutputId(id);
+        if (testCaseInputService.deleteByTestCaseOutputId(id))
+            throw BizException.of(ResponseCode.RC500);
         return true;
     }
 
@@ -82,7 +83,10 @@ public class TestCaseServiceImpl {
     }
 
     public List<TestCaseVo> getTestCaseVoByProblemId(Long problemId) {
-        List<TestCaseOutput> testCaseInputs = ITestCaseOutputService.getByProblemId(problemId).stream().filter(TestCaseOutput::getIsSample).toList();
+        List<TestCaseOutput> testCaseInputs =
+                ITestCaseOutputService.getByProblemId(problemId).stream()
+                        .filter(TestCaseOutput::getIsSample)
+                        .toList();
         List<TestCaseVo> testCaseVos = new ArrayList<>();
         for (TestCaseOutput testCaseOutput : testCaseInputs) {
             testCaseVos.add(
