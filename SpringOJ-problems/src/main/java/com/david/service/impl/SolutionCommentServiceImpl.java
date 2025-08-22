@@ -2,12 +2,12 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.entity.user.User;
+import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionCommentMapper;
 import com.david.service.ISolutionCommentService;
 import com.david.solution.SolutionComments;
 import com.david.solution.vo.SolutionCommentVo;
-import com.david.exception.BizException;
 import com.david.utils.ResponseResult;
 import com.david.utils.enums.ResponseCode;
 
@@ -133,10 +133,10 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
 				throw new BizException(ResponseCode.RC400.getCode(),
 						"点踩数不能为负数，当前值：" + c.getDownvotes() + "，评论ID：" + c.getId());
 			}
-			if (!c.isHierarchyValid()) {
-				throw new BizException(ResponseCode.RC400.getCode(),
-						"评论层级关系不合法（根评论rootId应为空；子评论必须提供rootId），评论ID：" + c.getId());
-			}
+//			if (!c.isHierarchyValid()) {
+//				throw new BizException(ResponseCode.RC400.getCode(),
+//						"评论层级关系不合法（根评论rootId应为空；子评论必须提供rootId），评论ID：" + c.getId());
+//			}
 		}
 		// 检查ID是否唯一，避免构建映射时冲突
 		long distinctIdCount = allComments.stream().map(SolutionComments::getId).distinct().count();

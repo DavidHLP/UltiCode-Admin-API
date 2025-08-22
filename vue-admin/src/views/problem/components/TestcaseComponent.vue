@@ -1,12 +1,12 @@
 <template>
-  <div class="page testcase-editor">
-    <header class="toolbar" v-if="!showEditor">
+  <div class="page testcase-editor pe-page">
+    <header class="toolbar pe-toolbar" v-if="!showEditor">
       <span class="title">测试用例</span>
       <span class="spacer" />
       <el-button :disabled="!problemId" :icon="Plus" type="primary" @click="openCreate">新增</el-button>
     </header>
 
-    <el-card v-if="!showEditor" shadow="never">
+    <el-card v-if="!showEditor" class="pe-section-card" shadow="never">
       <el-empty v-if="!problemId" description="请输入题目ID" />
       <el-skeleton v-else-if="loading" :rows="4" animated />
       <div v-else>
@@ -46,13 +46,13 @@
                     </div>
                     <el-popover width="520" placement="top-start" trigger="click">
                       <template #reference>
-                        <pre class="output-preview clickable mono">{{ preview(inp.inputContent) }}</pre>
+                        <pre class="output-preview clickable pe-mono">{{ preview(inp.inputContent) }}</pre>
                       </template>
                       <div class="popover-output">
                         <div class="popover-actions">
                           <el-button :icon="CopyDocument" text @click="copyOutput(inp.inputContent)">复制</el-button>
                         </div>
-                        <pre class="full-output mono">{{ inp.inputContent }}</pre>
+                        <pre class="full-output pe-mono">{{ inp.inputContent }}</pre>
                       </div>
                     </el-popover>
                   </div>
@@ -62,13 +62,13 @@
               <el-descriptions-item label="期望输出" :span="3">
                 <el-popover width="520" placement="top-start" trigger="click">
                   <template #reference>
-                    <pre class="output-preview clickable mono">{{ preview(row.testCaseOutput.output) }}</pre>
+                    <pre class="output-preview clickable pe-mono">{{ preview(row.testCaseOutput.output) }}</pre>
                   </template>
                   <div class="popover-output">
                     <div class="popover-actions">
                       <el-button :icon="CopyDocument" text @click="copyOutput(row.testCaseOutput.output)">复制</el-button>
                     </div>
-                    <pre class="full-output mono">{{ row.testCaseOutput.output }}</pre>
+                    <pre class="full-output pe-mono">{{ row.testCaseOutput.output }}</pre>
                   </div>
                 </el-popover>
               </el-descriptions-item>
@@ -208,26 +208,20 @@ onMounted(async () => {
 .page.testcase-editor {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
-  max-width: 1080px;
-  margin: 0 auto;
+  gap: var(--pe-gap);
 }
 .toolbar {
   position: sticky;
   top: 0;
   z-index: 5;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
+  padding: var(--pe-gap-sm) 0;
   background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color);
+  border-bottom: 1px solid var(--pe-border);
 }
 .title {
   font-size: 16px;
   font-weight: 600;
-  margin-left: 8px;
+  margin-left: var(--pe-gap-sm);
 }
 .spacer {
   flex: 1;
@@ -235,26 +229,26 @@ onMounted(async () => {
 .inputs {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--pe-gap-sm);
 }
 .inputs-details {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--pe-gap-sm);
 }
 .input-detail {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px dashed var(--el-border-color);
-  border-radius: 6px;
-  background: var(--el-fill-color-light);
+  gap: var(--pe-gap-sm);
+  padding: var(--pe-gap);
+  border: 1px dashed var(--pe-border);
+  border-radius: var(--pe-radius-sm);
+  background: var(--pe-bg-soft);
 }
 .input-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--pe-gap-sm);
 }
 .input-name {
   font-weight: 500;
@@ -262,13 +256,13 @@ onMounted(async () => {
 .desc-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--pe-gap);
 }
 .desc-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: var(--pe-gap);
+  margin-bottom: var(--pe-gap-sm);
 }
 .desc-id {
   color: var(--el-text-color-secondary);
@@ -277,22 +271,18 @@ onMounted(async () => {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-all;
-  background: var(--el-fill-color-light);
-  border: 1px dashed var(--el-border-color);
-  padding: 6px 8px;
-  border-radius: 4px;
+  background: var(--pe-bg-soft);
+  border: 1px dashed var(--pe-border);
+  padding: var(--pe-gap-sm) var(--pe-gap);
+  border-radius: var(--pe-radius-sm);
 }
 .clickable {
   cursor: pointer;
 }
-.mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 13px;
-}
 .popover-output {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--pe-gap-sm);
 }
 .popover-actions {
   display: flex;
@@ -302,20 +292,20 @@ onMounted(async () => {
   margin: 0;
   max-height: 40vh;
   overflow: auto;
-  background: var(--el-fill-color-lighter);
-  border: 1px solid var(--el-border-color);
-  padding: 10px 12px;
-  border-radius: 6px;
+  background: var(--pe-bg-subtle);
+  border: 1px solid var(--pe-border);
+  padding: var(--pe-card-pad);
+  border-radius: var(--pe-radius-md);
 }
 .input-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--pe-gap-sm);
 }
 .input-item {
   display: grid;
   grid-template-columns: 1fr 1fr 2fr auto;
-  gap: 8px;
+  gap: var(--pe-gap-sm);
   align-items: start;
 }
 </style>

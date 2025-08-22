@@ -4,6 +4,7 @@ export interface SolutionEditVo {
   content: string
   tags: string[]
   language: string
+  userId?: number
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
 }
 

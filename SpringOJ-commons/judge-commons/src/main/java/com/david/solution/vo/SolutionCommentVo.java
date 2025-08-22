@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-import jakarta.validation.constraints.AssertTrue;
-
 @Data
 @Builder
 @AllArgsConstructor
@@ -33,12 +31,12 @@ public class SolutionCommentVo {
      * - 当 parentId 为空时，rootId 也必须为空（表示根评论）
      * - 当 parentId 不为空时，rootId 必须非空（表示子评论）
      */
-    @AssertTrue(message = "根评论的rootId必须为空；子评论必须提供rootId")
-    public boolean isHierarchyValid() {
-        if (parentId == null) {
-            return rootId == null;
-        } else {
-            return rootId != null;
-        }
-    }
+//    @AssertTrue(message = "根评论的rootId必须为空；子评论必须提供rootId")
+//    public boolean isHierarchyValid() {
+//        if (parentId == null) {
+//            return rootId == null;
+//        } else {
+//            return rootId != null;
+//        }
+//    }
 }

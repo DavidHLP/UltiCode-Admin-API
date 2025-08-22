@@ -31,14 +31,6 @@
               </el-button>
             </el-tooltip>
 
-            <el-tooltip content="减小字号" placement="bottom">
-              <el-button text @click="decreaseFont"><el-icon><ZoomOut /></el-icon></el-button>
-            </el-tooltip>
-
-            <el-tooltip content="增大字号" placement="bottom">
-              <el-button text @click="increaseFont"><el-icon><ZoomIn /></el-icon></el-button>
-            </el-tooltip>
-
             <el-tooltip content="格式化文档" placement="bottom">
               <el-button text @click="formatDocument"><el-icon><MagicStick /></el-icon></el-button>
             </el-tooltip>
@@ -74,7 +66,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, shallowRef, computed, watchEffect, nextTick } from 'vue';
 import * as monaco from 'monaco-editor';
-import { Document, RefreshRight, FullScreen, CopyDocument, Download, MagicStick, Sunny, Moon, ZoomIn, ZoomOut, SwitchButton } from '@element-plus/icons-vue';
+import { Document, RefreshRight, FullScreen, CopyDocument, Download, MagicStick, Sunny, Moon, SwitchButton } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { toMonacoLanguage, LANGUAGE_OPTIONS } from '@/utils/languagetype';
 import { getCodeTemplate } from '@/api/problem';
@@ -260,9 +252,6 @@ watch(wordWrap, (val) => {
 watch(fontSize, (val) => {
   editor.value?.updateOptions({ fontSize: Math.min(24, Math.max(10, val)) });
 });
-
-const increaseFont = () => (fontSize.value = Math.min(24, fontSize.value + 1));
-const decreaseFont = () => (fontSize.value = Math.max(10, fontSize.value - 1));
 
 const formatDocument = async () => {
   try {

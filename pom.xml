@@ -48,13 +48,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-bom</artifactId>
-                <version>3.5.9</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!--spring cloud 2023.0.0-->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -94,6 +87,13 @@
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
                 <version>${mybatis-plus}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-bom</artifactId>
+                <version>${mybatis-plus}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <!-- swagger3 调用方式 http://你的主机IP地址:5555/swagger-ui/index.html -->
             <dependency>

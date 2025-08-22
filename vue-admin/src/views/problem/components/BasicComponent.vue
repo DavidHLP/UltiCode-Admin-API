@@ -1,7 +1,7 @@
 <template>
   <div class="basic-component">
     <div class="sections">
-      <el-card class="section-card" shadow="never">
+      <el-card class="section-card pe-section-card" shadow="never">
         <template #header>
           <span class="section-title">基本信息</span>
         </template>
@@ -64,7 +64,33 @@
         </div>
       </el-card>
 
-      <el-card class="section-card" shadow="never">
+      <el-card class="section-card pe-section-card" shadow="never">
+        <template #header>
+          <span class="section-title">题目设置</span>
+        </template>
+        <div class="form-grid">
+          <div class="col-6">
+            <el-form-item label="题目类型" prop="problemType">
+              <el-select
+                v-model="localProblem.problemType"
+                placeholder="请选择题目类型"
+                style="width: 100%"
+                clearable
+              >
+                <el-option label="ACM" value="ACM" />
+                <el-option label="OI" value="OI" />
+              </el-select>
+            </el-form-item>
+          </div>
+          <div class="col-6">
+            <el-form-item label="运行方法名称" prop="solutionFunctionName">
+              <el-input v-model="localProblem.solutionFunctionName" placeholder="请输入题目运行方法" />
+            </el-form-item>
+          </div>
+        </div>
+      </el-card>
+
+      <el-card class="section-card pe-section-card" shadow="never">
         <template #header>
           <span class="section-title">标签与限制</span>
         </template>
@@ -139,10 +165,10 @@ watch(
 .sections {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--pe-gap);
 }
 .section-card :deep(.el-card__header) {
-  padding: 10px 12px;
+  padding: var(--pe-card-header-pad);
 }
 .section-title {
   font-weight: 600;
@@ -150,7 +176,7 @@ watch(
 .form-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 16px;
+  gap: var(--pe-gap-lg);
 }
 
 .col-12 {
@@ -170,7 +196,7 @@ watch(
 .inline-field {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--pe-gap);
 }
 
 .difficulty-preview {

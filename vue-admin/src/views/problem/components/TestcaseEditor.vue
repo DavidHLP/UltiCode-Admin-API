@@ -1,6 +1,6 @@
 <template>
   <div class="editor-wrapper">
-    <header class="toolbar">
+    <header class="toolbar pe-toolbar">
       <span class="title">{{ mode === 'create' ? '新增测试用例' : '编辑测试用例' }}</span>
       <span class="spacer" />
       <el-button :icon="Close" text @click="onCancel">取消</el-button>
@@ -10,7 +10,7 @@
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <el-row :gutter="12">
         <el-col :xs="24" :md="12">
-          <el-card shadow="never">
+          <el-card class="pe-section-card" shadow="never">
             <template #header>
               <span>输出设置</span>
             </template>
@@ -28,7 +28,7 @@
             <el-form-item label="期望输出" prop="testCaseOutput.output">
               <el-input
                 v-model="form.testCaseOutput.output"
-                class="mono"
+                class="pe-mono"
                 :autosize="{ minRows: 4, maxRows: 12 }"
                 placeholder="请输入期望输出"
                 type="textarea"
@@ -38,7 +38,7 @@
         </el-col>
 
         <el-col :xs="24" :md="12">
-          <el-card shadow="never">
+          <el-card class="pe-section-card" shadow="never">
             <template #header>
               <span>输入参数</span>
             </template>
@@ -56,7 +56,7 @@
                   <el-form-item :prop="`testCaseInput.${idx}.inputContent`" :rules="[{ required: true, message: '请输入输入内容', trigger: 'blur' }]" label-width="0">
                     <el-input
                       v-model="inp.inputContent"
-                      class="mono"
+                      class="pe-mono"
                       :autosize="{ minRows: 2, maxRows: 10 }"
                       placeholder="输入内容，例如: [1,2,3] 或 5"
                       type="textarea"
@@ -317,12 +317,7 @@ const onCancel = () => emit('cancel')
 .editor-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: var(--pe-gap);
 }
 .spacer {
   flex: 1;
@@ -334,29 +329,29 @@ const onCancel = () => emit('cancel')
 .input-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--pe-gap);
 }
 .input-item {
   display: grid;
   grid-template-columns: 160px 1fr 1fr auto;
-  gap: 8px 12px;
+  gap: var(--pe-gap-sm) var(--pe-gap);
   align-items: start;
-  padding: 12px;
-  border: 1px dashed var(--el-border-color);
-  border-radius: 8px;
-  background: var(--el-fill-color-lighter);
+  padding: var(--pe-gap);
+  border: 1px dashed var(--pe-border);
+  border-radius: var(--pe-radius-md);
+  background: var(--pe-bg-subtle);
 }
 .op {
   display: flex;
-  gap: 6px;
+  gap: var(--pe-gap-sm);
 }
 .tip {
-  margin-top: 8px;
+  margin-top: var(--pe-gap-sm);
 }
 
 /* 等宽字体，便于输入/输出阅读 */
-.mono :deep(textarea.el-textarea__inner) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+.pe-mono :deep(textarea.el-textarea__inner) {
+  font-family: var(--pe-mono-font);
   font-size: 13px;
   line-height: 1.5;
 }

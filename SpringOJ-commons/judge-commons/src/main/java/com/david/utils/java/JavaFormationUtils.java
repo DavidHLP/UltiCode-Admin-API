@@ -25,7 +25,7 @@ public class JavaFormationUtils {
      * 验证 JSON 输入是否符合指定类型，并返回规范化的 JSON 字符串
      * 
      * @param jsonInput 输入的 JSON 字符串
-     * @param javaType 目标 Java 类型
+     * @param javaType  目标 Java 类型
      * @return 规范化的 JSON 字符串
      * @throws IllegalArgumentException 当输入不是合法 JSON 或类型不匹配时
      */
@@ -35,7 +35,7 @@ public class JavaFormationUtils {
         }
 
         String trimmed = jsonInput.trim();
-        
+
         // 首先验证是否是合法的 JSON
         JsonNode jsonNode;
         try {
@@ -59,12 +59,12 @@ public class JavaFormationUtils {
      * 将 JSON 字符串转换为 Java 代码中的字面量表达式
      * 
      * @param jsonValue JSON 格式的值
-     * @param javaType 目标 Java 类型
+     * @param javaType  目标 Java 类型
      * @return Java 代码字面量表达式
      */
     public static String jsonToJavaLiteral(String jsonValue, JavaType javaType) {
         String normalizedJson = validateAndNormalizeJson(jsonValue, javaType);
-        
+
         try {
             JsonNode node = MAPPER.readTree(normalizedJson);
             return convertJsonNodeToJavaLiteral(node, javaType);
@@ -77,7 +77,7 @@ public class JavaFormationUtils {
      * 构建方法参数列表的 Java 代码表达式
      * 
      * @param jsonInputs JSON 格式的输入值列表
-     * @param javaTypes 对应的 Java 类型列表
+     * @param javaTypes  对应的 Java 类型列表
      * @return 形如 "arg1, arg2, arg3" 的参数表达式
      */
     public static String buildParameterList(List<String> jsonInputs, List<JavaType> javaTypes) {
@@ -99,10 +99,9 @@ public class JavaFormationUtils {
      * 获取类型的 Java 导入语句
      */
     public static String getRequiredImports(List<JavaType> types) {
-        boolean needUtilImport = types.stream().anyMatch(type -> 
-            type.isList() || type.isArray() && type != JavaType.INT_ARRAY && type != JavaType.DOUBLE_ARRAY
-        );
-        
+        boolean needUtilImport = types.stream().anyMatch(
+                type -> type.isList() || type.isArray() && type != JavaType.INT_ARRAY && type != JavaType.DOUBLE_ARRAY);
+
         return needUtilImport ? "import java.util.*;" : "";
     }
 
@@ -118,25 +117,25 @@ public class JavaFormationUtils {
                     throw new IllegalArgumentException("期望整数类型，但输入为: " + node.getNodeType());
                 }
                 break;
-                
+
             case DOUBLE:
                 if (!node.isNumber()) {
                     throw new IllegalArgumentException("期望数值类型，但输入为: " + node.getNodeType());
                 }
                 break;
-                
+
             case STRING:
                 if (!node.isTextual()) {
                     throw new IllegalArgumentException("期望字符串类型，但输入为: " + node.getNodeType());
                 }
                 break;
-                
+
             case BOOLEAN:
                 if (!node.isBoolean()) {
                     throw new IllegalArgumentException("期望布尔类型，但输入为: " + node.getNodeType());
                 }
                 break;
-                
+
             case INT_ARRAY:
             case DOUBLE_ARRAY:
             case STRING_ARRAY:
@@ -153,7 +152,7 @@ public class JavaFormationUtils {
                 }
                 validateArrayElements(node, javaType);
                 break;
-                
+
             case VOID:
                 throw new IllegalArgumentException("VOID 类型不能用于输入验证");
         }
@@ -171,61 +170,61 @@ public class JavaFormationUtils {
                         throw new IllegalArgumentException("整数数组元素必须为整数，但发现: " + element.getNodeType());
                     }
                     break;
-                    
+
                 case DOUBLE_ARRAY:
                     if (!element.isNumber()) {
                         throw new IllegalArgumentException("浮点数组元素必须为数值，但发现: " + element.getNodeType());
                     }
                     break;
-                    
+
                 case STRING_ARRAY:
                 case LIST_STRING:
                     if (!element.isTextual()) {
                         throw new IllegalArgumentException("字符串数组元素必须为字符串，但发现: " + element.getNodeType());
                     }
                     break;
-                    
+
                 case BOOLEAN_ARRAY:
                     if (!element.isBoolean()) {
                         throw new IllegalArgumentException("布尔数组元素必须为布尔值，但发现: " + element.getNodeType());
                     }
                     break;
-                    
+
                 case INT_2D_ARRAY:
                     if (!element.isArray()) {
                         throw new IllegalArgumentException("二维数组元素必须为数组，但发现: " + element.getNodeType());
                     }
                     validateArrayElements(element, JavaType.INT_ARRAY);
                     break;
-                    
+
                 case STRING_2D_ARRAY:
                     if (!element.isArray()) {
                         throw new IllegalArgumentException("二维数组元素必须为数组，但发现: " + element.getNodeType());
                     }
                     validateArrayElements(element, JavaType.STRING_ARRAY);
                     break;
-                    
+
                 case BOOLEAN_2D_ARRAY:
                     if (!element.isArray()) {
                         throw new IllegalArgumentException("二维数组元素必须为数组，但发现: " + element.getNodeType());
                     }
                     validateArrayElements(element, JavaType.BOOLEAN_ARRAY);
                     break;
-                    
+
                 case LIST_LIST_INTEGER:
                     if (!element.isArray()) {
                         throw new IllegalArgumentException("嵌套列表元素必须为数组，但发现: " + element.getNodeType());
                     }
                     validateArrayElements(element, JavaType.LIST_INTEGER);
                     break;
-                    
+
                 case LIST_LIST_STRING:
                     if (!element.isArray()) {
                         throw new IllegalArgumentException("嵌套列表元素必须为数组，但发现: " + element.getNodeType());
                     }
                     validateArrayElements(element, JavaType.LIST_STRING);
                     break;
-                    
+
                 // 基础类型不应该在数组元素验证中出现
                 case INTEGER:
                 case DOUBLE:
@@ -244,53 +243,53 @@ public class JavaFormationUtils {
         switch (javaType) {
             case INTEGER:
                 return String.valueOf(node.asInt());
-                
+
             case DOUBLE:
                 return String.valueOf(node.asDouble());
-                
+
             case STRING:
                 try {
                     return MAPPER.writeValueAsString(node.asText());
                 } catch (JsonProcessingException e) {
                     throw new IllegalArgumentException("字符串序列化失败", e);
                 }
-                
+
             case BOOLEAN:
                 return String.valueOf(node.asBoolean());
-                
+
             case INT_ARRAY:
                 return buildArrayLiteral(node, "int", javaType);
-                
+
             case DOUBLE_ARRAY:
                 return buildArrayLiteral(node, "double", javaType);
-                
+
             case STRING_ARRAY:
                 return buildArrayLiteral(node, "String", javaType);
-                
+
             case BOOLEAN_ARRAY:
                 return buildArrayLiteral(node, "boolean", javaType);
-                
+
             case INT_2D_ARRAY:
                 return build2DArrayLiteral(node, "int", javaType);
-                
+
             case STRING_2D_ARRAY:
                 return build2DArrayLiteral(node, "String", javaType);
-                
+
             case BOOLEAN_2D_ARRAY:
                 return build2DArrayLiteral(node, "boolean", javaType);
-                
+
             case LIST_INTEGER:
                 return buildListLiteral(node, "Integer");
-                
+
             case LIST_STRING:
                 return buildListLiteral(node, "String");
-                
+
             case LIST_LIST_INTEGER:
                 return buildNestedListLiteral(node, "Integer");
-                
+
             case LIST_LIST_STRING:
                 return buildNestedListLiteral(node, "String");
-                
+
             default:
                 throw new IllegalArgumentException("不支持的类型转换: " + javaType);
         }
@@ -302,11 +301,12 @@ public class JavaFormationUtils {
     private static String buildArrayLiteral(JsonNode arrayNode, String elementType, JavaType javaType) {
         StringBuilder sb = new StringBuilder();
         sb.append("new ").append(elementType).append("[] {");
-        
+
         for (int i = 0; i < arrayNode.size(); i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0)
+                sb.append(", ");
             JsonNode element = arrayNode.get(i);
-            
+
             switch (elementType) {
                 case "int":
                     sb.append(element.asInt());
@@ -326,7 +326,7 @@ public class JavaFormationUtils {
                     break;
             }
         }
-        
+
         sb.append("}");
         return sb.toString();
     }
@@ -337,16 +337,18 @@ public class JavaFormationUtils {
     private static String build2DArrayLiteral(JsonNode arrayNode, String elementType, JavaType javaType) {
         StringBuilder sb = new StringBuilder();
         sb.append("new ").append(elementType).append("[][] {");
-        
+
         for (int i = 0; i < arrayNode.size(); i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0)
+                sb.append(", ");
             JsonNode subArray = arrayNode.get(i);
-            
+
             sb.append("{");
             for (int j = 0; j < subArray.size(); j++) {
-                if (j > 0) sb.append(", ");
+                if (j > 0)
+                    sb.append(", ");
                 JsonNode element = subArray.get(j);
-                
+
                 switch (elementType) {
                     case "int":
                         sb.append(element.asInt());
@@ -365,7 +367,7 @@ public class JavaFormationUtils {
             }
             sb.append("}");
         }
-        
+
         sb.append("}");
         return sb.toString();
     }
@@ -376,11 +378,12 @@ public class JavaFormationUtils {
     private static String buildListLiteral(JsonNode arrayNode, String elementType) {
         StringBuilder sb = new StringBuilder();
         sb.append("Arrays.asList(");
-        
+
         for (int i = 0; i < arrayNode.size(); i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0)
+                sb.append(", ");
             JsonNode element = arrayNode.get(i);
-            
+
             switch (elementType) {
                 case "Integer":
                     sb.append(element.asInt());
@@ -394,7 +397,7 @@ public class JavaFormationUtils {
                     break;
             }
         }
-        
+
         sb.append(")");
         return sb.toString();
     }
@@ -405,12 +408,13 @@ public class JavaFormationUtils {
     private static String buildNestedListLiteral(JsonNode arrayNode, String elementType) {
         StringBuilder sb = new StringBuilder();
         sb.append("Arrays.asList(");
-        
+
         for (int i = 0; i < arrayNode.size(); i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0)
+                sb.append(", ");
             sb.append(buildListLiteral(arrayNode.get(i), elementType));
         }
-        
+
         sb.append(")");
         return sb.toString();
     }

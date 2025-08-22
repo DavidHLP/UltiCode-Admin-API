@@ -2,6 +2,7 @@ import request from '@/utils/request'
 import type { SolutionCardVo, SolutionVo } from '@/types/solution'
 import type { SolutionEditVo } from '@/types/solution'
 import type { Page } from '@/types/commons'
+import { useAuthStore } from '@/stores/auth'
 
 export interface SolutionQueryParams {
   problemId: number
@@ -45,6 +46,7 @@ export const getSolutionById = (solutionId: number): Promise<SolutionVo> => {
  * @returns 新增的题解ID
  */
 export const addSolution = (solution: SolutionEditVo): Promise<void> => {
+  solution.userId = useAuthStore().user?.userId
   return request.post('/problems/api/view/solution', solution)
 }
 

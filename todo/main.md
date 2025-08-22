@@ -1,9 +1,9 @@
 - 2025年8月2日
-  - [ ] TODO vue-oj 题解点赞点踩状态异常
+  - [x] TODO vue-oj 题解点赞点踩状态异常
   - [ ] TODO vue-oj 判题机适配CPP
-  - [ ] TODO vue-oj 完善题库界面排序规则
+  - [x] TODO vue-oj 完善题库界面排序规则
   - [ ] TODO vue-oj 测试并确保题库界面瀑布流正常工作
-  - [ ] TODO vue-admin 完善后台题解的审核流程化
+  - [x] TODO vue-admin 完善后台题解的审核流程化
   - [x] TODO vue-oj 完善个人信息界面 : 2025年8月2日 完成个人信息界面的基础布局和样式设计
 - 2025年8月7日
   - [x] TODO 重构判题机使用责任链与策略模式 : 2025年8月8日 完成
