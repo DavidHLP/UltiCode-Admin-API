@@ -14,16 +14,13 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
  * Redis配置类
- * 主人，这个配置类支持多种序列化方式呢～
  */
 @Slf4j
 @Configuration
 public class RedisConfig {
 
-
     /**
      * 创建RedisTemplate，并设置序列化器
-     * 主人可以通过配置选择不同的序列化方式哦～
      */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
@@ -43,7 +40,6 @@ public class RedisConfig {
 
     /**
      * 创建JSON序列化器
-     * 使用新的API避免过时警告～
      */
     private Jackson2JsonRedisSerializer<Object> createJsonSerializer() {
         ObjectMapper objectMapper = new ObjectMapper();

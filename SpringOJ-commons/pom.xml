@@ -14,8 +14,11 @@
         <module>basic-commons</module>
         <module>redis-commons</module>
         <module>security-commons</module>
-        <module>webflux-commons</module>
+        <module>openfeign-commons</module>
         <module>judge-commons</module>
+        <module>servlet-commons</module>
+        <module>webflux-commons</module>
+        <module>mybatis-commons</module>
     </modules>
 
     <artifactId>SpringOJ-commons</artifactId>

@@ -7,11 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-/**
- * Feign请求拦截器
- * 自动将当前请求的权限信息传递到下游服务
- * 不依赖security-commons，保持模块独立性
- */
+/** Feign请求拦截器 自动将当前请求的权限信息传递到下游服务 不依赖security-commons，保持模块独立性 */
 @Slf4j
 public class FeignAuthInterceptor implements RequestInterceptor {
 
@@ -24,7 +20,8 @@ public class FeignAuthInterceptor implements RequestInterceptor {
     @Override
     public void apply(RequestTemplate template) {
         // 首先尝试从HTTP请求上下文获取权限信息
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attributes != null) {
             HttpServletRequest request = attributes.getRequest();
             String userId = request.getHeader(USER_ID_HEADER);

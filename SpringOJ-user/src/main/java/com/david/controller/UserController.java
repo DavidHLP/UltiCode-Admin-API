@@ -1,7 +1,7 @@
 package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.entity.user.User;
+import com.david.entity.user.AuthUser;
 import com.david.service.IUserService;
 import com.david.utils.ResponseResult;
 
@@ -26,12 +26,12 @@ public class UserController {
      * @return 分页数据
      */
     @GetMapping("/page")
-    public ResponseResult<Page<User>> pageUsers(
+    public ResponseResult<Page<AuthUser>> pageUsers(
             @RequestParam int page,
             @RequestParam int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long roleId) {
-        Page<User> result = userService.pageUsers(page, size, keyword, roleId);
+        Page<AuthUser> result = userService.pageUsers(page, size, keyword, roleId);
         return ResponseResult.success("分页获取用户成功", result);
     }
 
@@ -41,7 +41,7 @@ public class UserController {
      * @return 统一响应：成功或失败信息
      */
     @PostMapping
-    public ResponseResult<Void> createUser(@RequestBody User user) {
+    public ResponseResult<Void> createUser(@RequestBody AuthUser user) {
         if (userService.save(user)) {
             return ResponseResult.success("用户创建成功");
         }
@@ -55,7 +55,7 @@ public class UserController {
      * @return 统一响应：成功或失败信息
      */
     @PutMapping("/{id}")
-    public ResponseResult<Void> updateUser(@PathVariable Long id, @RequestBody User user) {
+    public ResponseResult<Void> updateUser(@PathVariable Long id, @RequestBody AuthUser user) {
         user.setUserId(id);
         if (userService.updateById(user)) {
             return ResponseResult.success("用户信息更新成功");
@@ -77,8 +77,8 @@ public class UserController {
     }
 
 	@GetMapping("/ids")
-	public ResponseResult<List<User>> getUserByIds(@RequestParam List<Long> ids) {
-		List<User> users = userService.listByIds(ids);
+	public ResponseResult<List<AuthUser>> getUserByIds(@RequestParam List<Long> ids) {
+		List<AuthUser> users = userService.listByIds(ids);
 		if (users.isEmpty()) {
 			return ResponseResult.fail(404, "用户不存在");
 		}
@@ -86,8 +86,8 @@ public class UserController {
 	}
 
 	@GetMapping("/id")
-	public ResponseResult<User> getUserById(@RequestParam Long id) {
-		User user = userService.getById(id);
+	public ResponseResult<AuthUser> getUserById(@RequestParam Long id) {
+        AuthUser user = userService.getById(id);
 		if (user == null){
 			return ResponseResult.fail(404, "用户不存在");
 		}

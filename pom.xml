@@ -44,6 +44,8 @@
         <zipkin-reporter-brave.version>2.17.0</zipkin-reporter-brave.version>
         <redisson.version>3.17.6</redisson.version>
         <jwt.version>0.11.5</jwt.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencyManagement>

@@ -3,7 +3,7 @@ package com.david.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.calendar.enums.TargetType;
-import com.david.entity.user.User;
+import com.david.entity.user.AuthUser;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionMapper;
 import com.david.service.ILikeDislikeRecordService;
@@ -79,7 +79,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             // 匿名或无效用户ID：不记录用户浏览记录，仅增加浏览量
             solutionMapper.updateViews(solutionId);
         }
-        User user = userServiceFeignClient.getUserById(solution.getUserId()).getData();
+        AuthUser user = userServiceFeignClient.getUserById(solution.getUserId()).getData();
         return SolutionDetailVo.builder()
                 .id(solution.getId())
                 .problemId(solution.getProblemId())
@@ -141,9 +141,9 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             return pages;
         }
         List<Long> userIds = records.stream().map(SolutionManagementCardVo::getUserId).distinct().toList();
-        Map<Long, User> userMap = loadUsersMapByIds(userIds);
+        Map<Long, AuthUser> userMap = loadUsersMapByIds(userIds);
         records.forEach(vo -> {
-            User u = userMap.getOrDefault(vo.getUserId(), new User());
+            AuthUser u = userMap.getOrDefault(vo.getUserId(), new AuthUser());
             vo.setAuthorUsername(u.getUsername());
             vo.setAuthorAvatar(u.getAvatar());
         });
@@ -164,7 +164,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         List<Long> userIds = records.stream().map(SolutionCardVo::getUserId).distinct().toList();
 
         // 4. 批量查询用户信息并转换为Map（增加空安全处理）
-        Map<Long, User> userMap = loadUsersMapByIds(userIds);
+        Map<Long, AuthUser> userMap = loadUsersMapByIds(userIds);
 
         // 5. 批量查询点赞点踩统计并转换为Map
         Map<Long, UpDownCounts> upDownCountsMap =
@@ -181,7 +181,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         records.forEach(
                 solutionCardVo -> {
                     // 处理用户信息（空安全）
-                    User user = userMap.getOrDefault(solutionCardVo.getUserId(), new User());
+                    AuthUser user = userMap.getOrDefault(solutionCardVo.getUserId(), new AuthUser());
                     solutionCardVo.setAuthorUsername(user.getUsername());
                     solutionCardVo.setAuthorAvatar(user.getAvatar());
 
@@ -200,7 +200,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         return pageSolutions;
     }
 
-    private Map<Long, User> loadUsersMapByIds(List<Long> userIds) {
+    private Map<Long, AuthUser> loadUsersMapByIds(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -210,7 +210,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                User::getUserId,
+                                AuthUser::getUserId,
                                 Function.identity(),
                                 (existing, replacement) -> existing));
     }

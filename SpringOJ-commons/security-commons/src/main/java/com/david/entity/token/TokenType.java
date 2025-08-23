@@ -8,8 +8,7 @@ public enum TokenType implements IEnum<String> {
     ACCESS("ACCESS"),
     REFRESH("REFRESH"),
     PASS("PASS");
-    @EnumValue
-    private final String value;
+    @EnumValue private final String value;
 
     TokenType(String value) {
         this.value = value;

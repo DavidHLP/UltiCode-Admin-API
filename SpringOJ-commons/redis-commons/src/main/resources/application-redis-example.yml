@@ -1,0 +1,18 @@
+spring:
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: ""
+      database: 0
+      timeout: 3000
+
+redis:
+  cache:
+    string:
+      ttl-seconds: 300   # RedisCacheStringService 默认回填 TTL（秒）
+    hash:
+      ttl-seconds: 300   # RedisCacheHashService 默认回填 TTL（秒）
+    lock:
+      wait-seconds: 10   # AOP/Service 获取分布式锁默认等待时间（秒）
+      lease-seconds: 30  # 分布式锁租约时间（秒），防止死锁

@@ -8,7 +8,6 @@
         <artifactId>SpringOJ</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-
     <artifactId>SpringOJ-authentication</artifactId>
 
     <properties>

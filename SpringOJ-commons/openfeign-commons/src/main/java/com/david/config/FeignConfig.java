@@ -1,8 +1,9 @@
 package com.david.config;
 
+import feign.RequestInterceptor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import feign.RequestInterceptor;
 
 /**
  * Feign客户端配置

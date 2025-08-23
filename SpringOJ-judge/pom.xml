@@ -40,7 +40,7 @@
         </dependency>
         <dependency>
             <groupId>com.david</groupId>
-            <artifactId>webflux-commons</artifactId>
+            <artifactId>openfeign-commons</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <!-- Druid 数据库连接池 -->

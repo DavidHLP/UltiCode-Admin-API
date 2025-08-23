@@ -4,7 +4,6 @@
  Source Server         : 本地数据库
  Source Server Type    : MySQL
  Source Server Version : 80036 (8.0.36)
- Source Host           : 127.0.0.1:3306
  Source Schema         : spring_oj
 
  Target Server Type    : MySQL

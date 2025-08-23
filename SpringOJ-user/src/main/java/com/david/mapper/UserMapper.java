@@ -7,14 +7,14 @@ import org.apache.ibatis.annotations.Param;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.entity.user.User;
+import com.david.entity.user.AuthUser;
 
 /**
  * @author david
  * @since 2025-07-20
  */
 @Mapper
-public interface UserMapper extends BaseMapper<User> {
+public interface UserMapper extends BaseMapper<AuthUser> {
 
     /**
      * 分页查询用户（按关键字匹配用户名或邮箱）
@@ -23,5 +23,5 @@ public interface UserMapper extends BaseMapper<User> {
      * @param roleId 
      * @return 当前页的用户列表
      */
-    List<User> selectUserPage(Page<User> page, @Param("keyword") String keyword, @Param("roleId") Long roleId);
+    List<AuthUser> selectUserPage(Page<AuthUser> page, @Param("keyword") String keyword, @Param("roleId") Long roleId);
 }

@@ -1,7 +1,7 @@
 package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.entity.user.User;
+import com.david.entity.user.AuthUser;
 import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionCommentMapper;
@@ -49,7 +49,7 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
 			return new ArrayList<>();
 		}
 
-		ResponseResult<List<User>> userResp = userServiceFeignClient.getUserByIds(new ArrayList<>(userIdsToFetch));
+		ResponseResult<List<AuthUser>> userResp = userServiceFeignClient.getUserByIds(new ArrayList<>(userIdsToFetch));
 		if (userResp == null) {
 			throw new BizException(ResponseCode.RC500.getCode(), "用户服务返回为空");
 		}
@@ -58,21 +58,21 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
 			String msg = userResp.getMessage() == null ? "用户服务调用失败" : userResp.getMessage();
 			throw new BizException(code, "查询用户信息失败：" + msg);
 		}
-		List<User> userList = userResp.getData();
+		List<AuthUser> userList = userResp.getData();
 		if (userList == null) {
 			throw new BizException(ResponseCode.RC500.getCode(), "用户服务返回数据为空");
 		}
 
-		Map<Long, User> users = userList.stream()
-				.collect(Collectors.toMap(User::getUserId, Function.identity()));
+		Map<Long, AuthUser> users = userList.stream()
+				.collect(Collectors.toMap(AuthUser::getUserId, Function.identity()));
 
 		Map<Long, SolutionCommentVo> commentVoMap = allComments.stream()
 				.map(
 						comment -> {
-							User author = users.get(comment.getUserId());
+                            AuthUser author = users.get(comment.getUserId());
 							String replyToUsername = null;
 							if (comment.getReplyToUserId() != null) {
-								User replyToUser = users.get(comment.getReplyToUserId());
+                                AuthUser replyToUser = users.get(comment.getReplyToUserId());
 								if (replyToUser != null) {
 									replyToUsername = replyToUser.getUsername();
 								}

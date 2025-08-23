@@ -1,6 +1,6 @@
 package com.david.interfaces;
 
-import com.david.auth.AuthUserCommon;
+import com.david.auth.AuthUserInfo;
 import com.david.utils.ResponseResult;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,5 +20,5 @@ public interface AuthFeignClient {
      * @return 用户信息
      */
     @GetMapping("/validate/{token}")
-    ResponseResult<AuthUserCommon> loadUserByUsername(@PathVariable("token") String token);
+    ResponseResult<AuthUserInfo> loadUserByUsername(@PathVariable("token") String token);
 }

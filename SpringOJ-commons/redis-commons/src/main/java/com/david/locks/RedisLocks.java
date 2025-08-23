@@ -3,8 +3,7 @@ package com.david.locks;
 public enum RedisLocks {
     LOGIN("auth:login:lock:"),
     LOGOUT("auth:logout:lock:"),
-    REGISTER("auth:register:lock:"),
-    VALIDATETOKEN("auth:validateToken:lock:"),;
+    REGISTER("auth:register:lock:");
 
     private final String lockKey;
 

@@ -1,10 +1,13 @@
 package com.david.utils.enums;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 
 /**
  * 响应码枚举，遵循 Spring Boot 3.0+ 的 sealed 接口设计规范
  */
+@Getter
 public enum ResponseCode {
     /**操作失败**/
     RC999(999,"操作XXX失败"),
@@ -47,15 +50,7 @@ public enum ResponseCode {
         this.message = message;
     }
 
-    public Integer getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-	public static ResponseCode valueOf(Integer code) {
+    public static ResponseCode valueOf(Integer code) {
         return Arrays.stream(ResponseCode.values()).filter(c -> c.getCode().equals(code)).findAny().orElseGet(() -> null);
     }
 }

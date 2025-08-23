@@ -1,6 +1,8 @@
 package com.david.utils;
 
 import com.david.utils.enums.ResponseCode;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -8,6 +10,8 @@ import java.time.format.DateTimeFormatter;
 /**
  * 响应结果封装，遵循统一响应格式规范
  */
+@Setter
+@Getter
 public class ResponseResult<T> {
     private Integer code;
     private String message;
@@ -22,15 +26,6 @@ public class ResponseResult<T> {
         this.data = data;
         this.timestamp = timestamp;
     }
-
-    public Integer getCode() { return code; }
-    public void setCode(Integer code) { this.code = code; }
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    public T getData() { return data; }
-    public void setData(T data) { this.data = data; }
-    public String getTimestamp() { return timestamp; }
-    public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
 
     public static ResponseResult<Void> success() {
         return new ResponseResult<>(ResponseCode.RC200.getCode(), ResponseCode.RC200.getMessage(), null, getCurrentTimestamp());
