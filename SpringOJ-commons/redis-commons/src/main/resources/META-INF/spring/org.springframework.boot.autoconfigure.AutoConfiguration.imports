@@ -1,1 +1,1 @@
-com.david.config.RedisUtilsAutoConfiguration
+com.david.redis.commons.config.RedisCommonsAutoConfiguration

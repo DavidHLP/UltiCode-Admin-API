@@ -105,12 +105,6 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Redis 数据库连接 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-
         <!-- MySQL 数据库驱动 -->
         <dependency>
             <groupId>mysql</groupId>
