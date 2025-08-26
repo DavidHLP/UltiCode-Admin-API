@@ -27,7 +27,8 @@ public class SubmissionManagementController {
     }
 
     @PostMapping("/callbackId")
-    public ResponseResult<Long> createSubmissionThenCallback(@RequestBody @Valid Submission submission) {
+    public ResponseResult<Long> createSubmissionThenCallback(
+            @RequestBody @Valid Submission submission) {
         if (!submissionService.save(submission)) {
             throw BizException.of(401, "提交记录创建失败");
         }
@@ -35,7 +36,11 @@ public class SubmissionManagementController {
     }
 
     @PutMapping("/callbackId")
-    public ResponseResult<Long> updateSubmissionThenCallback(@RequestBody @Valid Submission submission) {
+    public ResponseResult<Long> updateSubmissionThenCallback(
+            @RequestBody @Valid Submission submission) {
+        Submission oldSubmission = submissionService.getById(submission.getId());
+        submission.setUserId(oldSubmission.getUserId());
+        submission.setProblemId(oldSubmission.getProblemId());
         if (!submissionService.updateById(submission)) throw BizException.of(401, "提交记录更新失败");
         return ResponseResult.success("提交记录更新成功", submission.getId());
     }

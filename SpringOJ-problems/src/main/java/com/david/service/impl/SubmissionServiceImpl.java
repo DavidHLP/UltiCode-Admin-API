@@ -4,11 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.calendar.vo.CalendarVo;
 import com.david.enums.JudgeStatus;
+import com.david.exception.BizException;
 import com.david.mapper.SubmissionMapper;
+import com.david.redis.commons.annotation.RedisCacheable;
+import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.ISubmissionService;
 import com.david.submission.Submission;
 import com.david.submission.vo.SubmissionCardVo;
-import com.david.exception.BizException;
 import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Service
@@ -27,6 +30,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
     private final SubmissionMapper submissionMapper;
 
     @Override
+    @RedisCacheable(
+            key = "'solution:pageSubmissionCardVos:' + #problemId + ':' + #currentUserId",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Page.class)
     public Page<SubmissionCardVo> pageSubmissionCardVos(
             Page<SubmissionCardVo> p, Long problemId, Long currentUserId) {
         // 分页与参数校验
@@ -37,6 +45,11 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
     }
 
     @Override
+    @RedisCacheable(
+            key = "'solution:getSubmissionsStatusByProblemId:' + #problemId",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = List.class)
     public List<JudgeStatus> getSubmissionsStatusByProblemId(Long problemId) {
         validateRequiredId("题目ID", problemId);
         return this.lambdaQuery()
@@ -49,9 +62,53 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
     }
 
     @Override
+    @RedisCacheable(
+            key = "'solution:getSubmissionCalendar:' + #userId",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = List.class)
     public List<CalendarVo> getSubmissionCalendar(Long userId) {
         validateRequiredId("用户ID", userId);
         return submissionMapper.getSubmissionCalendar(userId);
+    }
+
+    @Override
+    @RedisCacheable(
+            key = "'solution:getById:' + #id",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Submission.class)
+    public Submission getById(Serializable id) {
+        return submissionMapper.selectById(id);
+    }
+
+    @Override
+    @RedisEvict(
+            keys = {
+                "'solution:getSubmissionCalendar:' + #entity.getUserId()",
+                "'solution:pageSubmissionCardVos:' + #entity.getProblemId() + ':' + #entity.getUserId()",
+                "'solution:getSubmissionsStatusByProblemId:' + #entity.getProblemId()"
+            },
+            keyPrefix = "springoj:cache:")
+    public boolean save(Submission entity) {
+        validateRequiredId("用户ID", entity.getUserId());
+        validateRequiredId("题目ID", entity.getProblemId());
+        return submissionMapper.insert(entity) > 0;
+    }
+
+    @Override
+    @RedisEvict(
+            keys = {
+                "'solution:getSubmissionCalendar:' + #entity.getUserId()",
+                "'solution:pageSubmissionCardVos:' + #entity.getProblemId() + ':' + #entity.getUserId()",
+                "'solution:getSubmissionsStatusByProblemId:' + #entity.getProblemId()",
+                "'solution:getById:' + #entity.getId()"
+            },
+            keyPrefix = "springoj:cache:")
+    public boolean updateById(Submission entity) {
+        validateRequiredId("用户ID", entity.getUserId());
+        validateRequiredId("题目ID", entity.getProblemId());
+        return submissionMapper.updateById(entity) > 0;
     }
 
     @Override
@@ -83,10 +140,12 @@ public class SubmissionServiceImpl extends ServiceImpl<SubmissionMapper, Submiss
             throw BizException.of(ResponseCode.RC400.getCode(), "分页对象不能为空");
         }
         if (page.getCurrent() < 1) {
-            throw BizException.of(ResponseCode.RC400.getCode(), "分页参数无效：current必须>=1，当前值：" + page.getCurrent());
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(), "分页参数无效：current必须>=1，当前值：" + page.getCurrent());
         }
         if (page.getSize() < 1) {
-            throw BizException.of(ResponseCode.RC400.getCode(), "分页参数无效：size必须>=1，当前值：" + page.getSize());
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(), "分页参数无效：size必须>=1，当前值：" + page.getSize());
         }
         if (page.getSize() > 100) {
             page.setSize(100);

@@ -22,7 +22,7 @@ import java.util.List;
 @Validated
 public class TestCaseServiceImpl {
     private final ITestCaseInputService testCaseInputService;
-    private final ITestCaseOutputService ITestCaseOutputService;
+    private final ITestCaseOutputService testCaseOutputService;
 
     @Transactional
     public Boolean save(TestCase testCase) {
@@ -37,7 +37,7 @@ public class TestCaseServiceImpl {
             testCase.getTestCaseOutput().setProblemId(testCase.getProblemId());
         }
 
-        if (!ITestCaseOutputService.save(testCase.getTestCaseOutput())) {
+        if (!testCaseOutputService.save(testCase.getTestCaseOutput())) {
             throw BizException.of(ResponseCode.RC500);
         }
         Long outputId = testCase.getTestCaseOutput().getId();
@@ -50,7 +50,12 @@ public class TestCaseServiceImpl {
 
     @Transactional
     public Boolean update(TestCase testCase) {
-        if (!ITestCaseOutputService.updateById(testCase.getTestCaseOutput()))
+        testCase.getTestCaseOutput()
+                .setProblemId(
+                        testCaseOutputService
+                                .getById(testCase.getTestCaseOutput().getId())
+                                .getProblemId());
+        if (!testCaseOutputService.updateById(testCase.getTestCaseOutput()))
             throw BizException.of(ResponseCode.RC500);
         if (!testCaseInputService.updateBatchById(testCase.getTestCaseInput()))
             throw BizException.of(ResponseCode.RC500);
@@ -59,14 +64,15 @@ public class TestCaseServiceImpl {
 
     @Transactional
     public Boolean delete(Long id) {
-        if (!ITestCaseOutputService.removeById(id)) throw BizException.of(ResponseCode.RC500);
+        if (!testCaseOutputService.removeById(id, testCaseOutputService.getById(id).getProblemId()))
+            throw BizException.of(ResponseCode.RC500);
         if (testCaseInputService.deleteByTestCaseOutputId(id))
             throw BizException.of(ResponseCode.RC500);
         return true;
     }
 
     public List<TestCase> getList(Long problemId) {
-        List<TestCaseOutput> testCaseInputs = ITestCaseOutputService.getByProblemId(problemId);
+        List<TestCaseOutput> testCaseInputs = testCaseOutputService.getByProblemId(problemId);
         List<TestCase> testCases = new ArrayList<>();
         for (TestCaseOutput testCaseOutput : testCaseInputs) {
             testCases.add(
@@ -84,7 +90,7 @@ public class TestCaseServiceImpl {
 
     public List<TestCaseVo> getTestCaseVoByProblemId(Long problemId) {
         List<TestCaseOutput> testCaseInputs =
-                ITestCaseOutputService.getByProblemId(problemId).stream()
+                testCaseOutputService.getByProblemId(problemId).stream()
                         .filter(TestCaseOutput::getIsSample)
                         .toList();
         List<TestCaseVo> testCaseVos = new ArrayList<>();

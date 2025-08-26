@@ -11,4 +11,5 @@ import jakarta.validation.constraints.NotNull;
 @Validated
 public interface ITestCaseOutputService extends IService<TestCaseOutput> {
     List<TestCaseOutput> getByProblemId(@NotNull @Min(1) Long problemId);
+    boolean removeById(Long id , Long problemId);
 }

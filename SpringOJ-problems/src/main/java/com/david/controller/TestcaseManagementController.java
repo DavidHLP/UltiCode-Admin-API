@@ -1,17 +1,18 @@
 package com.david.controller;
 
+import com.david.exception.BizException;
 import com.david.service.impl.TestCaseServiceImpl;
 import com.david.testcase.TestCase;
 import com.david.utils.ResponseResult;
-import com.david.exception.BizException;
-
-import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.web.bind.annotation.*;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,7 +25,8 @@ public class TestcaseManagementController {
 
     /** 根据题目ID获取所有测试用例 */
     @GetMapping("/{problemId}")
-    public ResponseResult<List<TestCase>> getTestCasesByProblemId(@PathVariable @NotNull @Min(1) Long problemId) {
+    public ResponseResult<List<TestCase>> getTestCasesByProblemId(
+            @PathVariable @NotNull @Min(1) Long problemId) {
         List<TestCase> testCases = testCaseService.getList(problemId);
         return ResponseResult.success("成功获取测试用例", testCases);
     }

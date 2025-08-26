@@ -8,6 +8,7 @@ import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionMapper;
 import com.david.redis.commons.annotation.RedisCacheable;
+import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.ILikeDislikeRecordService;
 import com.david.service.ISolutionCommentService;
 import com.david.service.ISolutionService;
@@ -27,8 +28,10 @@ import com.david.utils.enums.ResponseCode;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -59,9 +62,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             keyPrefix = "springoj:cache:",
             ttl = 1800,
             type = Page.class)
-    public SolutionDetailVo getSolutionDetailVoBy(
-            Long solutionId,
-            Long userId) {
+    public SolutionDetailVo getSolutionDetailVoBy(Long solutionId, Long userId) {
         // 基础参数校验
         validateRequiredId("题解ID", solutionId);
         validateOptionalId("用户ID", userId);
@@ -101,14 +102,13 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
 
     @Override
     @RedisCacheable(
-            key = "'solution:pageSolutionCardVos:' + #problemId + ':' + (#keyword != null ? #keyword : '')",
+            key =
+                    "'solution:pageSolutionCardVos:' + #problemId + ':' + (#keyword != null ? #keyword : '')",
             keyPrefix = "springoj:cache:",
             ttl = 1800,
             type = Page.class)
     public Page<SolutionCardVo> pageSolutionCardVos(
-            Page<SolutionCardVo> page,
-            Long problemId,
-            String keyword) {
+            Page<SolutionCardVo> page, Long problemId, String keyword) {
         // 分页与参数校验
         validateAndNormalizePage(page);
         validateRequiredId("题目ID", problemId);
@@ -126,8 +126,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             ttl = 1800,
             type = Page.class)
     public Page<SolutionCardVo> pageSolutionCardVosByUserId(
-            Page<SolutionCardVo> page,
-            Long userId) {
+            Page<SolutionCardVo> page, Long userId) {
         // 分页与参数校验
         validateAndNormalizePage(page);
         validateRequiredId("用户ID", userId);
@@ -138,7 +137,8 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
 
     @Override
     @RedisCacheable(
-            key = "'solution:pageSolutionManagementCardVo:' + (#problemId != null ? #problemId : '') + ':' + (#keyword != null ? #keyword : '') + ':' + (#userId != null ? #userId : '') + ':' + (#status != null ? #status : '')",
+            key =
+                    "'solution:pageSolutionManagementCardVo:' + (#problemId != null ? #problemId : '') + ':' + (#keyword != null ? #keyword : '') + ':' + (#userId != null ? #userId : '') + ':' + (#status != null ? #status : '')",
             keyPrefix = "springoj:cache:",
             ttl = 1800,
             type = Page.class)
@@ -154,19 +154,76 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         validateOptionalId("用户ID", userId);
         keyword = normalizeKeyword(keyword);
         Page<SolutionManagementCardVo> pages =
-                solutionMapper.pageSolutionManagementCardVos(page, problemId, keyword, userId, status);
+                solutionMapper.pageSolutionManagementCardVos(
+                        page, problemId, keyword, userId, status);
         List<SolutionManagementCardVo> records = pages.getRecords();
         if (records == null || records.isEmpty()) {
             return pages;
         }
-        List<Long> userIds = records.stream().map(SolutionManagementCardVo::getUserId).distinct().toList();
+        List<Long> userIds =
+                records.stream().map(SolutionManagementCardVo::getUserId).distinct().toList();
         Map<Long, AuthUser> userMap = loadUsersMapByIds(userIds);
-        records.forEach(vo -> {
-            AuthUser u = userMap.getOrDefault(vo.getUserId(), new AuthUser());
-            vo.setAuthorUsername(u.getUsername());
-            vo.setAuthorAvatar(u.getAvatar());
-        });
+        records.forEach(
+                vo -> {
+                    AuthUser u = userMap.getOrDefault(vo.getUserId(), new AuthUser());
+                    vo.setAuthorUsername(u.getUsername());
+                    vo.setAuthorAvatar(u.getAvatar());
+                });
         return pages;
+    }
+
+    @Override
+    @RedisCacheable(
+            key = "'solution:getById:' + #id",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Solution.class)
+    public Solution getById(Serializable id) {
+        return solutionMapper.selectById(id);
+    }
+
+    @Override
+    @Transactional
+    @RedisEvict(
+            keys = {
+                "'solution:getSolutionDetailVoBy:*'",
+                "'solution:pageSolutionCardVos:*'",
+                "'solution:pageSolutionCardVosByUserId:*'",
+                "'solution:pageSolutionManagementCardVo:*'",
+                "'solution:getById:' + #entity.getId()"
+            },
+            keyPrefix = "springoj:cache:")
+    public boolean updateById(Solution entity) {
+        return solutionMapper.updateById(entity) > 0;
+    }
+
+    @Override
+    @Transactional
+    @RedisEvict(
+            keys = {
+                "'solution:getSolutionDetailVoBy:*'",
+                "'solution:pageSolutionCardVos:*'",
+                "'solution:pageSolutionCardVosByUserId:*'",
+                "'solution:pageSolutionManagementCardVo:*'",
+            },
+            keyPrefix = "springoj:cache:")
+    public boolean save(Solution entity) {
+        return solutionMapper.insert(entity) > 0;
+    }
+
+    @Override
+    @Transactional
+    @RedisEvict(
+            keys = {
+                    "'solution:getSolutionDetailVoBy:*'",
+                    "'solution:pageSolutionCardVos:*'",
+                    "'solution:pageSolutionCardVosByUserId:*'",
+                    "'solution:pageSolutionManagementCardVo:*'",
+                    "'solution:getById:' + #entity.getId()"
+            },
+            keyPrefix = "springoj:cache:")
+    public boolean removeById(Solution entity) {
+        return solutionMapper.deleteById(entity) > 0;
     }
 
     private Page<SolutionCardVo> fillInMissingContent(Page<SolutionCardVo> pageSolutions) {
@@ -200,7 +257,8 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         records.forEach(
                 solutionCardVo -> {
                     // 处理用户信息（空安全）
-                    AuthUser user = userMap.getOrDefault(solutionCardVo.getUserId(), new AuthUser());
+                    AuthUser user =
+                            userMap.getOrDefault(solutionCardVo.getUserId(), new AuthUser());
                     solutionCardVo.setAuthorUsername(user.getUsername());
                     solutionCardVo.setAuthorAvatar(user.getAvatar());
 
@@ -233,20 +291,18 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                                 Function.identity(),
                                 (existing, replacement) -> existing));
     }
-    
+
     private void validateAndNormalizePage(Page<?> page) {
         if (page == null) {
             throw BizException.of(ResponseCode.RC400.getCode(), "分页对象不能为空");
         }
         if (page.getCurrent() < 1) {
             throw BizException.of(
-                    ResponseCode.RC400.getCode(),
-                    "分页参数无效：current必须>=1，当前值：" + page.getCurrent());
+                    ResponseCode.RC400.getCode(), "分页参数无效：current必须>=1，当前值：" + page.getCurrent());
         }
         if (page.getSize() < 1) {
             throw BizException.of(
-                    ResponseCode.RC400.getCode(),
-                    "分页参数无效：size必须>=1，当前值：" + page.getSize());
+                    ResponseCode.RC400.getCode(), "分页参数无效：size必须>=1，当前值：" + page.getSize());
         }
         // 防御性上限，避免大页造成负担
         if (page.getSize() > 100) {
@@ -281,7 +337,8 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             return null;
         }
         if (k.length() > 100) {
-            throw BizException.of(ResponseCode.RC400.getCode(), "关键词长度不能超过100字符，当前长度：" + k.length());
+            throw BizException.of(
+                    ResponseCode.RC400.getCode(), "关键词长度不能超过100字符，当前长度：" + k.length());
         }
         return k;
     }
