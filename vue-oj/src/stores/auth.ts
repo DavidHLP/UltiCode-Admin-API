@@ -209,7 +209,8 @@ export const useAuthStore = defineStore('auth', () => {
         setUser(userInfo)
       } catch (error) {
         console.error('获取用户信息失败:', error)
-        clearToken() // 如果获取失败，可能是无效的token，清除状态
+        // 不再自动清除token，让request拦截器处理认证错误
+        // 这样可以避免网络错误导致的误判
       }
     }
   }
@@ -219,6 +220,27 @@ export const useAuthStore = defineStore('auth', () => {
     if (!expireTime) return true
     const expireTimestamp = Number(expireTime)
     return isNaN(expireTimestamp) || Date.now() > expireTimestamp
+  }
+
+  // 检查token有效性（包括过期检查）
+  const isTokenValid = (): boolean => {
+    if (!token.value) return false
+    
+    const savedExpireTime = localStorage.getItem(STORAGE_KEYS.EXPIRE_TIME)
+    return !isTokenExpired(savedExpireTime)
+  }
+
+  // 主动检查并处理token过期
+  const checkTokenExpiration = (): boolean => {
+    if (!isTokenValid()) {
+      if (token.value) {
+        console.warn('Token已过期，自动清除认证状态')
+        clearToken()
+        ElMessage.warning('登录已过期，请重新登录')
+      }
+      return false
+    }
+    return true
   }
 
   // 初始化认证状态
@@ -388,9 +410,19 @@ export const useAuthStore = defineStore('auth', () => {
   if (typeof window !== 'undefined') {
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && token.value) {
-        fetchUserInfo().catch(console.error)
+        // 检查token是否过期
+        if (checkTokenExpiration()) {
+          fetchUserInfo().catch(console.error)
+        }
       }
     })
+
+    // 定期检查token过期状态（每5分钟检查一次）
+    setInterval(() => {
+      if (token.value) {
+        checkTokenExpiration()
+      }
+    }, 5 * 60 * 1000)
   }
 
   return {
@@ -425,6 +457,8 @@ export const useAuthStore = defineStore('auth', () => {
     setUser,
     fetchUserInfo,
     initAuth,
+    isTokenValid,
+    checkTokenExpiration,
 
     // 认证功能
     handleLogin,

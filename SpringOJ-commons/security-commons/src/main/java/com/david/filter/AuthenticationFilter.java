@@ -69,9 +69,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
             log.debug("设置用户认证上下文: {} (ID: {}), 权限: {}",
                     authUser.getUsername(), authUser.getUserId(), authUser.getAuthorities());
-        } else {
-            throw new RuntimeException("用户信息未找到");
-        }
+        } // 若用户信息不存在，保持匿名，由 Spring Security 的 EntryPoint/AccessDeniedHandler 统一处理
 
         try {
             filterChain.doFilter(request, response);

@@ -44,10 +44,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.OK)
     public ResponseResult<Void> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
-        String msg =
-                e.getBindingResult().getFieldErrors().stream()
-                        .map(this::formatFieldError)
-                        .collect(Collectors.joining("; "));
+        String msg = e.getBindingResult().getFieldErrors().stream()
+                .map(this::formatFieldError)
+                .collect(Collectors.joining("; "));
         return ResponseResult.fail(ResponseCode.RC400.getCode(), msg);
     }
 
@@ -55,10 +54,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.OK)
     public ResponseResult<Void> handleConstraintViolation(ConstraintViolationException e) {
-        String msg =
-                e.getConstraintViolations().stream()
-                        .map(this::formatViolation)
-                        .collect(Collectors.joining("; "));
+        String msg = e.getConstraintViolations().stream()
+                .map(this::formatViolation)
+                .collect(Collectors.joining("; "));
         return ResponseResult.fail(ResponseCode.RC400.getCode(), msg);
     }
 
@@ -66,10 +64,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     @ResponseStatus(HttpStatus.OK)
     public ResponseResult<Void> handleBindException(BindException e) {
-        String msg =
-                e.getBindingResult().getFieldErrors().stream()
-                        .map(this::formatFieldError)
-                        .collect(Collectors.joining("; "));
+        String msg = e.getBindingResult().getFieldErrors().stream()
+                .map(this::formatFieldError)
+                .collect(Collectors.joining("; "));
         return ResponseResult.fail(ResponseCode.RC400.getCode(), msg);
     }
 
@@ -78,8 +75,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.OK)
     public ResponseResult<Void> handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         String name = e.getName();
-        String required =
-                e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "未知类型";
+        String required = e.getRequiredType() != null ? e.getRequiredType().getSimpleName() : "未知类型";
         String value = e.getValue() != null ? e.getValue().toString() : "null";
         String msg = String.format("参数类型错误: %s 需要 %s, 实际值=%s", name, required, value);
         return ResponseResult.fail(ResponseCode.RC400.getCode(), msg);

@@ -1,8 +1,10 @@
-package com.david.redis.commons.core;
+package com.david.redis.commons.core.lock;
 
 import com.david.redis.commons.core.interfaces.RedisLock;
 import com.david.redis.commons.exception.DistributedLockException;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.redisson.api.RLock;
 
 import java.time.Duration;
@@ -10,7 +12,7 @@ import java.time.Duration;
 /**
  * Redis分布式锁实现类
  *
- * 基于Redisson的RLock实现，提供分布式锁的具体功能
+ * <p>基于Redisson的RLock实现，提供分布式锁的具体功能
  *
  * @author David
  */
@@ -24,7 +26,7 @@ public class RedisLockImpl implements RedisLock {
     /**
      * 构造函数
      *
-     * @param rLock   Redisson锁对象
+     * @param rLock Redisson锁对象
      * @param lockKey 锁键名
      */
     public RedisLockImpl(RLock rLock, String lockKey) {

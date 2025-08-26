@@ -10,6 +10,7 @@ import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController extends BaseController {
 
     private final AuthService authService;
+
     @PostMapping("/login")
     public ResponseResult<Token> login(@RequestBody LoginRequest loginRequest) {
         return ResponseResult.success("登录成功",authService.login(loginRequest.getUsername(), loginRequest.getPassword()));

@@ -1,4 +1,4 @@
-package com.david.redis.commons.core;
+package com.david.redis.commons.core.transaction;
 
 import com.david.redis.commons.annotation.RedisTransactional;
 import com.david.redis.commons.exception.RedisTransactionException;
@@ -15,10 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Redis事务管理器
  *
- * <p>
- * 负责管理Redis事务的生命周期，包括事务的创建、提交、回滚和嵌套事务处理。
- * 支持事务传播行为和超时控制。
- * </p>
+ * <p>负责管理Redis事务的生命周期，包括事务的创建、提交、回滚和嵌套事务处理。 支持事务传播行为和超时控制。
  *
  * @author David
  */
@@ -28,15 +25,12 @@ public class RedisTransactionManager {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    /**
-     * 线程本地事务上下文栈，支持嵌套事务
-     */
+    /** 线程本地事务上下文栈，支持嵌套事务 */
     private final ThreadLocal<List<TransactionContext>> transactionStack = new ThreadLocal<>();
 
-    /**
-     * 活跃事务映射，用于监控和管理
-     */
-    private final ConcurrentMap<String, TransactionContext> activeTransactions = new ConcurrentHashMap<>();
+    /** 活跃事务映射，用于监控和管理 */
+    private final ConcurrentMap<String, TransactionContext> activeTransactions =
+            new ConcurrentHashMap<>();
 
     public RedisTransactionManager(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -51,8 +45,11 @@ public class RedisTransactionManager {
     public TransactionContext beginTransaction(RedisTransactional annotation) {
         String transactionId = generateTransactionId();
 
-        log.debug("开始Redis事务: {}, 传播行为: {}, 只读: {}",
-                transactionId, annotation.propagation(), annotation.readOnly());
+        log.debug(
+                "开始Redis事务: {}, 传播行为: {}, 只读: {}",
+                transactionId,
+                annotation.propagation(),
+                annotation.readOnly());
 
         List<TransactionContext> stack = getOrCreateTransactionStack();
         TransactionContext parentContext = stack.isEmpty() ? null : stack.get(stack.size() - 1);
@@ -74,7 +71,8 @@ public class RedisTransactionManager {
                 // 清理上下文
                 stack.remove(context);
                 activeTransactions.remove(transactionId);
-                throw new RedisTransactionException("开始Redis事务失败", e, new ArrayList<>(), transactionId, false);
+                throw new RedisTransactionException(
+                        "开始Redis事务失败", e, new ArrayList<>(), transactionId, false);
             }
         }
 
@@ -93,13 +91,15 @@ public class RedisTransactionManager {
             log.debug("提交Redis事务: {}", transactionId);
 
             // 只有新事务且已开始的事务才需要执行EXEC
-            if (context.isNewTransaction() && context.isTransactionStarted() && !context.isReadOnly()) {
+            if (context.isNewTransaction()
+                    && context.isTransactionStarted()
+                    && !context.isReadOnly()) {
                 List<Object> results = redisTemplate.exec();
 
                 if (results == null) {
                     // EXEC返回null表示事务被DISCARD或WATCH的键被修改
-                    throw new RedisTransactionException("Redis事务执行失败，可能由于WATCH的键被修改",
-                            new ArrayList<>(), transactionId, false);
+                    throw new RedisTransactionException(
+                            "Redis事务执行失败，可能由于WATCH的键被修改", new ArrayList<>(), transactionId, false);
                 }
 
                 log.debug("Redis事务提交成功: {}, 执行了{}个操作", transactionId, results.size());
@@ -121,7 +121,8 @@ public class RedisTransactionManager {
             if (e instanceof RedisTransactionException) {
                 throw e;
             } else {
-                throw RedisTransactionException.commitFailed(transactionId, context.getOperations());
+                throw RedisTransactionException.commitFailed(
+                        transactionId, context.getOperations());
             }
         } finally {
             cleanupTransaction(context);
@@ -140,7 +141,9 @@ public class RedisTransactionManager {
             log.debug("回滚Redis事务: {}", transactionId);
 
             // 只有新事务且已开始的事务才需要执行DISCARD
-            if (context.isNewTransaction() && context.isTransactionStarted() && !context.isReadOnly()) {
+            if (context.isNewTransaction()
+                    && context.isTransactionStarted()
+                    && !context.isReadOnly()) {
                 redisTemplate.discard();
                 log.debug("Redis DISCARD命令已执行，事务ID: {}", transactionId);
             }
@@ -189,11 +192,9 @@ public class RedisTransactionManager {
         }
     }
 
-    /**
-     * 处理事务传播行为
-     */
-    private TransactionContext handlePropagation(RedisTransactional annotation, String transactionId,
-            TransactionContext parentContext) {
+    /** 处理事务传播行为 */
+    private TransactionContext handlePropagation(
+            RedisTransactional annotation, String transactionId, TransactionContext parentContext) {
         RedisTransactional.Propagation propagation = annotation.propagation();
 
         switch (propagation) {
@@ -245,46 +246,53 @@ public class RedisTransactionManager {
         }
     }
 
-    /**
-     * 创建新事务上下文
-     */
-    private TransactionContext createNewTransactionContext(String transactionId, RedisTransactional annotation) {
-        return new TransactionContext(transactionId, true, annotation.readOnly(),
-                annotation.timeout(), annotation.label());
+    /** 创建新事务上下文 */
+    private TransactionContext createNewTransactionContext(
+            String transactionId, RedisTransactional annotation) {
+        return new TransactionContext(
+                transactionId,
+                true,
+                annotation.readOnly(),
+                annotation.timeout(),
+                annotation.label());
     }
 
-    /**
-     * 创建参与现有事务的上下文
-     */
-    private TransactionContext createParticipatingContext(String transactionId, TransactionContext parentContext,
-            RedisTransactional annotation) {
-        return new TransactionContext(transactionId, false, annotation.readOnly(),
-                annotation.timeout(), annotation.label(), parentContext.getTransactionId());
+    /** 创建参与现有事务的上下文 */
+    private TransactionContext createParticipatingContext(
+            String transactionId, TransactionContext parentContext, RedisTransactional annotation) {
+        return new TransactionContext(
+                transactionId,
+                false,
+                annotation.readOnly(),
+                annotation.timeout(),
+                annotation.label(),
+                parentContext.getTransactionId());
     }
 
-    /**
-     * 创建非事务上下文
-     */
-    private TransactionContext createNonTransactionalContext(String transactionId, RedisTransactional annotation) {
+    /** 创建非事务上下文 */
+    private TransactionContext createNonTransactionalContext(
+            String transactionId, RedisTransactional annotation) {
         return new TransactionContext(transactionId, false, true, 0, annotation.label());
     }
 
-    /**
-     * 创建嵌套事务上下文
-     */
-    private TransactionContext createNestedTransactionContext(String transactionId, TransactionContext parentContext,
-            RedisTransactional annotation) {
+    /** 创建嵌套事务上下文 */
+    private TransactionContext createNestedTransactionContext(
+            String transactionId, TransactionContext parentContext, RedisTransactional annotation) {
         // Redis不直接支持嵌套事务，这里创建一个新的事务上下文
         // 但标记为嵌套，以便在异常处理时区别对待
-        TransactionContext context = new TransactionContext(transactionId, true, annotation.readOnly(),
-                annotation.timeout(), annotation.label(), parentContext.getTransactionId());
+        TransactionContext context =
+                new TransactionContext(
+                        transactionId,
+                        true,
+                        annotation.readOnly(),
+                        annotation.timeout(),
+                        annotation.label(),
+                        parentContext.getTransactionId());
         context.setNested(true);
         return context;
     }
 
-    /**
-     * 获取或创建事务栈
-     */
+    /** 获取或创建事务栈 */
     private List<TransactionContext> getOrCreateTransactionStack() {
         List<TransactionContext> stack = transactionStack.get();
         if (stack == null) {
@@ -294,9 +302,7 @@ public class RedisTransactionManager {
         return stack;
     }
 
-    /**
-     * 清理事务上下文
-     */
+    /** 清理事务上下文 */
     private void cleanupTransaction(TransactionContext context) {
         String transactionId = context.getTransactionId();
 
@@ -315,23 +321,17 @@ public class RedisTransactionManager {
         log.debug("事务上下文已清理: {}", transactionId);
     }
 
-    /**
-     * 生成事务ID
-     */
+    /** 生成事务ID */
     private String generateTransactionId() {
         return "redis-tx-" + UUID.randomUUID().toString().substring(0, 8);
     }
 
-    /**
-     * 获取活跃事务数量（用于监控）
-     */
+    /** 获取活跃事务数量（用于监控） */
     public int getActiveTransactionCount() {
         return activeTransactions.size();
     }
 
-    /**
-     * 获取所有活跃事务ID（用于监控）
-     */
+    /** 获取所有活跃事务ID（用于监控） */
     public List<String> getActiveTransactionIds() {
         return new ArrayList<>(activeTransactions.keySet());
     }

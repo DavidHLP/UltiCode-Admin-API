@@ -1,4 +1,4 @@
-package com.david.redis.commons.core;
+package com.david.redis.commons.core.transaction;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,10 +11,7 @@ import java.util.List;
 /**
  * Redis事务上下文
  *
- * <p>
- * 保存事务执行过程中的状态信息，包括事务ID、操作记录、
- * 时间戳等，用于事务管理和监控。
- * </p>
+ * <p>保存事务执行过程中的状态信息，包括事务ID、操作记录、 时间戳等，用于事务管理和监控。
  *
  * @author David
  */
@@ -22,102 +19,83 @@ import java.util.List;
 @Setter
 public class TransactionContext {
 
-    /**
-     * 事务唯一标识
-     */
+    /** 事务唯一标识 */
     private final String transactionId;
 
-    /**
-     * 是否为新事务（相对于嵌套或参与现有事务）
-     */
+    /** 是否为新事务（相对于嵌套或参与现有事务） */
     private final boolean newTransaction;
 
-    /**
-     * 是否为只读事务
-     */
+    /** 是否为只读事务 */
     private final boolean readOnly;
 
-    /**
-     * 事务超时时间（毫秒）
-     */
+    /** 事务超时时间（毫秒） */
     private final long timeout;
 
-    /**
-     * 事务标签
-     */
+    /** 事务标签 */
     private final String label;
 
-    /**
-     * 父事务ID（用于嵌套事务）
-     */
+    /** 父事务ID（用于嵌套事务） */
     private final String parentTransactionId;
 
-    /**
-     * 事务创建时间
-     */
+    /** 事务创建时间 */
     private final LocalDateTime createdAt;
 
-    /**
-     * 事务中执行的操作列表
-     */
+    /** 事务中执行的操作列表 */
     private final List<String> operations;
 
-    /**
-     * 事务是否已开始（MULTI命令是否已执行）
-     */
+    /** 事务是否已开始（MULTI命令是否已执行） */
     private boolean transactionStarted;
 
-    /**
-     * 事务是否已提交
-     */
+    /** 事务是否已提交 */
     private boolean committed;
 
-    /**
-     * 事务是否已回滚
-     */
+    /** 事务是否已回滚 */
     private boolean rolledBack;
 
-    /**
-     * 是否为嵌套事务
-     */
+    /** 是否为嵌套事务 */
     private boolean nested;
 
-    /**
-     * 事务开始时间
-     */
+    /** 事务开始时间 */
     private LocalDateTime startedAt;
 
-    /**
-     * 事务结束时间
-     */
+    /** 事务结束时间 */
     private LocalDateTime completedAt;
 
     /**
      * 构造函数 - 创建新事务上下文
      *
-     * @param transactionId  事务ID
+     * @param transactionId 事务ID
      * @param newTransaction 是否为新事务
-     * @param readOnly       是否只读
-     * @param timeout        超时时间
-     * @param label          事务标签
+     * @param readOnly 是否只读
+     * @param timeout 超时时间
+     * @param label 事务标签
      */
-    public TransactionContext(String transactionId, boolean newTransaction, boolean readOnly,
-            long timeout, String label) {
+    public TransactionContext(
+            String transactionId,
+            boolean newTransaction,
+            boolean readOnly,
+            long timeout,
+            String label) {
         this(transactionId, newTransaction, readOnly, timeout, label, null);
     }
 
     /**
      * 构造函数 - 创建事务上下文（支持父事务）
      *
-     * @param transactionId       事务ID
-     * @param newTransaction      是否为新事务
-     * @param readOnly            是否只读
-     * @param timeout             超时时间
-     * @param label               事务标签
+     * @param transactionId 事务ID
+     * @param newTransaction 是否为新事务
+     * @param readOnly 是否只读
+     * @param timeout 超时时间
+     * @param label 事务标签
      * @param parentTransactionId 父事务ID
      */
-    public TransactionContext(String transactionId, boolean newTransaction, boolean readOnly,
-            long timeout, String label, String parentTransactionId) {
+    public TransactionContext(
+            String transactionId,
+            boolean newTransaction,
+            boolean readOnly,
+            long timeout,
+            String label,
+            String parentTransactionId) {
         this.transactionId = transactionId;
         this.newTransaction = newTransaction;
         this.readOnly = readOnly;
@@ -152,17 +130,13 @@ public class TransactionContext {
         return Collections.unmodifiableList(operations);
     }
 
-    /**
-     * 标记事务开始
-     */
+    /** 标记事务开始 */
     public void markTransactionStarted() {
         this.transactionStarted = true;
         this.startedAt = LocalDateTime.now();
     }
 
-    /**
-     * 标记事务完成
-     */
+    /** 标记事务完成 */
     public void markCompleted() {
         this.completedAt = LocalDateTime.now();
     }
@@ -258,10 +232,15 @@ public class TransactionContext {
     public String getSummary() {
         StringBuilder sb = new StringBuilder();
         sb.append("Transaction[")
-                .append("id=").append(transactionId)
-                .append(", status=").append(getStatus())
-                .append(", operations=").append(operations.size())
-                .append(", duration=").append(getExecutionTimeMillis()).append("ms");
+                .append("id=")
+                .append(transactionId)
+                .append(", status=")
+                .append(getStatus())
+                .append(", operations=")
+                .append(operations.size())
+                .append(", duration=")
+                .append(getExecutionTimeMillis())
+                .append("ms");
 
         if (readOnly) {
             sb.append(", readOnly");

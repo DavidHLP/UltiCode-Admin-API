@@ -233,7 +233,11 @@ public class CacheAspect {
                 : properties.getCache().getKeyPrefix();
 
         String pattern = keyPrefix + "*";
-        Set<String> keys = redisUtils.keys(pattern);
+        Set<String> keys = redisUtils.scanKeys(pattern);
+        if (keys.isEmpty()) {
+            // fallback to KEYS in case SCAN returns empty due to server config/count
+            keys = redisUtils.keys(pattern);
+        }
 
         if (!keys.isEmpty()) {
             Long deletedCount = redisUtils.delete(keys.toArray(new String[0]));
@@ -269,12 +273,61 @@ public class CacheAspect {
         }
 
         if (!keysToEvict.isEmpty()) {
-            Long deletedCount = redisUtils.delete(keysToEvict.toArray(new String[0]));
-            log.info("驱逐指定缓存键完成 - 键数量: {}, 删除数量: {}", keysToEvict.size(), deletedCount);
+            // 优化的缓存删除策略
+            List<String> exactKeys = new ArrayList<>();
+            List<String> patternKeys = new ArrayList<>();
+
+            // 分离精确键和模式键
+            for (String key : keysToEvict) {
+                if (key.contains("*") || key.contains("?")) {
+                    patternKeys.add(key);
+                } else {
+                    exactKeys.add(key);
+                }
+            }
+
+            int totalDeleted = 0;
+
+            // 批量删除精确键
+            if (!exactKeys.isEmpty()) {
+                Long exactDeleted = redisUtils.delete(exactKeys.toArray(new String[0]));
+                totalDeleted += (exactDeleted != null ? exactDeleted.intValue() : 0);
+                log.debug("删除精确键 {} 个，成功删除: {}", exactKeys.size(), exactDeleted);
+            }
+
+            // 处理模式键 - 使用 KEYS + DEL 组合
+            for (String pattern : patternKeys) {
+                Long patternDeleted = deleteByPattern(pattern);
+                totalDeleted += (patternDeleted != null ? patternDeleted.intValue() : 0);
+                log.debug("删除模式键 '{}' 匹配的缓存，成功删除: {}", pattern, patternDeleted);
+            }
+
+            log.info("缓存驱逐完成 - 原始键数量: {}, 总删除数量: {}", keysToEvict.size(), totalDeleted);
 
             if (log.isDebugEnabled()) {
-                log.debug("驱逐的缓存键: {}", keysToEvict);
+                log.debug("驱逐键详情 - 精确键: {}, 模式键: {}", exactKeys, patternKeys);
             }
+        }
+    }
+
+    /**
+     * 根据模式删除缓存键
+     * 使用优化的批量删除策略
+     */
+    private Long deleteByPattern(String pattern) {
+        try {
+            Set<String> matchedKeys = redisUtils.scanKeys(pattern);
+            if (matchedKeys.isEmpty()) {
+                // fallback to KEYS if needed
+                matchedKeys = redisUtils.keys(pattern);
+            }
+            if (!matchedKeys.isEmpty()) {
+                return redisUtils.delete(matchedKeys.toArray(new String[0]));
+            }
+            return 0L;
+        } catch (Exception e) {
+            log.error("根据模式删除缓存失败 - 模式: {}", pattern, e);
+            return 0L;
         }
     }
 }

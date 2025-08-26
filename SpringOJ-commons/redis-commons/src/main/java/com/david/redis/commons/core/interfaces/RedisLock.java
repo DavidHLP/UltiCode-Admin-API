@@ -5,7 +5,7 @@ import java.time.Duration;
 /**
  * Redis分布式锁接口
  *
- * 提供分布式锁的基本操作，支持自动资源管理（try-with-resources）
+ * <p>提供分布式锁的基本操作，支持自动资源管理（try-with-resources）
  *
  * @author David
  */
@@ -26,8 +26,7 @@ public interface RedisLock extends AutoCloseable {
     boolean isHeldByAnyThread();
 
     /**
-     * 释放锁
-     * 只有持有锁的线程才能释放锁
+     * 释放锁 只有持有锁的线程才能释放锁
      *
      * @throws IllegalStateException 如果当前线程没有持有锁
      */
@@ -55,10 +54,7 @@ public interface RedisLock extends AutoCloseable {
      */
     String getLockKey();
 
-    /**
-     * 自动关闭资源，释放锁
-     * 实现AutoCloseable接口，支持try-with-resources语法
-     */
+    /** 自动关闭资源，释放锁 实现AutoCloseable接口，支持try-with-resources语法 */
     @Override
     void close();
 }

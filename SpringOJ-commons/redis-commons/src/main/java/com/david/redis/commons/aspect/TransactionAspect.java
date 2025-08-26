@@ -1,8 +1,8 @@
 package com.david.redis.commons.aspect;
 
 import com.david.redis.commons.annotation.RedisTransactional;
-import com.david.redis.commons.core.RedisTransactionManager;
-import com.david.redis.commons.core.TransactionContext;
+import com.david.redis.commons.core.transaction.RedisTransactionManager;
+import com.david.redis.commons.core.transaction.TransactionContext;
 import com.david.redis.commons.exception.RedisTransactionException;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -13,7 +13,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
 
 /**
  * Redis事务切面
@@ -55,7 +54,6 @@ public class TransactionAspect {
         log.debug("开始处理Redis事务方法: {}", methodName);
 
         TransactionContext context = null;
-        boolean shouldManageTransaction = true;
 
         try {
             // 检查超时配置
@@ -81,6 +79,9 @@ public class TransactionAspect {
             transactionManager.commitTransaction(context);
             log.debug("Redis事务提交成功: {}", context.getTransactionId());
 
+            // 记录事务性能指标
+            recordTransactionMetrics(context, methodName);
+
             return result;
 
         } catch (Throwable throwable) {
@@ -97,6 +98,11 @@ public class TransactionAspect {
                     // 将回滚异常作为抑制异常添加到原始异常中
                     throwable.addSuppressed(rollbackException);
                 }
+            }
+
+            // 记录事务性能指标（即使失败也要记录）
+            if (context != null) {
+                recordTransactionMetrics(context, methodName);
             }
 
             // 重新抛出原始异常
@@ -169,19 +175,6 @@ public class TransactionAspect {
     }
 
     /**
-     * 创建事务异常信息
-     *
-     * @param methodName    方法名
-     * @param transactionId 事务ID
-     * @param cause         原始异常
-     * @return 格式化的异常消息
-     */
-    private String createTransactionErrorMessage(String methodName, String transactionId, Throwable cause) {
-        return String.format("Redis事务方法[%s]执行失败，事务ID: %s，原因: %s",
-                methodName, transactionId, cause.getMessage());
-    }
-
-    /**
      * 记录事务性能指标
      *
      * @param context    事务上下文
@@ -192,12 +185,21 @@ public class TransactionAspect {
             long executionTime = context.getExecutionTimeMillis();
             int operationCount = context.getOperations().size();
 
-            log.debug("Redis事务性能指标 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}",
-                    methodName, context.getTransactionId(), executionTime, operationCount);
+            log.debug("Redis事务性能指标 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}, 状态: {}",
+                    methodName, context.getTransactionId(), executionTime, operationCount, context.getStatus());
+
+            // 记录慢事务警告
+            if (executionTime > 1000) { // 超过1秒的事务
+                log.warn("检测到慢Redis事务 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}",
+                        methodName, context.getTransactionId(), executionTime, operationCount);
+            }
 
             // 这里可以集成监控系统，如Micrometer
-            // meterRegistry.timer("redis.transaction.duration", "method", methodName)
+            // meterRegistry.timer("redis.transaction.duration", "method", methodName,
+            // "status", context.getStatus())
             // .record(executionTime, TimeUnit.MILLISECONDS);
+            // meterRegistry.counter("redis.transaction.operations", "method", methodName)
+            // .increment(operationCount);
         }
     }
 }

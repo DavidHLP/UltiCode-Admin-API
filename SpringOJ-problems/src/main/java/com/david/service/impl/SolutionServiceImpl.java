@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.calendar.enums.TargetType;
 import com.david.entity.user.AuthUser;
+import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionMapper;
+import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.service.ILikeDislikeRecordService;
 import com.david.service.ISolutionCommentService;
 import com.david.service.ISolutionService;
@@ -20,13 +22,11 @@ import com.david.solution.vo.SolutionManagementCardVo;
 import com.david.usercontent.UserContentView;
 import com.david.utils.MarkdownUtils;
 import com.david.utils.ResponseResult;
-import com.david.exception.BizException;
 import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.Collections;
@@ -54,7 +54,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     private final ILikeDislikeRecordService likeDislikeRecordService;
 
     @Override
-    @Transactional
+    @RedisCacheable(
+            key = "'solution:getSolutionDetailVoBy:' + #solutionId + ':' + #userId",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Page.class)
     public SolutionDetailVo getSolutionDetailVoBy(
             Long solutionId,
             Long userId) {
@@ -96,6 +100,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
+    @RedisCacheable(
+            key = "'solution:pageSolutionCardVos:' + #problemId + ':' + (#keyword != null ? #keyword : '')",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Page.class)
     public Page<SolutionCardVo> pageSolutionCardVos(
             Page<SolutionCardVo> page,
             Long problemId,
@@ -111,6 +120,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
+    @RedisCacheable(
+            key = "'solution:pageSolutionCardVosByUserId:' + #userId)",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Page.class)
     public Page<SolutionCardVo> pageSolutionCardVosByUserId(
             Page<SolutionCardVo> page,
             Long userId) {
@@ -123,6 +137,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
+    @RedisCacheable(
+            key = "'solution:pageSolutionManagementCardVo:' + (#problemId != null ? #problemId : '') + ':' + (#keyword != null ? #keyword : '') + ':' + (#userId != null ? #userId : '') + ':' + (#status != null ? #status : '')",
+            keyPrefix = "springoj:cache:",
+            ttl = 1800,
+            type = Page.class)
     public Page<SolutionManagementCardVo> pageSolutionManagementCardVo(
             Page<SolutionManagementCardVo> page,
             Long problemId,
@@ -214,8 +233,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
                                 Function.identity(),
                                 (existing, replacement) -> existing));
     }
-
-    // --------------------------- 内部校验与标准化工具方法 ---------------------------
+    
     private void validateAndNormalizePage(Page<?> page) {
         if (page == null) {
             throw BizException.of(ResponseCode.RC400.getCode(), "分页对象不能为空");

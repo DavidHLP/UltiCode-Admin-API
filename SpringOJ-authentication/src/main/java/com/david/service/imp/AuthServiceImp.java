@@ -5,18 +5,22 @@ import com.david.entity.token.TokenType;
 import com.david.entity.user.AuthUser;
 import com.david.mapper.TokenMapper;
 import com.david.mapper.UserMapper;
+import com.david.redis.commons.annotation.RedisCacheable;
+import com.david.redis.commons.annotation.RedisEvict;
+import com.david.redis.commons.core.RedisUtils;
+import com.david.redis.commons.core.lock.DistributedLockManager;
 import com.david.service.AuthService;
 import com.david.service.EmailService;
 import com.david.utils.JwtService;
-import com.david.redis.commons.core.DistributedLockManager;
-import com.david.redis.commons.core.RedisUtils;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
+
+import com.david.exception.BizException;
+import com.david.utils.enums.ResponseCode;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,18 +52,19 @@ public class AuthServiceImp implements AuthService {
         AuthUser user = userMapper.loadUserByUsername(username);
         if (user == null) {
             log.error("用户不存在");
-            throw new RuntimeException("用户不存在");
+            throw BizException.of(ResponseCode.USERNAME_OR_PASSWORD_ERROR);
         }
         if (!passwordEncoder.matches(password, user.getPassword())) {
             log.error("密码错误");
-            throw new RuntimeException("密码错误");
+            throw BizException.of(ResponseCode.USERNAME_OR_PASSWORD_ERROR);
         }
         String accessToken = jwtService.generateToken(username);
-        Token token = Token.builder()
-                .userId(user.getUserId())
-                .token(accessToken)
-                .tokenType(TokenType.ACCESS)
-                .build();
+        Token token =
+                Token.builder()
+                        .userId(user.getUserId())
+                        .token(accessToken)
+                        .tokenType(TokenType.ACCESS)
+                        .build();
         // 使用分布式锁防止并发重复写入
         distributedLockManager.executeWithLock(
                 LOCK_KEY_LOGIN_PREFIX + username,
@@ -87,19 +92,20 @@ public class AuthServiceImp implements AuthService {
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
         String storedCode = redisUtils.getString(codeKey);
         if (storedCode == null || !storedCode.equals(code)) {
-            throw new RuntimeException("验证码错误或已过期");
+            throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "验证码错误或已过期");
         }
 
         if (userMapper.loadUserByUsername(username) != null) {
-            throw new RuntimeException("用户名已存在");
+            throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "用户名已存在");
         }
 
-        AuthUser user = AuthUser.builder()
-                .username(username)
-                .password(passwordEncoder.encode(password))
-                .email(email)
-                .status(1)
-                .build();
+        AuthUser user =
+                AuthUser.builder()
+                        .username(username)
+                        .password(passwordEncoder.encode(password))
+                        .email(email)
+                        .status(1)
+                        .build();
         // 使用分布式锁防止并发重复注册
         distributedLockManager.executeWithLock(
                 LOCK_KEY_REGISTER_PREFIX + username,
@@ -114,50 +120,61 @@ public class AuthServiceImp implements AuthService {
 
     @Override
     @Transactional
-    public AuthUser validateToken(String jwt) {
-        final String username = jwtService.extractUsername(jwt);
-        if (username == null || username.isEmpty()) {
-            log.error("JWT token无效或缺少用户名");
-            throw new UsernameNotFoundException("JWT token无效或缺少用户名");
-        }
+    @RedisCacheable(
+            key = "'user:token:' + #token",
+            ttl = 1800, // 30分钟缓存
+            type = AuthUser.class,
+            keyPrefix = "springoj:cache:")
+    public AuthUser validateToken(String token) {
+        try {
+            final String username = jwtService.extractUsername(token);
+            if (username == null || username.isEmpty()) {
+                log.error("JWT token无效或缺少用户名");
+                throw BizException.of(ResponseCode.INVALID_TOKEN);
+            }
 
-        AuthUser userDetails = userMapper.loadUserByUsername(username);
-        if (userDetails == null) {
-            log.error("用户不存在: {}", username);
-            throw new UsernameNotFoundException("未找到用户: " + username);
-        }
+            AuthUser userDetails = userMapper.loadUserByUsername(username);
+            if (userDetails == null) {
+                log.error("用户不存在: {}", username);
+                throw BizException.of(ResponseCode.RC401.getCode(), "未找到用户");
+            }
 
-        if (!jwtService.isTokenValid(jwt, userDetails)) {
-            log.error("Token验证失败: {}", username);
-            throw new UsernameNotFoundException("Token无效或已过期: " + username);
-        }
+            if (!jwtService.isTokenValid(token, userDetails)) {
+                log.error("Token验证失败: {}", username);
+                throw BizException.of(ResponseCode.INVALID_TOKEN);
+            }
 
-        Token token = tokenMapper.findValidToken(userDetails.getUserId(), jwt);
-        if (token == null) {
-            log.error("用户token无效或已被撤销: {}", username);
-            throw new UsernameNotFoundException("Token无效或已撤销: " + username);
-        }
+            Token res = tokenMapper.findValidToken(userDetails.getUserId(), token);
+            if (res == null) {
+                log.error("用户token无效或已被撤销: {}", username);
+                throw BizException.of(ResponseCode.INVALID_TOKEN);
+            }
 
-        return userDetails;
+            return userDetails;
+        } catch (ExpiredJwtException e) {
+            log.error("Token已过期", e);
+            throw BizException.of(ResponseCode.EXPIRED_TOKEN);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.error("Token无效", e);
+            throw BizException.of(ResponseCode.INVALID_TOKEN);
+        }
     }
 
     @Override
+    @RedisEvict(
+            keys = {"'user:info:' + #username", "'user:token:' + #token"},
+            keyPrefix = "springoj:cache:")
     public void logout(String username, String token) {
         tokenMapper.deleteByToken(token);
     }
 
     @Override
-    @RedisCacheable(key = "'user:info:' + #username", ttl = 1800, // 30分钟缓存
-            type = AuthUser.class, keyPrefix = "springoj:cache:")
+    @RedisCacheable(
+            key = "'user:info:' + #username",
+            ttl = 1800, // 30分钟缓存
+            type = AuthUser.class,
+            keyPrefix = "springoj:cache:")
     public AuthUser getUserInfo(String username) {
         return userMapper.loadUserByUsername(username);
-    }
-
-    /**
-     * 清除用户相关缓存
-     */
-    @RedisEvict(keys = { "'user:info:' + #username" }, keyPrefix = "springoj:cache:")
-    public void clearUserCache(String username) {
-        log.debug("清除用户缓存: {}", username);
     }
 }

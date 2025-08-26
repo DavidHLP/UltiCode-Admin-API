@@ -1,6 +1,8 @@
 package com.david.config;
 
 import com.david.filter.AuthenticationFilter;
+import com.david.utils.ResponseResult;
+import com.david.utils.enums.ResponseCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -69,20 +71,33 @@ public class SecurityConfiguration {
                                                     response.setStatus(401);
                                                     response.setContentType(
                                                             "application/json;charset=UTF-8");
-                                                    response.getWriter()
-                                                            .write(
-                                                                    "{\"error\":\"Unauthorized\",\"message\":\"请求头中缺少有效的用户信息\"}");
+                                                    ResponseResult<Void> body =
+                                                            ResponseResult.fail(
+                                                                    ResponseCode.RC401.getCode(),
+                                                                    "请求头中缺少有效的用户信息");
+                                                    response.getWriter().write(
+                                                            toJson(body));
                                                 })
                                         .accessDeniedHandler(
                                                 (request, response, accessDeniedException) -> {
                                                     response.setStatus(403);
                                                     response.setContentType(
                                                             "application/json;charset=UTF-8");
-                                                    response.getWriter()
-                                                            .write(
-                                                                    "{\"error\":\"Forbidden\",\"message\":\"权限不足\"}");
+                                                    ResponseResult<Void> body =
+                                                            ResponseResult.fail(
+                                                                    ResponseCode.ACCESS_DENIED);
+                                                    response.getWriter().write(
+                                                            toJson(body));
                                                 }));
 
         return http.build();
+    }
+
+    private String toJson(Object obj) {
+        try {
+            return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(obj);
+        } catch (Exception e) {
+            return "{\"code\":500,\"message\":\"系统异常\"}";
+        }
     }
 }

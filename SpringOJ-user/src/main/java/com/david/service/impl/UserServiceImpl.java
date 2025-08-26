@@ -1,22 +1,24 @@
 package com.david.service.impl;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.entity.user.AuthUser;
 import com.david.entity.user.UserRole;
+import com.david.mapper.RoleMapper;
+import com.david.mapper.UserMapper;
+import com.david.mapper.UserRoleMapper;
+import com.david.redis.commons.annotation.RedisCacheable;
+import com.david.redis.commons.annotation.RedisEvict;
+import com.david.service.IUserService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.entity.user.AuthUser;
-import com.david.mapper.RoleMapper;
-import com.david.mapper.UserMapper;
-import com.david.mapper.UserRoleMapper;
-import com.david.service.IUserService;
-
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @author david
@@ -42,6 +44,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(readOnly = true)
+    @RedisCacheable(
+            key =
+                    "'user:pageUsers:' + #page + ':' + #size + ':' + (#keyword != null ? #keyword : '') + ':' + (#roleId != null ? #roleId : '')",
+            ttl = 1800, // 30分钟缓存
+            type = Page.class,
+            keyPrefix = "springoj:cache:")
     public Page<AuthUser> pageUsers(int page, int size, String keyword, Long roleId) {
         keyword = keyword == null ? "" : keyword;
         Page<AuthUser> userPage = new Page<>(page, size);
@@ -59,6 +67,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @RedisEvict(keyPrefix = "springoj:cache:user:pageUsers:", allEntries = true)
     public boolean save(AuthUser user) {
         // 设置默认值
         if (user.getStatus() == null) {
@@ -95,6 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @RedisEvict(keyPrefix = "springoj:cache:user:pageUsers:", allEntries = true)
     public boolean updateById(AuthUser user) {
         // 如果密码有更新，则进行加密
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {

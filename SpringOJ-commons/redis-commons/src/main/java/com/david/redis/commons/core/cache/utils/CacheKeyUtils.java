@@ -1,4 +1,4 @@
-package com.david.redis.commons.core.cache;
+package com.david.redis.commons.core.cache.utils;
 
 import com.david.redis.commons.core.RedisUtils;
 import com.david.redis.commons.properties.RedisCommonsProperties;
@@ -50,7 +50,12 @@ public class CacheKeyUtils {
      */
     public Set<String> getKeysByPrefix(String keyPrefix) {
         String pattern = keyPrefix + "*";
-        return redisUtils.keys(pattern);
+        Set<String> keys = redisUtils.scanKeys(pattern);
+        if (keys.isEmpty()) {
+            // Fallback to KEYS in case SCAN yields nothing due to server-side sampling
+            keys = redisUtils.keys(pattern);
+        }
+        return keys;
     }
 
     /**

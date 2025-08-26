@@ -109,13 +109,53 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
-  if (to.meta.requiresAuth && !authStore.token) {
-    next({ name: 'login' })
-  } else {
-    next()
+  
+  // 如果路由需要认证
+  if (to.meta.requiresAuth) {
+    // 检查token是否存在且有效
+    if (!authStore.token || !authStore.isTokenValid()) {
+      // 如果token无效，清除认证状态并跳转到登录页
+      if (authStore.token) {
+        authStore.clearToken()
+      }
+      
+      next({
+        name: 'login',
+        query: {
+          redirect: to.fullPath // 保存原始路径，登录后可以跳转回来
+        }
+      })
+      return
+    }
+    
+    // 如果有token但没有用户信息，尝试获取用户信息
+    if (!authStore.user) {
+      try {
+        await authStore.fetchUserInfo()
+      } catch (error) {
+        // 获取用户信息失败，可能是token无效，跳转到登录页
+        console.error('路由守卫：获取用户信息失败', error)
+        next({
+          name: 'login',
+          query: {
+            redirect: to.fullPath
+          }
+        })
+        return
+      }
+    }
   }
+  
+  // 如果已登录用户访问登录页，重定向到首页
+  if (to.name === 'login' && authStore.token && authStore.isTokenValid()) {
+    const redirectPath = (to.query.redirect as string) || '/'
+    next(redirectPath)
+    return
+  }
+  
+  next()
 })
 
 export default router
