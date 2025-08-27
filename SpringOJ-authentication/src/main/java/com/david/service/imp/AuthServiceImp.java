@@ -9,7 +9,6 @@ import com.david.mapper.UserMapper;
 import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.redis.commons.annotation.RedisEvict;
 import com.david.redis.commons.core.RedisUtils;
-import com.david.redis.commons.core.lock.DistributedLockManager;
 import com.david.service.AuthService;
 import com.david.service.EmailService;
 import com.david.utils.JwtService;
@@ -37,13 +36,14 @@ public class AuthServiceImp implements AuthService {
     private static final String CACHE_KEY_VERIFICATION_PREFIX = "springoj:auth:verification:";
     private static final String LOCK_KEY_LOGIN_PREFIX = "springoj:lock:login:";
     private static final String LOCK_KEY_REGISTER_PREFIX = "springoj:lock:register:";
+    private static final String LOCK_KEY_DISTRIBUTED_LOCK_PREFIX =
+            "springoj:auth:verification:code:";
 
     public final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenMapper tokenMapper;
     private final EmailService emailService;
-    private final DistributedLockManager distributedLockManager;
     private final RedisUtils redisUtils;
 
     @Override
@@ -66,13 +66,15 @@ public class AuthServiceImp implements AuthService {
                         .tokenType(TokenType.ACCESS)
                         .build();
         // 使用分布式锁防止并发重复写入
-        distributedLockManager.executeWithLock(
-                LOCK_KEY_LOGIN_PREFIX + username,
-                Duration.ofSeconds(5),
-                Duration.ofSeconds(30),
-                () -> {
-                    tokenMapper.insert(token);
-                });
+        redisUtils
+                .locks()
+                .executeWithLock(
+                        LOCK_KEY_LOGIN_PREFIX + username,
+                        Duration.ofSeconds(5),
+                        Duration.ofSeconds(30),
+                        () -> {
+                            tokenMapper.insert(token);
+                        });
         return token;
     }
 
@@ -81,7 +83,13 @@ public class AuthServiceImp implements AuthService {
         String code = String.format("%06d", new Random().nextInt(999999));
         // 使用 Redis 缓存服务，设置 5 分钟过期
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
-        redisUtils.strings().set(codeKey, code, Duration.ofMinutes(5));
+        redisUtils
+                .locks()
+                .executeWithLock(
+                        LOCK_KEY_DISTRIBUTED_LOCK_PREFIX + email,
+                        Duration.ofSeconds(5),
+                        Duration.ofSeconds(30),
+                        () -> redisUtils.strings().set(codeKey, code, Duration.ofMinutes(5)));
         emailService.sendVerificationCode(email, code);
     }
 
@@ -107,13 +115,15 @@ public class AuthServiceImp implements AuthService {
                         .status(1)
                         .build();
         // 使用分布式锁防止并发重复注册
-        distributedLockManager.executeWithLock(
-                LOCK_KEY_REGISTER_PREFIX + username,
-                Duration.ofSeconds(5),
-                Duration.ofSeconds(30),
-                () -> {
-                    userMapper.insert(user);
-                });
+        redisUtils
+                .locks()
+                .executeWithLock(
+                        LOCK_KEY_REGISTER_PREFIX + username,
+                        Duration.ofSeconds(5),
+                        Duration.ofSeconds(30),
+                        () -> {
+                            userMapper.insert(user);
+                        });
         // 注册完成后删除验证码
         redisUtils.strings().delete(codeKey);
     }
