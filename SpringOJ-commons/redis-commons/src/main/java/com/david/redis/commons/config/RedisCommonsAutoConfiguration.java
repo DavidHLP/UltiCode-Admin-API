@@ -4,13 +4,20 @@ import com.david.redis.commons.aspect.CacheAspect;
 import com.david.redis.commons.aspect.TransactionAspect;
 import com.david.redis.commons.core.cache.CacheConditionEvaluator;
 import com.david.redis.commons.core.cache.CacheKeyGenerator;
-import com.david.redis.commons.core.lock.DistributedLockManager;
-import com.david.redis.commons.core.transaction.RedisTransactionManager;
 import com.david.redis.commons.core.RedisUtils;
+import com.david.redis.commons.core.lock.DistributedLockManager;
+import com.david.redis.commons.core.operations.RedisLockOperationsImpl;
+import com.david.redis.commons.core.operations.interfaces.RedisLockOperations;
+import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
+import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
+import com.david.redis.commons.core.operations.support.RedisResultProcessor;
+import com.david.redis.commons.core.transaction.RedisTransactionManager;
+import com.david.redis.commons.manager.BatchOperationManager;
+import com.david.redis.commons.manager.CacheWarmUpManager;
+import com.david.redis.commons.monitor.CacheMetricsCollector;
 import com.david.redis.commons.properties.RedisCommonsProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -43,6 +50,36 @@ public class RedisCommonsAutoConfiguration {
     }
 
     /**
+     * 配置Redis操作执行器
+     */
+    @Bean
+    @ConditionalOnMissingBean(RedisOperationExecutor.class)
+    public RedisOperationExecutor redisOperationExecutor(RedisLoggerHelper loggerHelper) {
+        log.info("配置Redis操作执行器");
+        return new RedisOperationExecutor(loggerHelper);
+    }
+
+    /**
+     * 配置Redis结果处理器
+     */
+    @Bean
+    @ConditionalOnMissingBean(RedisResultProcessor.class)
+    public RedisResultProcessor redisResultProcessor() {
+        log.info("配置Redis结果处理器");
+        return new RedisResultProcessor();
+    }
+
+    /**
+     * 配置Redis日志助手
+     */
+    @Bean
+    @ConditionalOnMissingBean(RedisLoggerHelper.class)
+    public RedisLoggerHelper redisLoggerHelper() {
+        log.info("配置Redis日志助手");
+        return new RedisLoggerHelper();
+    }
+
+    /**
      * 配置Redis工具类
      *
      * @param redisTemplate Redis模板
@@ -50,22 +87,15 @@ public class RedisCommonsAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(RedisUtils.class)
-    public RedisUtils redisUtils(RedisTemplate<String, Object> redisTemplate) {
-        log.info("配置Redis工具类");
-        return new RedisUtils(redisTemplate);
-    }
-
-    /**
-     * 配置RedisUtils的事务管理器依赖
-     * 使用@Autowired来避免循环依赖
-     */
-    @Autowired(required = false)
-    public void configureRedisUtilsTransactionManager(RedisUtils redisUtils,
+    public RedisUtils redisUtils(RedisTemplate<String, Object> redisTemplate,
+            RedisLockOperations lockOperations,
+            RedisOperationExecutor executor,
+            RedisResultProcessor resultProcessor,
+            RedisLoggerHelper loggerHelper,
             RedisTransactionManager transactionManager) {
-        if (transactionManager != null) {
-            redisUtils.setTransactionManager(transactionManager);
-            log.debug("为RedisUtils设置事务管理器");
-        }
+        log.info("配置Redis工具类");
+        return new RedisUtils(redisTemplate, lockOperations, executor, resultProcessor, loggerHelper,
+                transactionManager);
     }
 
     /**
@@ -90,12 +120,15 @@ public class RedisCommonsAutoConfiguration {
      * @return TransactionAspect实例
      */
     @Bean
-    @ConditionalOnBean(RedisTransactionManager.class)
+    @ConditionalOnBean({ RedisTransactionManager.class, RedisUtils.class, CacheKeyGenerator.class, CacheMetricsCollector.class })
     @ConditionalOnMissingBean(TransactionAspect.class)
     @ConditionalOnProperty(prefix = "spring.data.redis.commons.transaction", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public TransactionAspect transactionAspect(RedisTransactionManager transactionManager) {
+    public TransactionAspect transactionAspect(RedisTransactionManager transactionManager,
+            RedisUtils redisUtils,
+            CacheKeyGenerator cacheKeyGenerator,
+            CacheMetricsCollector metricsCollector) {
         log.info("配置Redis事务切面");
-        return new TransactionAspect(transactionManager);
+        return new TransactionAspect(transactionManager, redisUtils, cacheKeyGenerator, metricsCollector);
     }
 
     /**
@@ -113,6 +146,36 @@ public class RedisCommonsAutoConfiguration {
             RedisCommonsProperties redisCommonsProperties) {
         log.info("配置分布式锁管理器");
         return new DistributedLockManager(redissonClient, redisCommonsProperties);
+    }
+
+    /**
+     * 配置Redis锁操作
+     *
+     * @param redisTemplate          Redis模板
+     * @param transactionManager     事务管理器
+     * @param executor               操作执行器
+     * @param resultProcessor        结果处理器
+     * @param loggerHelper           日志助手
+     * @param distributedLockManager 分布式锁管理器
+     * @param redissonClient         Redisson客户端
+     * @param redisCommonsProperties Redis Commons配置属性
+     * @return RedisLockOperations实例
+     */
+    @Bean
+    @ConditionalOnBean({ RedisTemplate.class, DistributedLockManager.class, RedissonClient.class })
+    @ConditionalOnMissingBean(RedisLockOperations.class)
+    public RedisLockOperations redisLockOperations(
+            RedisTemplate<String, Object> redisTemplate,
+            RedisTransactionManager transactionManager,
+            RedisOperationExecutor executor,
+            RedisResultProcessor resultProcessor,
+            RedisLoggerHelper loggerHelper,
+            DistributedLockManager distributedLockManager,
+            RedissonClient redissonClient,
+            RedisCommonsProperties redisCommonsProperties) {
+        log.info("配置Redis锁操作");
+        return new RedisLockOperationsImpl(redisTemplate, transactionManager, executor,
+                resultProcessor, loggerHelper, distributedLockManager, redissonClient, redisCommonsProperties);
     }
 
     /**
@@ -140,6 +203,38 @@ public class RedisCommonsAutoConfiguration {
     }
 
     /**
+     * 配置批量操作管理器
+     */
+    @Bean
+    @ConditionalOnBean(RedisUtils.class)
+    @ConditionalOnMissingBean(BatchOperationManager.class)
+    public BatchOperationManager batchOperationManager(RedisUtils redisUtils) {
+        log.info("配置Redis批量操作管理器");
+        return new BatchOperationManager(redisUtils);
+    }
+
+    /**
+     * 配置缓存预热管理器
+     */
+    @Bean
+    @ConditionalOnBean({ RedisUtils.class, BatchOperationManager.class })
+    @ConditionalOnMissingBean(CacheWarmUpManager.class)
+    public CacheWarmUpManager cacheWarmUpManager(RedisUtils redisUtils, BatchOperationManager batchManager) {
+        log.info("配置Redis缓存预热管理器");
+        return new CacheWarmUpManager(redisUtils, batchManager);
+    }
+
+    /**
+     * 配置缓存性能监控收集器
+     */
+    @Bean
+    @ConditionalOnMissingBean(CacheMetricsCollector.class)
+    public CacheMetricsCollector cacheMetricsCollector() {
+        log.info("配置Redis缓存性能监控收集器");
+        return new CacheMetricsCollector();
+    }
+
+    /**
      * 配置缓存切面
      *
      * @param redisUtils         Redis工具类
@@ -149,13 +244,18 @@ public class RedisCommonsAutoConfiguration {
      * @return CacheAspect实例
      */
     @Bean
-    @ConditionalOnBean({ RedisUtils.class, CacheKeyGenerator.class, CacheConditionEvaluator.class })
+    @ConditionalOnBean({ RedisUtils.class, CacheKeyGenerator.class, CacheConditionEvaluator.class, 
+                        BatchOperationManager.class, CacheWarmUpManager.class, CacheMetricsCollector.class })
     @ConditionalOnMissingBean(CacheAspect.class)
     public CacheAspect cacheAspect(RedisUtils redisUtils,
             CacheKeyGenerator keyGenerator,
             CacheConditionEvaluator conditionEvaluator,
-            RedisCommonsProperties properties) {
+            RedisCommonsProperties properties,
+            BatchOperationManager batchManager,
+            CacheWarmUpManager warmUpManager,
+            CacheMetricsCollector metricsCollector) {
         log.info("配置Redis缓存切面");
-        return new CacheAspect(redisUtils, keyGenerator, conditionEvaluator, properties);
+        return new CacheAspect(redisUtils, keyGenerator, conditionEvaluator, properties, 
+                              batchManager, warmUpManager, metricsCollector);
     }
 }

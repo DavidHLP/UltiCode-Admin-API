@@ -50,10 +50,10 @@ public class CacheKeyUtils {
      */
     public Set<String> getKeysByPrefix(String keyPrefix) {
         String pattern = keyPrefix + "*";
-        Set<String> keys = redisUtils.scanKeys(pattern);
+        Set<String> keys = redisUtils.strings().scanKeys(pattern);
         if (keys.isEmpty()) {
             // Fallback to KEYS in case SCAN yields nothing due to server-side sampling
-            keys = redisUtils.keys(pattern);
+            keys = redisUtils.strings().keys(pattern);
         }
         return keys;
     }
@@ -70,7 +70,7 @@ public class CacheKeyUtils {
             return 0;
         }
 
-        return redisUtils.delete(keys.toArray(new String[0]));
+        return redisUtils.strings().delete(keys.toArray(new String[0]));
     }
 
     /**

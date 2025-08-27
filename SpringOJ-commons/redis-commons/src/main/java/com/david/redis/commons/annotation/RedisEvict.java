@@ -1,5 +1,7 @@
 package com.david.redis.commons.annotation;
 
+import com.david.redis.commons.enums.EvictTiming;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -7,9 +9,10 @@ import java.lang.annotation.Target;
 
 /**
  * Redis缓存驱逐注解，用于标记需要清除缓存的方法
- * 支持多键驱逐和SpEL表达式
+ * 支持多键驱逐、延迟删除、级联删除等高级功能
  *
  * @author David
+ * @since 1.0.0
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -47,4 +50,35 @@ public @interface RedisEvict {
      * 默认在方法执行后驱逐
      */
     boolean beforeInvocation() default false;
+
+    // ==================== 新增功能属性 ====================
+
+    /**
+     * 延迟删除时间（毫秒）
+     * 延迟指定时间后删除缓存，避免缓存雪崩
+     */
+    long delayMs() default 0;
+
+    /**
+     * 是否启用级联删除
+     * 删除缓存时同时清理相关联的缓存数据
+     */
+    boolean cascade() default false;
+
+    /**
+     * 级联删除模式数组
+     * 当cascade为true时，按照这些模式删除相关缓存
+     */
+    String[] cascadePatterns() default {};
+
+    /**
+     * 删除时机策略
+     */
+    EvictTiming timing() default EvictTiming.IMMEDIATE;
+
+    /**
+     * 是否软删除
+     * 软删除只标记删除而不物理删除，便于数据恢复
+     */
+    boolean softDelete() default false;
 }

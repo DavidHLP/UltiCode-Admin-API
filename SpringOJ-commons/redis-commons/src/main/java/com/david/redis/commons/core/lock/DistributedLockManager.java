@@ -1,6 +1,6 @@
 package com.david.redis.commons.core.lock;
 
-import com.david.redis.commons.core.interfaces.RedisLock;
+import com.david.redis.commons.core.lock.interfaces.RedisLock;
 import com.david.redis.commons.exception.DistributedLockException;
 import com.david.redis.commons.properties.RedisCommonsProperties;
 import lombok.RequiredArgsConstructor;

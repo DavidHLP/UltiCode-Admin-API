@@ -2,10 +2,8 @@ server:
   port: 9095
 
 spring:
-  profiles:
-    active: myself
   kafka:
-    bootstrap-servers: 120.0.0.1:9092
+    bootstrap-servers: 127.0.0.1:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -17,26 +15,25 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 120.0.0.1:8848 #配置Nacos地址
+        server-addr: 127.0.0.1:8848 #配置Nacos地址
         username: nacos
-        password: '#Alone117'
+        password: "#Alone117"
     sentinel:
       transport:
-        dashboard: 120.0.0.1:9090
+        dashboard: 127.0.0.1:9090
         port: 8719
       web-context-unify: false # 关闭上下文整合，启用链路模式
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://120.0.0.1:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
+    url: jdbc:mysql://127.0.0.1:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
     username: root
     password: Alone117
 
-
-# 判题机配置
+  # 判题机配置
 
   sandbox:
-    service-url: http://localhost:9096  # 沙箱服务地址
+    service-url: http://localhost:9096 # 沙箱服务地址
 
 # 日志配置
 logging:

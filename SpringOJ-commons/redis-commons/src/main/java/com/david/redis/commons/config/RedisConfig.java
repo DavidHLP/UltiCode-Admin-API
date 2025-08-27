@@ -8,6 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,12 +76,62 @@ public class RedisConfig {
         objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
-        // 注册 JSR310 模块以支持 Java 8 时间类型
-        objectMapper.registerModule(new JavaTimeModule());
+
+        // 创建自定义的 JavaTimeModule 来处理日期时间序列化问题
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+
+        // 配置日期时间格式
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+        // 自定义 LocalDateTime 反序列化器，支持多种格式
+        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(dateTimeFormatter) {
+            @Override
+            public LocalDateTime deserialize(com.fasterxml.jackson.core.JsonParser parser,
+                    com.fasterxml.jackson.databind.DeserializationContext context) throws java.io.IOException {
+                String dateString = parser.getValueAsString();
+                if (dateString == null || dateString.trim().isEmpty()) {
+                    return null;
+                }
+
+                try {
+                    // 尝试完整的日期时间格式
+                    if (dateString.contains(" ") || dateString.contains("T")) {
+                        if (dateString.contains("T")) {
+                            // ISO 格式
+                            return LocalDateTime.parse(dateString);
+                        } else {
+                            // 自定义格式 yyyy-MM-dd HH:mm:ss
+                            return LocalDateTime.parse(dateString, dateTimeFormatter);
+                        }
+                    } else {
+                        // 只有日期的情况，添加默认时间 00:00:00
+                        return java.time.LocalDate.parse(dateString, dateFormatter).atStartOfDay();
+                    }
+                } catch (Exception e) {
+                    // 最后尝试 ISO 格式
+                    try {
+                        return LocalDateTime.parse(dateString);
+                    } catch (Exception ex) {
+                        log.warn("无法解析日期时间字符串: {}", dateString, ex);
+                        return null;
+                    }
+                }
+            }
+        });
+
+        // 配置序列化器
+        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
+
+        // 注册自定义的 JavaTimeModule
+        objectMapper.registerModule(javaTimeModule);
+
         // 禁用将日期写为时间戳的功能
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         // 忽略未知属性，避免反序列化时出错
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        log.info("已配置自定义 LocalDateTime 反序列化器，支持多种日期格式");
         return new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
     }
 }

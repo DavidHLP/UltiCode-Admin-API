@@ -2,8 +2,6 @@ server:
   port: 9090
 
 spring:
-  profiles:
-    active: myself
   application:
     name: gateway # 应用名称
   jackson:
@@ -14,7 +12,7 @@ spring:
       discovery:
         server-addr: 127.0.0.1:8848 #配置Nacos地址
         username: nacos
-        password: '#Alone117'
+        password: "#Alone117"
     sentinel:
       transport:
         dashboard: 127.0.0.1:9090
@@ -47,7 +45,7 @@ spring:
         - id: problems-service-problems
           uri: lb://problems-service
           predicates:
-              - Path=/problems/api/**
+            - Path=/problems/api/**
           filters:
             - StripPrefix=0
         - id: problems-service-submissions
@@ -65,9 +63,9 @@ spring:
         - id: judge-service
           uri: lb://judge-service
           predicates:
-              - Path=/judge/api/**
+            - Path=/judge/api/**
           filters:
-              - StripPrefix=0
+            - StripPrefix=0
         - id: problems-service-solution
           uri: lb://problems-service
           predicates:

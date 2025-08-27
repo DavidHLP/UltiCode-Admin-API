@@ -1,158 +1,95 @@
 package com.david.redis.commons.core.operations;
 
+import com.david.redis.commons.core.operations.interfaces.RedisListOperations;
+import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
+import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
+import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
+import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
-import com.david.redis.commons.core.utils.RedisOperationUtils;
-import com.david.redis.commons.core.utils.RedisTypeConverter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Redis List类型操作实现类
  * 
- * <p>实现所有List类型的Redis操作方法
+ * <p>
+ * 实现所有List类型的Redis操作方法，继承抽象基类以复用通用逻辑
  * 
  * @author David
  */
-@Slf4j
-public class RedisListOperationsImpl implements RedisListOperations {
+public class RedisListOperationsImpl extends AbstractRedisOperations implements RedisListOperations {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final RedisTransactionManager transactionManager;
-
-    public RedisListOperationsImpl(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.transactionManager = null;
+    public RedisListOperationsImpl(RedisTemplate<String, Object> redisTemplate,
+            RedisTransactionManager transactionManager,
+            RedisOperationExecutor executor,
+            RedisResultProcessor resultProcessor,
+            RedisLoggerHelper loggerHelper) {
+        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper);
     }
 
-    public RedisListOperationsImpl(RedisTemplate<String, Object> redisTemplate, 
-                                 RedisTransactionManager transactionManager) {
-        this.redisTemplate = redisTemplate;
-        this.transactionManager = transactionManager;
+    @Override
+    protected String getOperationType() {
+        return "LIST";
     }
 
     @Override
     public Long lPush(String key, Object... values) {
-        return RedisOperationUtils.executeWithExceptionHandling("LPUSH", key, 
-            new Object[]{values}, () -> {
-            RedisOperationUtils.logDebug("Left pushing to list - key: {}, values count: {}", key, values.length);
-            Long result = redisTemplate.opsForList().leftPushAll(key, values);
-            RedisOperationUtils.logDebug("Left pushed {} elements to list {}, new size: {}", 
-                values.length, key, result);
-            return result;
+        return executeOperation("LPUSH", key, () -> {
+            return redisTemplate.opsForList().leftPushAll(key, values);
         });
     }
 
     @Override
     public Long rPush(String key, Object... values) {
-        return RedisOperationUtils.executeWithExceptionHandling("RPUSH", key, 
-            new Object[]{values}, () -> {
-            RedisOperationUtils.logDebug("Right pushing to list - key: {}, values count: {}", key, values.length);
-            Long result = redisTemplate.opsForList().rightPushAll(key, values);
-            RedisOperationUtils.logDebug("Right pushed {} elements to list {}, new size: {}", 
-                values.length, key, result);
-            return result;
+        return executeOperation("RPUSH", key, () -> {
+            return redisTemplate.opsForList().rightPushAll(key, values);
         });
     }
 
     @Override
     public <T> T lPop(String key, Class<T> clazz) {
-        return RedisOperationUtils.executeWithExceptionHandling("LPOP", key, () -> {
-            RedisOperationUtils.logDebug("Left popping from list - key: {}, expected type: {}", 
-                key, clazz.getSimpleName());
+        return executeOperation("LPOP", key, () -> {
             Object value = redisTemplate.opsForList().leftPop(key);
-
-            if (value == null) {
-                RedisOperationUtils.logDebug("List is empty or key not found: {}", key);
-                return null;
-            }
-
-            T result = RedisTypeConverter.convertValue(value, clazz);
-            RedisOperationUtils.logDebug("Left popped element from list {}: {}", key, result);
-            return result;
+            return resultProcessor.convertSingle(value, clazz);
         });
     }
 
     @Override
     public <T> T rPop(String key, Class<T> clazz) {
-        return RedisOperationUtils.executeWithExceptionHandling("RPOP", key, () -> {
-            RedisOperationUtils.logDebug("Right popping from list - key: {}, expected type: {}", 
-                key, clazz.getSimpleName());
+        return executeOperation("RPOP", key, () -> {
             Object value = redisTemplate.opsForList().rightPop(key);
-
-            if (value == null) {
-                RedisOperationUtils.logDebug("List is empty or key not found: {}", key);
-                return null;
-            }
-
-            T result = RedisTypeConverter.convertValue(value, clazz);
-            RedisOperationUtils.logDebug("Right popped element from list {}: {}", key, result);
-            return result;
+            return resultProcessor.convertSingle(value, clazz);
         });
     }
 
     @Override
     public <T> List<T> lRange(String key, long start, long end, Class<T> clazz) {
-        return RedisOperationUtils.executeWithExceptionHandling("LRANGE", key, 
-            new Object[]{start, end}, () -> {
-            RedisOperationUtils.logDebug("Getting list range - key: {}, start: {}, end: {}, type: {}", 
-                key, start, end, clazz.getSimpleName());
+        return executeOperation("LRANGE", key, () -> {
             List<Object> rawList = redisTemplate.opsForList().range(key, start, end);
-
-            if (rawList == null || rawList.isEmpty()) {
-                RedisOperationUtils.logDebug("List range is empty - key: {}, start: {}, end: {}", key, start, end);
-                return new ArrayList<>();
-            }
-
-            List<T> result = new ArrayList<>();
-            for (Object item : rawList) {
-                result.add(RedisTypeConverter.convertValue(item, clazz));
-            }
-
-            RedisOperationUtils.logDebug("Retrieved {} elements from list range - key: {}", result.size(), key);
-            return result;
+            return resultProcessor.convertList(rawList, clazz);
         });
     }
 
     @Override
     public Long lSize(String key) {
-        return RedisOperationUtils.executeWithExceptionHandling("LLEN", key, () -> {
-            RedisOperationUtils.logDebug("Getting list size for key: {}", key);
-            Long result = redisTemplate.opsForList().size(key);
-            RedisOperationUtils.logDebug("List size for key {}: {}", key, result);
-            return result;
+        return executeOperation("LLEN", key, () -> {
+            return redisTemplate.opsForList().size(key);
         });
     }
 
     @Override
     public <T> T lIndex(String key, long index, Class<T> clazz) {
-        return RedisOperationUtils.executeWithExceptionHandling("LINDEX", key, 
-            new Object[]{index}, () -> {
-            RedisOperationUtils.logDebug("Getting list element by index - key: {}, index: {}, type: {}", 
-                key, index, clazz.getSimpleName());
+        return executeOperation("LINDEX", key, () -> {
             Object value = redisTemplate.opsForList().index(key, index);
-
-            if (value == null) {
-                RedisOperationUtils.logDebug("List element not found - key: {}, index: {}", key, index);
-                return null;
-            }
-
-            T result = RedisTypeConverter.convertValue(value, clazz);
-            RedisOperationUtils.logDebug("Retrieved list element - key: {}, index: {}, value: {}", key, index, result);
-            return result;
+            return resultProcessor.convertSingle(value, clazz);
         });
     }
 
     @Override
     public void lSet(String key, long index, Object value) {
-        RedisOperationUtils.executeWithExceptionHandling("LSET", key, 
-            new Object[]{index, value}, () -> {
-            RedisOperationUtils.logDebug("Setting list element by index - key: {}, index: {}, value: {}", 
-                key, index, value);
+        executeOperation("LSET", key, () -> {
             redisTemplate.opsForList().set(key, index, value);
-            RedisOperationUtils.logDebug("Set list element - key: {}, index: {}", key, index);
             return null;
         });
     }

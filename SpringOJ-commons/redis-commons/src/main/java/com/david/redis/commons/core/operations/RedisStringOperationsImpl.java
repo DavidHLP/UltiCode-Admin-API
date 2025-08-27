@@ -1,8 +1,11 @@
 package com.david.redis.commons.core.operations;
 
+import com.david.redis.commons.core.operations.interfaces.RedisStringOperations;
+import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
+import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
+import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
+import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
-import com.david.redis.commons.core.utils.RedisOperationUtils;
-import com.david.redis.commons.core.utils.RedisTypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -22,59 +25,46 @@ import java.util.concurrent.TimeUnit;
 /**
  * Redis String类型操作实现类
  * 
- * <p>实现所有String类型的Redis操作方法
+ * <p>
+ * 实现所有String类型的Redis操作方法
  * 
  * @author David
  */
 @Slf4j
-public class RedisStringOperationsImpl implements RedisStringOperations {
+public class RedisStringOperationsImpl extends AbstractRedisOperations implements RedisStringOperations {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private final RedisTransactionManager transactionManager;
-
-    public RedisStringOperationsImpl(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-        this.transactionManager = null;
+    public RedisStringOperationsImpl(RedisTemplate<String, Object> redisTemplate,
+            RedisTransactionManager transactionManager,
+            RedisOperationExecutor executor,
+            RedisResultProcessor resultProcessor,
+            RedisLoggerHelper loggerHelper) {
+        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper);
     }
 
-    public RedisStringOperationsImpl(RedisTemplate<String, Object> redisTemplate, 
-                                   RedisTransactionManager transactionManager) {
-        this.redisTemplate = redisTemplate;
-        this.transactionManager = transactionManager;
+    @Override
+    protected String getOperationType() {
+        return "STRING";
     }
 
     @Override
     public void set(String key, Object value) {
-        RedisOperationUtils.executeWithExceptionHandling("SET", key, () -> {
-            RedisOperationUtils.logDebug("Setting key: {}, value: {}", key, value);
-            RedisOperationUtils.recordOperation(transactionManager, "SET " + key);
+        executeOperation("SET", key, () -> {
             redisTemplate.opsForValue().set(key, value);
         });
     }
 
     @Override
     public void set(String key, Object value, Duration timeout) {
-        RedisOperationUtils.executeWithExceptionHandling("SETEX", key, 
-            new Object[]{value, timeout}, () -> {
-            RedisOperationUtils.logDebug("Setting key: {}, value: {}, timeout: {}", key, value, timeout);
-            RedisOperationUtils.recordOperation(transactionManager, "SETEX " + key + " " + timeout.getSeconds());
+        executeOperation("SETEX", key, new Object[] { value, timeout }, () -> {
             redisTemplate.opsForValue().set(key, value, timeout.toMillis(), TimeUnit.MILLISECONDS);
-            return null;
         });
     }
 
     @Override
     public <T> T get(String key, Class<T> clazz) {
-        return RedisOperationUtils.executeWithExceptionHandling("GET", key, () -> {
-            RedisOperationUtils.logDebug("Getting key: {}, expected type: {}", key, clazz.getSimpleName());
+        return executeOperation("GET", key, () -> {
             Object value = redisTemplate.opsForValue().get(key);
-
-            if (value == null) {
-                RedisOperationUtils.logDebug("Key not found: {}", key);
-                return null;
-            }
-
-            return RedisTypeConverter.convertValue(value, clazz);
+            return resultProcessor.convertSingle(value, clazz);
         });
     }
 
@@ -85,125 +75,156 @@ public class RedisStringOperationsImpl implements RedisStringOperations {
 
     @Override
     public Boolean delete(String key) {
-        return RedisOperationUtils.executeWithExceptionHandling("DEL", key, () -> {
-            RedisOperationUtils.logDebug("Deleting key: {}", key);
-            Boolean result = redisTemplate.delete(key);
-            RedisOperationUtils.logDebug("Delete result for key {}: {}", key, result);
-            return result;
+        return executeOperation("DEL", key, () -> {
+            return redisTemplate.delete(key);
         });
     }
 
     @Override
     public Long delete(String... keys) {
-        return RedisOperationUtils.executeWithExceptionHandling("DEL", Arrays.toString(keys), () -> {
-            RedisOperationUtils.logDebug("Deleting keys: {}", Arrays.toString(keys));
+        return executeOperation("DEL", Arrays.toString(keys), new Object[] { keys }, () -> {
             Long result = redisTemplate.delete(Arrays.asList(keys));
-            Long normalizedResult = result != null ? result : 0L;
-            RedisOperationUtils.logDebug("Delete result for keys {}: {}", Arrays.toString(keys), normalizedResult);
-            return normalizedResult;
+            return resultProcessor.handleNullLong(result, 0L);
         });
     }
 
     @Override
     public Boolean expire(String key, Duration timeout) {
-        return RedisOperationUtils.executeWithExceptionHandling("EXPIRE", key, 
-            new Object[]{timeout}, () -> {
-            RedisOperationUtils.logDebug("Setting expiration for key: {}, timeout: {}", key, timeout);
-            Boolean result = redisTemplate.expire(key, timeout.toMillis(), TimeUnit.MILLISECONDS);
-            RedisOperationUtils.logDebug("Expire result for key {}: {}", key, result);
-            return result;
+        return executeOperation("EXPIRE", key, new Object[] { timeout }, () -> {
+            return redisTemplate.expire(key, timeout.toMillis(), TimeUnit.MILLISECONDS);
         });
     }
 
     @Override
     public Boolean hasKey(String key) {
-        return RedisOperationUtils.executeWithExceptionHandling("EXISTS", key, () -> {
-            RedisOperationUtils.logDebug("Checking existence of key: {}", key);
-            Boolean result = redisTemplate.hasKey(key);
-            RedisOperationUtils.logDebug("Key existence result for {}: {}", key, result);
-            return result;
+        return executeOperation("EXISTS", key, () -> {
+            return redisTemplate.hasKey(key);
         });
     }
 
     @Override
     public Long getExpire(String key) {
-        return RedisOperationUtils.executeWithExceptionHandling("TTL", key, () -> {
-            RedisOperationUtils.logDebug("Getting expiration time for key: {}", key);
-            Long result = redisTemplate.getExpire(key, TimeUnit.SECONDS);
-            RedisOperationUtils.logDebug("Expiration time for key {}: {} seconds", key, result);
-            return result;
+        return executeOperation("TTL", key, () -> {
+            return redisTemplate.getExpire(key, TimeUnit.SECONDS);
         });
     }
 
     @Override
     public Set<String> keys(String pattern) {
-        return RedisOperationUtils.executeWithExceptionHandling("KEYS", pattern, () -> {
-            RedisOperationUtils.logDebug("Getting keys by pattern: {}", pattern);
+        return executeOperation("KEYS", pattern, () -> {
             Set<String> result = redisTemplate.keys(pattern);
-            if (result == null) {
-                result = new LinkedHashSet<>();
-            }
-            RedisOperationUtils.logDebug("Found {} keys matching pattern: {}", result.size(), pattern);
-            return result;
+            return result != null ? result : new LinkedHashSet<>();
         });
     }
 
     @Override
     public Set<String> scanKeys(String pattern) {
-        return RedisOperationUtils.executeWithExceptionHandling("SCAN", pattern, () -> {
-            RedisOperationUtils.logDebug("Scanning keys by pattern: {}", pattern);
-            Set<String> result = new LinkedHashSet<>();
+        return executeOperation("SCAN", pattern, () -> {
+            return performScanKeys(pattern);
+        });
+    }
 
-            RedisConnectionFactory factory = redisTemplate.getConnectionFactory();
-            if (factory == null) {
-                log.warn("RedisConnectionFactory is null, fallback to RedisTemplate.keys()");
-                return keys(pattern);
+    /**
+     * 执行SCAN操作获取键
+     * 
+     * @param pattern 匹配模式
+     * @return 匹配的键集合
+     */
+    private Set<String> performScanKeys(String pattern) {
+        Set<String> result = new LinkedHashSet<>();
+        RedisConnectionFactory factory = redisTemplate.getConnectionFactory();
+
+        if (factory == null) {
+            log.warn("RedisConnectionFactory is null, fallback to RedisTemplate.keys()");
+            return keys(pattern);
+        }
+
+        try (RedisConnection connection = factory.getConnection()) {
+            ScanOptions options = ScanOptions.scanOptions().match(pattern).count(1000).build();
+            RedisKeyCommands keyCommands = connection.keyCommands();
+
+            if (keyCommands != null) {
+                try (Cursor<byte[]> cursor = keyCommands.scan(options)) {
+                    while (cursor.hasNext()) {
+                        result.add(new String(cursor.next(), StandardCharsets.UTF_8));
+                    }
+                }
+                return result;
+            } else {
+                return fallbackToKeysCommand(connection, pattern);
             }
 
-            // 使用独立的非事务连接执行 SCAN，避免受当前线程事务/管道影响
-            try (RedisConnection connection = factory.getConnection()) {
-                ScanOptions options = ScanOptions.scanOptions().match(pattern).count(1000).build();
-                RedisKeyCommands keyCommands = connection.keyCommands();
+        } catch (InvalidDataAccessApiUsageException e) {
+            log.warn("SCAN not allowed in current mode, fallback to KEYS - pattern: {}", pattern, e);
+            return fallbackToKeysWithConnection(factory, pattern);
+        } catch (Exception e) {
+            log.error("Failed to scan keys by pattern (will fallback to KEYS via RedisTemplate): {}", pattern, e);
+            return keys(pattern);
+        }
+    }
 
-                if (keyCommands != null) {
-                    try (Cursor<byte[]> cursor = keyCommands.scan(options)) {
-                        while (cursor.hasNext()) {
-                            result.add(new String(cursor.next(), StandardCharsets.UTF_8));
-                        }
-                    }
-                    RedisOperationUtils.logDebug("Found {} keys matching pattern via SCAN: {}", result.size(), pattern);
-                    return result;
-                } else {
-                    RedisOperationUtils.logDebug("KeyCommands is null on connection, fallback to KEYS on standalone connection");
-                    Set<byte[]> raw = connection.keys(pattern.getBytes(StandardCharsets.UTF_8));
-                    if (raw != null) {
-                        for (byte[] b : raw) {
-                            result.add(new String(b, StandardCharsets.UTF_8));
-                        }
-                    }
-                    return result;
-                }
-
-            } catch (InvalidDataAccessApiUsageException e) {
-                // 明确处理 SCAN 在事务/管道模式受限的场景，回退到 KEYS（同样使用独立连接）
-                log.warn("SCAN not allowed in current mode, fallback to KEYS - pattern: {}", pattern, e);
-                try (RedisConnection connection = factory.getConnection()) {
-                    Set<byte[]> raw = connection.keys(pattern.getBytes(StandardCharsets.UTF_8));
-                    if (raw != null) {
-                        for (byte[] b : raw) {
-                            result.add(new String(b, StandardCharsets.UTF_8));
-                        }
-                    }
-                    return result;
-                } catch (Exception ex) {
-                    log.error("Fallback KEYS failed on standalone connection, final fallback to RedisTemplate.keys()", ex);
-                    return keys(pattern);
-                }
-            } catch (Exception e) {
-                // 任何其它异常，记录并回退到 RedisTemplate.keys()，避免影响调用方
-                log.error("Failed to scan keys by pattern (will fallback to KEYS via RedisTemplate): {}", pattern, e);
-                return keys(pattern);
+    /**
+     * 使用KEYS命令作为回退方案
+     */
+    private Set<String> fallbackToKeysCommand(RedisConnection connection, String pattern) {
+        Set<String> result = new LinkedHashSet<>();
+        Set<byte[]> raw = connection.keys(pattern.getBytes(StandardCharsets.UTF_8));
+        if (raw != null) {
+            for (byte[] b : raw) {
+                result.add(new String(b, StandardCharsets.UTF_8));
             }
+        }
+        return result;
+    }
+
+    /**
+     * 使用独立连接执行KEYS命令
+     */
+    private Set<String> fallbackToKeysWithConnection(RedisConnectionFactory factory, String pattern) {
+        try (RedisConnection connection = factory.getConnection()) {
+            return fallbackToKeysCommand(connection, pattern);
+        } catch (Exception ex) {
+            log.error("Fallback KEYS failed on standalone connection, final fallback to RedisTemplate.keys()", ex);
+            return keys(pattern);
+        }
+    }
+
+    @Override
+    public java.util.List<Object> multiGet(java.util.List<String> keys) {
+        String keyStr = keys != null && !keys.isEmpty() ? keys.get(0) : "batch";
+        return executeOperation("MGET", keyStr, () -> {
+            if (keys == null || keys.isEmpty()) {
+                throw new IllegalArgumentException("Keys list cannot be null or empty");
+            }
+            return redisTemplate.opsForValue().multiGet(keys);
+        });
+    }
+
+    @Override
+    public void multiSet(java.util.Map<String, Object> keyValues) {
+        String keyStr = keyValues != null && !keyValues.isEmpty() ? 
+            keyValues.keySet().iterator().next() : "batch";
+        executeOperation("MSET", keyStr, () -> {
+            if (keyValues == null || keyValues.isEmpty()) {
+                throw new IllegalArgumentException("Key-value map cannot be null or empty");
+            }
+            redisTemplate.opsForValue().multiSet(keyValues);
+        });
+    }
+
+    @Override
+    public Boolean expire(String key, long timeout, java.util.concurrent.TimeUnit timeUnit) {
+        return executeOperation("EXPIRE", key, () -> {
+            if (key == null || key.trim().isEmpty()) {
+                throw new IllegalArgumentException("Key cannot be null or empty");
+            }
+            if (timeout <= 0) {
+                throw new IllegalArgumentException("Timeout must be positive");
+            }
+            if (timeUnit == null) {
+                throw new IllegalArgumentException("TimeUnit cannot be null");
+            }
+            return redisTemplate.expire(key, timeout, timeUnit);
         });
     }
 }

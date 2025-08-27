@@ -1,4 +1,4 @@
-package com.david.redis.commons.core.operations;
+package com.david.redis.commons.core.operations.interfaces;
 
 import java.time.Duration;
 import java.util.Set;
@@ -103,4 +103,29 @@ public interface RedisStringOperations {
      * @return 匹配的键集合
      */
     Set<String> scanKeys(String pattern);
+
+    /**
+     * 批量获取多个键的值
+     *
+     * @param keys 键列表
+     * @return 值列表，与键列表顺序对应
+     */
+    java.util.List<Object> multiGet(java.util.List<String> keys);
+
+    /**
+     * 批量设置多个键值对
+     *
+     * @param keyValues 键值对映射
+     */
+    void multiSet(java.util.Map<String, Object> keyValues);
+
+    /**
+     * 设置键的过期时间（支持TimeUnit）
+     *
+     * @param key 键
+     * @param timeout 过期时间数值
+     * @param timeUnit 时间单位
+     * @return 是否设置成功
+     */
+    Boolean expire(String key, long timeout, java.util.concurrent.TimeUnit timeUnit);
 }

@@ -1,4 +1,4 @@
-package com.david.redis.commons.core.operations;
+package com.david.redis.commons.core.operations.interfaces;
 
 import java.util.List;
 import java.util.Map;

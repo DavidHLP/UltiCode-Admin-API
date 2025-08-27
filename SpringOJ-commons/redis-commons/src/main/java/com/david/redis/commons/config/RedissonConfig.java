@@ -58,9 +58,8 @@ public class RedissonConfig {
 
     /** 配置单机模式 */
     private void configureSingle(Config config) {
-        String address =
-                String.format(
-                        "redis://%s:%d", redisProperties.getHost(), redisProperties.getPort());
+        String address = String.format(
+                "redis://%s:%d", redisProperties.getHost(), redisProperties.getPort());
 
         config.useSingleServer()
                 .setAddress(address)
@@ -126,4 +125,3 @@ public class RedissonConfig {
         log.info("配置 Redisson 集群模式: nodes={}", cluster.getNodes());
     }
 }
-

@@ -4,6 +4,11 @@ import com.david.redis.commons.annotation.RedisTransactional;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
 import com.david.redis.commons.core.transaction.TransactionContext;
 import com.david.redis.commons.exception.RedisTransactionException;
+import com.david.redis.commons.core.RedisUtils;
+import com.david.redis.commons.core.lock.interfaces.RedisLock;
+import com.david.redis.commons.core.cache.CacheKeyGenerator;
+import com.david.redis.commons.enums.TimeoutStrategy;
+import com.david.redis.commons.monitor.CacheMetricsCollector;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -11,8 +16,10 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 
 /**
  * Redis事务切面
@@ -31,9 +38,18 @@ import java.lang.reflect.Method;
 public class TransactionAspect {
 
     private final RedisTransactionManager transactionManager;
+    private final RedisUtils redisUtils;
+    private final CacheKeyGenerator cacheKeyGenerator;
+    private final CacheMetricsCollector metricsCollector;
 
-    public TransactionAspect(RedisTransactionManager transactionManager) {
+    public TransactionAspect(RedisTransactionManager transactionManager,
+            RedisUtils redisUtils,
+            CacheKeyGenerator cacheKeyGenerator,
+            CacheMetricsCollector metricsCollector) {
         this.transactionManager = transactionManager;
+        this.redisUtils = redisUtils;
+        this.cacheKeyGenerator = cacheKeyGenerator;
+        this.metricsCollector = metricsCollector;
     }
 
     /**
@@ -50,40 +66,92 @@ public class TransactionAspect {
 
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         String methodName = method.getDeclaringClass().getSimpleName() + "." + method.getName();
+        long startTime = System.currentTimeMillis();
 
-        log.debug("开始处理Redis事务方法: {}", methodName);
+        log.debug("开始处理Redis事务方法: {} - 锁策略: {}, 重试策略: {}, 超时策略: {}",
+                methodName, redisTransactional.lockStrategy(),
+                redisTransactional.retryPolicy(), redisTransactional.timeoutStrategy());
 
         TransactionContext context = null;
 
-        try {
-            // 检查超时配置
-            validateTimeout(redisTransactional.timeout());
-
-            // 开始事务
-            context = transactionManager.beginTransaction(redisTransactional);
-            log.debug("Redis事务已开始: {}", context.getTransactionId());
-
-            // 记录方法调用
-            transactionManager.addOperation("METHOD_CALL: " + methodName);
-
-            // 执行目标方法
-            Object result = joinPoint.proceed();
-
-            // 检查事务超时
-            if (context.isTimeout()) {
-                throw RedisTransactionException.transactionTimeout(
-                        context.getTransactionId(), redisTransactional.timeout());
+        // 解析锁参数
+        String lockKeyExp = redisTransactional.lockKey();
+        String resolvedLockKey = null;
+        if (StringUtils.hasText(lockKeyExp)) {
+            resolvedLockKey = cacheKeyGenerator.resolveSpELExpression(lockKeyExp, method, joinPoint.getArgs());
+            long timeoutMs = redisTransactional.timeout();
+            long leaseMs = redisTransactional.lockLeaseTimeMs();
+            if (timeoutMs > 0 && leaseMs > 0 && leaseMs < timeoutMs) {
+                log.warn("锁租约时间({}ms)小于事务超时({}ms)，可能导致锁提前释放", leaseMs, timeoutMs);
             }
+        }
 
-            // 提交事务
-            transactionManager.commitTransaction(context);
-            log.debug("Redis事务提交成功: {}", context.getTransactionId());
+        try {
+            if (StringUtils.hasText(resolvedLockKey)) {
+                // 锁+事务融合 - 使用新的 RedisUtils 锁操作
+                try (RedisLock ignored = redisUtils.locks().tryLock(
+                        resolvedLockKey,
+                        Duration.ofMillis(Math.max(0, redisTransactional.lockWaitTimeMs())),
+                        Duration.ofMillis(Math.max(0, redisTransactional.lockLeaseTimeMs())))) {
 
-            // 记录事务性能指标
-            recordTransactionMetrics(context, methodName);
+                    // 检查超时配置
+                    validateTimeout(redisTransactional.timeout());
 
-            return result;
+                    // 开始事务
+                    context = transactionManager.beginTransaction(redisTransactional);
+                    log.debug("Redis事务已开始(带锁): {} | 锁键: {}", context.getTransactionId(), resolvedLockKey);
 
+                    // 记录方法调用
+                    transactionManager.addOperation("METHOD_CALL: " + methodName);
+
+                    // 执行目标方法
+                    Object result = joinPoint.proceed();
+
+                    // 检查事务超时
+                    if (context.isTimeout()) {
+                        throw RedisTransactionException.transactionTimeout(
+                                context.getTransactionId(), redisTransactional.timeout());
+                    }
+
+                    // 提交事务
+                    transactionManager.commitTransaction(context);
+                    log.debug("Redis事务提交成功(带锁): {}", context.getTransactionId());
+
+                    // 记录事务性能指标
+                    recordTransactionMetrics(context, methodName, startTime, redisTransactional);
+
+                    return result;
+                }
+            } else {
+                // 仅事务
+                // 检查超时配置
+                validateTimeout(redisTransactional.timeout());
+
+                // 开始事务
+                context = transactionManager.beginTransaction(redisTransactional);
+                log.debug("Redis事务已开始: {}", context.getTransactionId());
+
+                // 记录方法调用
+                transactionManager.addOperation("METHOD_CALL: " + methodName);
+
+                // 执行目标方法
+                Object result = joinPoint.proceed();
+
+                // 检查事务超时
+                if (context.isTimeout()) {
+                    throw RedisTransactionException.transactionTimeout(
+                            context.getTransactionId(), redisTransactional.timeout());
+                }
+
+                // 提交事务
+                transactionManager.commitTransaction(context);
+                log.debug("Redis事务提交成功: {}", context.getTransactionId());
+
+                // 记录事务性能指标
+                recordTransactionMetrics(context, methodName, startTime, redisTransactional);
+
+                return result;
+            }
         } catch (Throwable throwable) {
             log.error("Redis事务方法执行异常: {}, 事务ID: {}",
                     methodName, context != null ? context.getTransactionId() : "unknown", throwable);
@@ -102,7 +170,7 @@ public class TransactionAspect {
 
             // 记录事务性能指标（即使失败也要记录）
             if (context != null) {
-                recordTransactionMetrics(context, methodName);
+                recordTransactionMetrics(context, methodName, startTime, redisTransactional);
             }
 
             // 重新抛出原始异常
@@ -179,27 +247,72 @@ public class TransactionAspect {
      *
      * @param context    事务上下文
      * @param methodName 方法名
+     * @param startTime  开始时间
+     * @param annotation 事务注解
      */
-    private void recordTransactionMetrics(TransactionContext context, String methodName) {
+    private void recordTransactionMetrics(TransactionContext context, String methodName,
+            long startTime, RedisTransactional annotation) {
         if (context != null) {
-            long executionTime = context.getExecutionTimeMillis();
+            long executionTime = System.currentTimeMillis() - startTime;
             int operationCount = context.getOperations().size();
+            String status = context.getStatus().toString();
 
             log.debug("Redis事务性能指标 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}, 状态: {}",
-                    methodName, context.getTransactionId(), executionTime, operationCount, context.getStatus());
+                    methodName, context.getTransactionId(), executionTime, operationCount, status);
+
+            // 使用新的性能监控组件
+            if (annotation.enableMetrics()) {
+                String operation = "TRANSACTION_" + (context.isCommitted() ? "COMMIT" : "ROLLBACK");
+                if (context.isCommitted()) {
+                    metricsCollector.recordSet(methodName, executionTime);
+                } else {
+                    metricsCollector.recordError(operation, executionTime);
+                }
+            }
 
             // 记录慢事务警告
             if (executionTime > 1000) { // 超过1秒的事务
-                log.warn("检测到慢Redis事务 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}",
-                        methodName, context.getTransactionId(), executionTime, operationCount);
+                log.warn("检测到慢Redis事务 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}, 锁策略: {}, 重试策略: {}",
+                        methodName, context.getTransactionId(), executionTime, operationCount,
+                        annotation.lockStrategy(), annotation.retryPolicy());
             }
 
-            // 这里可以集成监控系统，如Micrometer
-            // meterRegistry.timer("redis.transaction.duration", "method", methodName,
-            // "status", context.getStatus())
-            // .record(executionTime, TimeUnit.MILLISECONDS);
-            // meterRegistry.counter("redis.transaction.operations", "method", methodName)
-            // .increment(operationCount);
+            // 检查死锁检测
+            if (annotation.deadlockDetection() && executionTime > annotation.timeout()) {
+                log.warn("事务执行时间超过配置超时 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 配置超时: {}ms, 可能存在死锁",
+                        methodName, context.getTransactionId(), executionTime, annotation.timeout());
+            }
+
+            // 处理超时策略
+            if (executionTime > annotation.timeout() && annotation.timeout() > 0) {
+                handleTimeoutStrategy(context, annotation.timeoutStrategy(), methodName);
+            }
+        }
+    }
+
+    /**
+     * 处理超时策略
+     */
+    private void handleTimeoutStrategy(TransactionContext context, TimeoutStrategy strategy, String methodName) {
+        switch (strategy) {
+            case ROLLBACK:
+                log.info("执行超时策略 ROLLBACK - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                // 超时回滚逻辑已在主流程中处理
+                break;
+            case FORCE_COMMIT:
+                log.warn("执行超时策略 FORCE_COMMIT - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                // 强制提交，忽略超时
+                break;
+            case THROW_EXCEPTION:
+                log.error("执行超时策略 THROW_EXCEPTION - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                // 异常已在主流程中抛出
+                break;
+            case EXTEND_TIMEOUT:
+                log.info("执行超时策略 EXTEND_TIMEOUT - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                // 延长超时时间的逻辑
+                break;
+            default:
+                log.warn("未知的超时策略: {} - 方法: {}, 事务ID: {}", strategy, methodName, context.getTransactionId());
         }
     }
 }

@@ -3,6 +3,7 @@ package com.david.service.imp;
 import com.david.entity.token.Token;
 import com.david.entity.token.TokenType;
 import com.david.entity.user.AuthUser;
+import com.david.exception.BizException;
 import com.david.mapper.TokenMapper;
 import com.david.mapper.UserMapper;
 import com.david.redis.commons.annotation.RedisCacheable;
@@ -12,8 +13,6 @@ import com.david.redis.commons.core.lock.DistributedLockManager;
 import com.david.service.AuthService;
 import com.david.service.EmailService;
 import com.david.utils.JwtService;
-
-import com.david.exception.BizException;
 import com.david.utils.enums.ResponseCode;
 
 import io.jsonwebtoken.ExpiredJwtException;
@@ -21,6 +20,7 @@ import io.jsonwebtoken.JwtException;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,7 +81,7 @@ public class AuthServiceImp implements AuthService {
         String code = String.format("%06d", new Random().nextInt(999999));
         // 使用 Redis 缓存服务，设置 5 分钟过期
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
-        redisUtils.set(codeKey, code, Duration.ofMinutes(5));
+        redisUtils.strings().set(codeKey, code, Duration.ofMinutes(5));
         emailService.sendVerificationCode(email, code);
     }
 
@@ -90,7 +90,7 @@ public class AuthServiceImp implements AuthService {
     public void register(String username, String password, String email, String code) {
         log.debug("register: {} {} {} {}", username, password, email, code);
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
-        String storedCode = redisUtils.getString(codeKey);
+        String storedCode = redisUtils.strings().getString(codeKey);
         if (storedCode == null || !storedCode.equals(code)) {
             throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "验证码错误或已过期");
         }
@@ -115,7 +115,7 @@ public class AuthServiceImp implements AuthService {
                     userMapper.insert(user);
                 });
         // 注册完成后删除验证码
-        redisUtils.delete(codeKey);
+        redisUtils.strings().delete(codeKey);
     }
 
     @Override

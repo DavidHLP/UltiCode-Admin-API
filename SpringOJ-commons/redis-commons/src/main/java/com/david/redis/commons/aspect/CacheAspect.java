@@ -6,6 +6,10 @@ import com.david.redis.commons.core.cache.CacheConditionEvaluator;
 import com.david.redis.commons.core.cache.CacheKeyGenerator;
 import com.david.redis.commons.core.cache.CacheOperationContext;
 import com.david.redis.commons.core.RedisUtils;
+import com.david.redis.commons.enums.WarmUpPriority;
+import com.david.redis.commons.manager.BatchOperationManager;
+import com.david.redis.commons.manager.CacheWarmUpManager;
+import com.david.redis.commons.monitor.CacheMetricsCollector;
 import com.david.redis.commons.properties.RedisCommonsProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -17,9 +21,8 @@ import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Redis缓存切面，处理@RedisCacheable和@RedisEvict注解
@@ -35,15 +38,24 @@ public class CacheAspect {
     private final CacheKeyGenerator keyGenerator;
     private final CacheConditionEvaluator conditionEvaluator;
     private final RedisCommonsProperties properties;
+    private final BatchOperationManager batchManager;
+    private final CacheWarmUpManager warmUpManager;
+    private final CacheMetricsCollector metricsCollector;
 
     public CacheAspect(RedisUtils redisUtils,
             CacheKeyGenerator keyGenerator,
             CacheConditionEvaluator conditionEvaluator,
-            RedisCommonsProperties properties) {
+            RedisCommonsProperties properties,
+            BatchOperationManager batchManager,
+            CacheWarmUpManager warmUpManager,
+            CacheMetricsCollector metricsCollector) {
         this.redisUtils = redisUtils;
         this.keyGenerator = keyGenerator;
         this.conditionEvaluator = conditionEvaluator;
         this.properties = properties;
+        this.batchManager = batchManager;
+        this.warmUpManager = warmUpManager;
+        this.metricsCollector = metricsCollector;
     }
 
     /**
@@ -58,6 +70,7 @@ public class CacheAspect {
 
         // 创建缓存操作上下文
         CacheOperationContext context = new CacheOperationContext(method, args, target);
+        long startTime = System.currentTimeMillis();
 
         try {
             // 生成缓存键
@@ -65,11 +78,34 @@ public class CacheAspect {
             log.debug("处理缓存注解 @RedisCacheable - 方法: {}, 缓存键: {}",
                     context.getMethodSignature(), cacheKey);
 
+            // 处理批量操作
+            if (redisCacheable.batchSize() > 1) {
+                return handleBatchCacheable(joinPoint, redisCacheable, cacheKey, method, args);
+            }
+
             // 尝试从缓存获取数据
             Object cachedValue = getCachedValue(cacheKey, redisCacheable.type());
+            long responseTime = System.currentTimeMillis() - startTime;
+
             if (cachedValue != null) {
+                // 记录缓存命中指标
+                if (redisCacheable.enableMetrics()) {
+                    metricsCollector.recordHit(cacheKey, responseTime);
+                }
+
                 log.debug("缓存命中 - 键: {}, 值类型: {}", cacheKey, cachedValue.getClass().getSimpleName());
+
+                // 检查是否需要刷新缓存
+                if (shouldRefreshCache(cacheKey, redisCacheable)) {
+                    CompletableFuture.runAsync(() -> refreshCacheAsync(joinPoint, cacheKey, redisCacheable));
+                }
+
                 return cachedValue;
+            }
+
+            // 记录缓存未命中指标
+            if (redisCacheable.enableMetrics()) {
+                metricsCollector.recordMiss(cacheKey, responseTime);
             }
 
             log.debug("缓存未命中 - 键: {}, 执行原方法", cacheKey);
@@ -82,7 +118,19 @@ public class CacheAspect {
             if (shouldCache(redisCacheable, method, args, result)) {
                 // 缓存结果
                 cacheResult(cacheKey, result, redisCacheable);
+
+                // 记录缓存写入指标
+                if (redisCacheable.enableMetrics()) {
+                    long writeTime = System.currentTimeMillis() - startTime;
+                    metricsCollector.recordSet(cacheKey, writeTime);
+                }
+
                 log.debug("缓存结果已保存 - 键: {}, TTL: {}秒", cacheKey, redisCacheable.ttl());
+
+                // 触发预热
+                if (redisCacheable.warmUp()) {
+                    triggerWarmUp(cacheKey, redisCacheable);
+                }
             } else {
                 log.debug("缓存条件不满足，跳过缓存 - 键: {}", cacheKey);
             }
@@ -90,6 +138,11 @@ public class CacheAspect {
             return result;
 
         } catch (Exception e) {
+            long errorTime = System.currentTimeMillis() - startTime;
+            if (redisCacheable.enableMetrics()) {
+                metricsCollector.recordError("CACHE_GET", errorTime);
+            }
+
             log.error("缓存操作失败 - 方法: {}, 参数: {}",
                     context.getMethodSignature(), context.getArgsString(), e);
 
@@ -155,15 +208,39 @@ public class CacheAspect {
     }
 
     /**
-     * 从缓存获取值
+     * 从缓存获取数据
      */
     private Object getCachedValue(String cacheKey, Class<?> type) {
         try {
-            if (type == Object.class) {
-                return redisUtils.get(cacheKey, Object.class);
+            if (type != Object.class) {
+                // 如果指定了具体类型，直接使用类型化的get方法
+                return redisUtils.strings().get(cacheKey, type);
             } else {
-                return redisUtils.get(cacheKey, type);
+                // 使用字符串方法获取原始值
+                return redisUtils.strings().getString(cacheKey);
             }
+        } catch (org.springframework.data.redis.serializer.SerializationException e) {
+            // 反序列化失败，可能是数据格式不兼容，删除损坏的缓存
+            log.warn("缓存反序列化失败，删除损坏的缓存 - 键: {}, 错误: {}", cacheKey, e.getMessage());
+            try {
+                redisUtils.strings().delete(cacheKey);
+            } catch (Exception deleteEx) {
+                log.warn("删除损坏缓存失败 - 键: {}", cacheKey, deleteEx);
+            }
+            return null;
+        } catch (com.david.redis.commons.exception.RedisOperationException e) {
+            // Redis操作异常，可能包含反序列化错误
+            if (e.getCause() instanceof org.springframework.data.redis.serializer.SerializationException) {
+                log.warn("缓存反序列化失败，删除损坏的缓存 - 键: {}, 错误: {}", cacheKey, e.getMessage());
+                try {
+                    redisUtils.strings().delete(cacheKey);
+                } catch (Exception deleteEx) {
+                    log.warn("删除损坏缓存失败 - 键: {}", cacheKey, deleteEx);
+                }
+                return null;
+            }
+            log.warn("从缓存获取数据失败 - 键: {}", cacheKey, e);
+            return null;
         } catch (Exception e) {
             log.warn("从缓存获取数据失败 - 键: {}", cacheKey, e);
             return null;
@@ -190,11 +267,11 @@ public class CacheAspect {
         try {
             long ttlSeconds = redisCacheable.ttl();
             if (ttlSeconds > 0) {
-                redisUtils.set(cacheKey, result, Duration.ofSeconds(ttlSeconds));
+                redisUtils.strings().set(cacheKey, result, Duration.ofSeconds(ttlSeconds));
             } else {
                 // 使用默认TTL
                 Duration defaultTtl = properties.getCache().getDefaultTtl();
-                redisUtils.set(cacheKey, result, defaultTtl);
+                redisUtils.strings().set(cacheKey, result, defaultTtl);
             }
         } catch (Exception e) {
             log.error("缓存结果失败 - 键: {}", cacheKey, e);
@@ -233,14 +310,14 @@ public class CacheAspect {
                 : properties.getCache().getKeyPrefix();
 
         String pattern = keyPrefix + "*";
-        Set<String> keys = redisUtils.scanKeys(pattern);
+        Set<String> keys = redisUtils.strings().scanKeys(pattern);
         if (keys.isEmpty()) {
             // fallback to KEYS in case SCAN returns empty due to server config/count
-            keys = redisUtils.keys(pattern);
+            keys = redisUtils.strings().keys(pattern);
         }
 
         if (!keys.isEmpty()) {
-            Long deletedCount = redisUtils.delete(keys.toArray(new String[0]));
+            Long deletedCount = redisUtils.strings().delete(keys.toArray(new String[0]));
             log.info("批量驱逐缓存完成 - 模式: {}, 删除数量: {}", pattern, deletedCount);
         } else {
             log.debug("未找到匹配的缓存键 - 模式: {}", pattern);
@@ -290,7 +367,7 @@ public class CacheAspect {
 
             // 批量删除精确键
             if (!exactKeys.isEmpty()) {
-                Long exactDeleted = redisUtils.delete(exactKeys.toArray(new String[0]));
+                Long exactDeleted = redisUtils.strings().delete(exactKeys.toArray(new String[0]));
                 totalDeleted += (exactDeleted != null ? exactDeleted.intValue() : 0);
                 log.debug("删除精确键 {} 个，成功删除: {}", exactKeys.size(), exactDeleted);
             }
@@ -316,18 +393,118 @@ public class CacheAspect {
      */
     private Long deleteByPattern(String pattern) {
         try {
-            Set<String> matchedKeys = redisUtils.scanKeys(pattern);
+            Set<String> matchedKeys = redisUtils.strings().scanKeys(pattern);
             if (matchedKeys.isEmpty()) {
                 // fallback to KEYS if needed
-                matchedKeys = redisUtils.keys(pattern);
+                matchedKeys = redisUtils.strings().keys(pattern);
             }
             if (!matchedKeys.isEmpty()) {
-                return redisUtils.delete(matchedKeys.toArray(new String[0]));
+                return redisUtils.strings().delete(matchedKeys.toArray(new String[0]));
             }
             return 0L;
         } catch (Exception e) {
             log.error("根据模式删除缓存失败 - 模式: {}", pattern, e);
             return 0L;
         }
+    }
+
+    /**
+     * 处理批量缓存操作
+     */
+    private Object handleBatchCacheable(ProceedingJoinPoint joinPoint, RedisCacheable redisCacheable,
+            String cacheKey, Method method, Object[] args) throws Throwable {
+        try {
+            // 对于批量操作，直接使用原始缓存键，不生成批量键
+            Object cachedValue = getCachedValue(cacheKey, redisCacheable.type());
+            
+            if (cachedValue != null) {
+                log.debug("批量缓存命中 - 键: {}", cacheKey);
+                return cachedValue;
+            }
+
+            // 执行原方法
+            Object result = joinPoint.proceed();
+
+            // 缓存结果
+            if (result != null && shouldCache(redisCacheable, method, args, result)) {
+                Map<String, Object> batchData = new HashMap<>();
+                batchData.put(cacheKey, result);
+                batchManager.batchSet(batchData, redisCacheable.ttl());
+                log.debug("批量缓存结果已保存 - 键: {}", cacheKey);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("批量缓存操作失败 - 键: {}", cacheKey, e);
+            return joinPoint.proceed();
+        }
+    }
+
+
+    /**
+     * 检查是否需要刷新缓存
+     */
+    private boolean shouldRefreshCache(String cacheKey, RedisCacheable redisCacheable) {
+        if (redisCacheable.refreshThreshold() <= 0) {
+            return false;
+        }
+
+        try {
+            Long ttl = redisUtils.strings().getExpire(cacheKey);
+            if (ttl != null && ttl > 0) {
+                // 如果剩余TTL小于刷新阈值，则需要刷新
+                return ttl < redisCacheable.refreshThreshold();
+            }
+        } catch (Exception e) {
+            log.warn("检查缓存刷新条件失败 - 键: {}", cacheKey, e);
+        }
+
+        return false;
+    }
+
+    /**
+     * 异步刷新缓存
+     */
+    private void refreshCacheAsync(ProceedingJoinPoint joinPoint, String cacheKey, RedisCacheable redisCacheable) {
+        try {
+            // 执行原方法获取新数据
+            Object newValue = joinPoint.proceed();
+            if (newValue != null) {
+                // 更新缓存
+                cacheResult(cacheKey, newValue, redisCacheable);
+                log.debug("异步刷新缓存完成 - 键: {}", cacheKey);
+            }
+        } catch (Throwable e) {
+            log.error("异步刷新缓存失败 - 键: {}", cacheKey, e);
+        }
+    }
+
+    /**
+     * 触发缓存预热
+     */
+    private void triggerWarmUp(String cacheKey, RedisCacheable redisCacheable) {
+        try {
+            // 提取键模式用于预热
+            String pattern = extractKeyPattern(cacheKey);
+            WarmUpPriority priority = redisCacheable.warmUpPriority();
+
+            // 触发预热任务
+            warmUpManager.triggerWarmUp(pattern, priority);
+
+            log.debug("触发缓存预热 - 模式: {}, 优先级: {}", pattern, priority);
+
+        } catch (Exception e) {
+            log.error("触发缓存预热失败 - 键: {}", cacheKey, e);
+        }
+    }
+
+    /**
+     * 从缓存键提取模式
+     */
+    private String extractKeyPattern(String cacheKey) {
+        // 简单的模式提取：将具体值替换为通配符
+        return cacheKey.replaceAll(":\\d+", ":*")
+                .replaceAll(":[a-zA-Z0-9]+$", ":*");
     }
 }

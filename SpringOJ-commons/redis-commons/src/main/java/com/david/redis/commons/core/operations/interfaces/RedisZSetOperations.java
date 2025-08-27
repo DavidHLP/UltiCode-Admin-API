@@ -1,4 +1,4 @@
-package com.david.redis.commons.core.operations;
+package com.david.redis.commons.core.operations.interfaces;
 
 import org.springframework.data.redis.core.ZSetOperations;
 

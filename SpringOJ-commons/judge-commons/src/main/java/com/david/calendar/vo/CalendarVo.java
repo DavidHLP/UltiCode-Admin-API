@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,6 +17,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class CalendarVo {
 	@JsonFormat(pattern = "yyyy-MM-dd")
-	private LocalDateTime date;
+	private LocalDate date;
 	private Integer count;
 }

@@ -1,5 +1,9 @@
 package com.david.redis.commons.annotation;
 
+import com.david.redis.commons.enums.LockStrategy;
+import com.david.redis.commons.enums.RetryPolicy;
+import com.david.redis.commons.enums.TimeoutStrategy;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -18,18 +22,23 @@ import java.lang.annotation.Target;
  * 
  * <pre>
  * {@code
- * &#64;RedisTransactional
+ * @RedisTransactional
  * public void updateUserData(String userId, UserData data) {
  *     redisUtils.set("user:" + userId, data);
  *     redisUtils.hSet("user:index", userId, data.getName());
  * }
  *
- * @RedisTransactional(rollbackFor = {BusinessException.class})
+ * @RedisTransactional(rollbackFor = { BusinessException.class })
  * public void complexOperation() {
  *     // 复杂的Redis操作
  * }
  * }
  * </pre>
+ * </p>
+ *
+ * <p>
+ * 可选：通过 lockKey/wait/lease 配置融合分布式锁与事务，lockKey 支持 SpEL。
+ * 当 lockKey 非空时，切面会先获取分布式锁，再开启事务，方法结束后释放锁。
  * </p>
  *
  * @author David
@@ -83,6 +92,60 @@ public @interface RedisTransactional {
      * 可以为事务指定一个有意义的名称
      */
     String label() default "";
+
+    /**
+     * 分布式锁键（支持SpEL）。为空表示不使用锁
+     * 示例："'order:' + #orderId" 或 "T.concat('user:', #userId)"
+     */
+    String lockKey() default "";
+
+    /**
+     * 分布式锁等待时间（毫秒）。仅当 lockKey 非空时生效
+     */
+    long lockWaitTimeMs() default 5000;
+
+    /**
+     * 分布式锁租约时间（毫秒）。仅当 lockKey 非空时生效
+     */
+    long lockLeaseTimeMs() default 30000;
+
+    // ==================== 新增功能属性 ====================
+
+    /**
+     * 锁策略
+     * 定义获取锁的策略和类型
+     */
+    LockStrategy lockStrategy() default LockStrategy.AUTO;
+
+    /**
+     * 重试策略
+     * 定义事务失败时的重试行为
+     */
+    RetryPolicy retryPolicy() default RetryPolicy.DEFAULT;
+
+    /**
+     * 超时处理策略
+     * 定义事务超时时的处理方式
+     */
+    TimeoutStrategy timeoutStrategy() default TimeoutStrategy.ROLLBACK;
+
+    /**
+     * 是否启用死锁检测
+     * 启用后会自动检测和解决死锁问题
+     */
+    boolean deadlockDetection() default true;
+
+    /**
+     * 事务优先级
+     * 高优先级事务在资源竞争时优先执行
+     */
+    int priority() default 0;
+
+    /**
+     * 是否启用事务监控
+     * 启用后会收集事务执行时间、成功率等指标
+     */
+    boolean enableMetrics() default true;
 
     /**
      * 事务传播行为枚举
