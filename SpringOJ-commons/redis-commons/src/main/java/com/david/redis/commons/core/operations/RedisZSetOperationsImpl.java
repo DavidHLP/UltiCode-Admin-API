@@ -1,12 +1,12 @@
 package com.david.redis.commons.core.operations;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.operations.interfaces.RedisZSetOperations;
 import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
 import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 
@@ -23,15 +23,10 @@ import java.util.Set;
  * 
  * @author David
  */
-@Slf4j
 public class RedisZSetOperationsImpl extends AbstractRedisOperations implements RedisZSetOperations {
 
-    public RedisZSetOperationsImpl(RedisTemplate<String, Object> redisTemplate,
-            RedisTransactionManager transactionManager,
-            RedisOperationExecutor executor,
-            RedisResultProcessor resultProcessor,
-            RedisLoggerHelper loggerHelper) {
-        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper);
+    public RedisZSetOperationsImpl(RedisTemplate<String, Object> redisTemplate, RedisTransactionManager transactionManager, RedisOperationExecutor executor, RedisResultProcessor resultProcessor, RedisLoggerHelper loggerHelper, LogUtils logUtils) {
+        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper, logUtils);
     }
 
     @Override

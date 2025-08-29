@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import lombok.Data;
 
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -34,6 +35,7 @@ public class RedisCommonsProperties {
 
     /** 缓存配置 */
     @Data
+    @Getter
     public static class Cache {
         /** 默认缓存过期时间 */
         private Duration defaultTtl = Duration.ofHours(1);

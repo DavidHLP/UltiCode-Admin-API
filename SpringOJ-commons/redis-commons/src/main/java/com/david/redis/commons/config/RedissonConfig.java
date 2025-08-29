@@ -1,9 +1,9 @@
 package com.david.redis.commons.config;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.properties.RedisCommonsProperties;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -21,7 +21,6 @@ import org.springframework.util.StringUtils;
  *
  * @author david
  */
-@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @ConditionalOnClass(RedissonClient.class)
@@ -30,12 +29,14 @@ public class RedissonConfig {
 
     private final RedisProperties redisProperties;
     private final RedisCommonsProperties redisCommonsProperties;
+    private final LogUtils logUtils;
 
     /** 配置 RedissonClient */
     @Bean
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redissonClient() {
-        log.info("正在配置 RedissonClient...");
+        logUtils.business()
+                .event("redisson_config", "configure_client", "start", "正在配置 RedissonClient");
 
         Config config = new Config();
 
@@ -52,14 +53,16 @@ public class RedissonConfig {
         }
 
         RedissonClient redissonClient = Redisson.create(config);
-        log.info("RedissonClient 配置完成");
+        logUtils.business()
+                .event("redisson_config", "configure_client", "success", "RedissonClient 配置完成");
         return redissonClient;
     }
 
     /** 配置单机模式 */
     private void configureSingle(Config config) {
-        String address = String.format(
-                "redis://%s:%d", redisProperties.getHost(), redisProperties.getPort());
+        String address =
+                String.format(
+                        "redis://%s:%d", redisProperties.getHost(), redisProperties.getPort());
 
         config.useSingleServer()
                 .setAddress(address)
@@ -77,7 +80,8 @@ public class RedissonConfig {
             config.useSingleServer().setPassword(redisProperties.getPassword());
         }
 
-        log.info("配置 Redisson 单机模式: {}", address);
+        logUtils.business()
+                .event("redisson_config", "configure_single", "success", "address: " + address);
     }
 
     /** 配置哨兵模式 */
@@ -100,8 +104,13 @@ public class RedissonConfig {
             config.useSentinelServers().setPassword(redisProperties.getPassword());
         }
 
-        log.info(
-                "配置 Redisson 哨兵模式: master={}, nodes={}", sentinel.getMaster(), sentinel.getNodes());
+        logUtils.business()
+                .event(
+                        "redisson_config",
+                        "configure_sentinel",
+                        "success",
+                        "master: " + sentinel.getMaster(),
+                        "nodes: " + sentinel.getNodes());
     }
 
     /** 配置集群模式 */
@@ -122,6 +131,11 @@ public class RedissonConfig {
             config.useClusterServers().setPassword(redisProperties.getPassword());
         }
 
-        log.info("配置 Redisson 集群模式: nodes={}", cluster.getNodes());
+        logUtils.business()
+                .event(
+                        "redisson_config",
+                        "configure_cluster",
+                        "success",
+                        "nodes: " + cluster.getNodes());
     }
 }

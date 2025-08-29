@@ -1,31 +1,30 @@
 package com.david.redis.commons.core;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.operations.*;
 import com.david.redis.commons.core.operations.interfaces.*;
 import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
+
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 /**
  * Redis核心工具类 - 门面模式
  *
- * <p>
- * 提供统一的Redis操作接口，支持String、Hash、List、Set、ZSet等数据类型操作， 以及事务支持。
- * 所有操作都委托给对应的专门操作类，保持向后兼容性。
+ * <p>提供统一的Redis操作接口，支持String、Hash、List、Set、ZSet等数据类型操作， 以及事务支持。 所有操作都委托给对应的专门操作类，保持向后兼容性。
  *
  * @author David
  */
-@Slf4j
 @Component
 public class RedisUtils {
 
-    @Getter
-    private final RedisTemplate<String, Object> redisTemplate;
+    @Getter private final RedisTemplate<String, Object> redisTemplate;
+    @Getter private final LogUtils logUtils;
 
     // 各个操作模块
     private final RedisStringOperations stringOperations;
@@ -40,27 +39,65 @@ public class RedisUtils {
     /** 构造函数 */
     public RedisUtils(
             RedisTemplate<String, Object> redisTemplate,
+            LogUtils logUtils,
             RedisLockOperations lockOperations,
             RedisOperationExecutor executor,
             RedisResultProcessor resultProcessor,
             RedisLoggerHelper loggerHelper,
             RedisTransactionManager transactionManager) {
         this.redisTemplate = redisTemplate;
+        this.logUtils = logUtils;
         this.lockOperations = lockOperations;
 
         // 初始化各个操作模块
-        this.stringOperations = new RedisStringOperationsImpl(redisTemplate, transactionManager, executor,
-                resultProcessor, loggerHelper);
-        this.hashOperations = new RedisHashOperationsImpl(redisTemplate, transactionManager, executor, resultProcessor,
-                loggerHelper);
-        this.listOperations = new RedisListOperationsImpl(redisTemplate, transactionManager, executor, resultProcessor,
-                loggerHelper);
-        this.setOperations = new RedisSetOperationsImpl(redisTemplate, transactionManager, executor, resultProcessor,
-                loggerHelper);
-        this.zSetOperations = new RedisZSetOperationsImpl(redisTemplate, transactionManager, executor, resultProcessor,
-                loggerHelper);
-        this.transactionOperations = new RedisTransactionOperationsImpl(redisTemplate, transactionManager, executor,
-                resultProcessor, loggerHelper);
+        this.stringOperations =
+                new RedisStringOperationsImpl(
+                        redisTemplate,
+                        transactionManager,
+                        executor,
+                        resultProcessor,
+                        loggerHelper,
+                        logUtils);
+        this.hashOperations =
+                new RedisHashOperationsImpl(
+                        redisTemplate,
+                        transactionManager,
+                        executor,
+                        resultProcessor,
+                        loggerHelper,
+                        logUtils);
+        this.listOperations =
+                new RedisListOperationsImpl(
+                        redisTemplate,
+                        transactionManager,
+                        executor,
+                        resultProcessor,
+                        loggerHelper,
+                        logUtils);
+        this.setOperations =
+                new RedisSetOperationsImpl(
+                        redisTemplate,
+                        transactionManager,
+                        executor,
+                        resultProcessor,
+                        loggerHelper,
+                        logUtils);
+        this.zSetOperations =
+                new RedisZSetOperationsImpl(
+                        redisTemplate,
+                        transactionManager,
+                        executor,
+                        resultProcessor,
+                        loggerHelper,
+                        logUtils);
+        this.transactionOperations =
+                new RedisTransactionOperationsImpl(
+                        redisTemplate,
+                        transactionManager,
+                        executor,
+                        resultProcessor,
+                        loggerHelper,
+                        logUtils);
     }
 
     /** 获取 String 类型操作入口 */
@@ -97,5 +134,4 @@ public class RedisUtils {
     public RedisLockOperations locks() {
         return this.lockOperations;
     }
-
 }

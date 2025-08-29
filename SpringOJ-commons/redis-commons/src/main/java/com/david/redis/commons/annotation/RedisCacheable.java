@@ -59,8 +59,6 @@ public @interface RedisCacheable {
      */
     String keyPrefix() default "";
 
-    // ==================== 新增功能属性 ====================
-
     /**
      * 是否启用缓存预热
      * 启用后会在应用启动或定时任务中预加载缓存数据

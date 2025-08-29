@@ -1,10 +1,12 @@
 package com.david.redis.commons.core.lock;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.lock.interfaces.RedisLock;
 import com.david.redis.commons.exception.DistributedLockException;
 import com.david.redis.commons.properties.RedisCommonsProperties;
+
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
@@ -21,13 +23,13 @@ import java.util.function.Supplier;
  *
  * @author David
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DistributedLockManager {
 
     private final RedissonClient redissonClient;
     private final RedisCommonsProperties redisCommonsProperties;
+    private final LogUtils logUtils;
 
     /**
      * 尝试获取分布式锁
@@ -45,25 +47,36 @@ public class DistributedLockManager {
         RLock rLock = redissonClient.getLock(fullLockKey);
 
         try {
-            log.debug("尝试获取分布式锁: {}, 等待时间: {}, 租约时间: {}", fullLockKey, waitTime, leaseTime);
+            logUtils.business()
+                    .trace(
+                            "distributed_lock",
+                            "try_acquire",
+                            "attempt",
+                            "锁键: " + fullLockKey,
+                            "等待时间: " + waitTime,
+                            "租约时间: " + leaseTime);
 
             boolean acquired =
                     rLock.tryLock(waitTime.toMillis(), leaseTime.toMillis(), TimeUnit.MILLISECONDS);
 
             if (acquired) {
-                log.debug("成功获取分布式锁: {}", fullLockKey);
-                return new RedisLockImpl(rLock, fullLockKey);
+                logUtils.business()
+                        .trace("distributed_lock", "acquire", "success", "锁键: " + fullLockKey);
+                return new RedisLockImpl(logUtils, rLock, fullLockKey);
             } else {
-                log.debug("获取分布式锁超时: {}", fullLockKey);
+                logUtils.business()
+                        .trace("distributed_lock", "acquire", "timeout", "锁键: " + fullLockKey);
                 throw DistributedLockException.lockTimeout(fullLockKey, waitTime);
             }
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("获取分布式锁被中断: {}", fullLockKey, e);
+            logUtils.exception()
+                    .business("distributed_lock_interrupted", e, "high", "锁键: " + fullLockKey);
             throw new DistributedLockException("获取分布式锁被中断", e, fullLockKey, waitTime, leaseTime);
         } catch (Exception e) {
-            log.error("获取分布式锁异常: {}", fullLockKey, e);
+            logUtils.exception()
+                    .business("distributed_lock_failed", e, "high", "锁键: " + fullLockKey);
             throw new DistributedLockException("获取分布式锁失败", e, fullLockKey, waitTime, leaseTime);
         }
     }
@@ -99,35 +112,33 @@ public class DistributedLockManager {
         }
 
         String fullLockKey = buildLockKey(lockKey);
-        RedisLock lock = null;
 
-        try {
+        try (RedisLock lock = tryLock(lockKey, waitTime, leaseTime)) {
             // 获取锁
-            lock = tryLock(lockKey, waitTime, leaseTime);
-            log.debug("在锁保护下执行操作: {}", fullLockKey);
+            logUtils.business()
+                    .trace("distributed_lock", "execute_with_lock", "start", "锁键: " + fullLockKey);
 
             // 执行业务操作
             T result = action.get();
 
-            log.debug("锁保护下的操作执行成功: {}", fullLockKey);
+            logUtils.business()
+                    .trace(
+                            "distributed_lock",
+                            "execute_with_lock",
+                            "success",
+                            "锁键: " + fullLockKey);
             return result;
 
         } catch (DistributedLockException e) {
-            log.error("获取分布式锁失败: {}", fullLockKey, e);
+            logUtils.exception()
+                    .business("distributed_lock_acquire_failed", e, "high", "锁键: " + fullLockKey);
             throw e;
         } catch (Exception e) {
-            log.error("在锁保护下执行操作失败: {}", fullLockKey, e);
+            logUtils.exception()
+                    .business("distributed_lock_execute_failed", e, "high", "锁键: " + fullLockKey);
             throw new DistributedLockException("在锁保护下执行操作失败", e, fullLockKey, waitTime, leaseTime);
-        } finally {
-            // 确保锁被正确释放
-            if (lock != null) {
-                try {
-                    lock.close();
-                } catch (Exception e) {
-                    log.error("释放锁时发生异常: {}", fullLockKey, e);
-                }
-            }
         }
+        // 确保锁被正确释放
     }
 
     /**
@@ -199,7 +210,8 @@ public class DistributedLockManager {
             RLock rLock = redissonClient.getLock(fullLockKey);
             return rLock.isLocked();
         } catch (Exception e) {
-            log.error("检查锁是否存在失败: {}", fullLockKey, e);
+            logUtils.exception()
+                    .business("distributed_lock_check_failed", e, "low", "锁键: " + fullLockKey);
             return false;
         }
     }
@@ -228,12 +240,25 @@ public class DistributedLockManager {
 
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                log.debug("尝试获取锁并执行操作，第{}次尝试: {}", attempt, fullLockKey);
+                logUtils.business()
+                        .trace(
+                                "distributed_lock",
+                                "retry_attempt",
+                                "start",
+                                "尝试次数: " + attempt,
+                                "锁键: " + fullLockKey);
                 return executeWithLock(lockKey, waitTime, leaseTime, action);
 
             } catch (DistributedLockException e) {
                 lastException = e;
-                log.warn("第{}次尝试获取锁失败: {}, 错误: {}", attempt, fullLockKey, e.getMessage());
+                logUtils.business()
+                        .trace(
+                                "distributed_lock",
+                                "retry_attempt",
+                                "failed",
+                                "尝试次数: " + attempt,
+                                "锁键: " + fullLockKey,
+                                "错误: " + e.getMessage());
 
                 if (attempt < maxRetries) {
                     try {
@@ -249,7 +274,13 @@ public class DistributedLockManager {
             }
         }
 
-        log.error("所有重试都失败，无法获取锁: {}, 重试次数: {}", fullLockKey, maxRetries);
+        logUtils.business()
+                .trace(
+                        "distributed_lock",
+                        "retry",
+                        "all_failed",
+                        "锁键: " + fullLockKey,
+                        "重试次数: " + maxRetries);
         throw new DistributedLockException(
                 String.format("经过%d次重试后仍无法获取锁", maxRetries),
                 lastException,
@@ -342,11 +373,22 @@ public class DistributedLockManager {
         try {
             return executeWithLock(lockKey, waitTime, leaseTime, action);
         } catch (DistributedLockException e) {
-            log.warn("无法获取锁，执行回退操作: {}, 错误: {}", fullLockKey, e.getMessage());
+            logUtils.business()
+                    .trace(
+                            "distributed_lock",
+                            "fallback",
+                            "executing",
+                            "锁键: " + fullLockKey,
+                            "错误: " + e.getMessage());
             try {
                 return fallbackAction.get();
             } catch (Exception fallbackException) {
-                log.error("回退操作也失败了: {}", fullLockKey, fallbackException);
+                logUtils.exception()
+                        .business(
+                                "distributed_lock_fallback_failed",
+                                fallbackException,
+                                "high",
+                                "锁键: " + fullLockKey);
                 throw new DistributedLockException(
                         "主要操作和回退操作都失败", fallbackException, fullLockKey, waitTime, leaseTime);
             }
@@ -404,14 +446,26 @@ public class DistributedLockManager {
             boolean result = rLock.forceUnlock();
 
             if (result) {
-                log.warn("强制释放锁成功: {}", fullLockKey);
+                logUtils.business()
+                        .trace("distributed_lock", "force_unlock", "success", "锁键: " + fullLockKey);
             } else {
-                log.warn("强制释放锁失败，锁可能不存在: {}", fullLockKey);
+                logUtils.business()
+                        .trace(
+                                "distributed_lock",
+                                "force_unlock",
+                                "failed",
+                                "锁键: " + fullLockKey,
+                                "锁可能不存在");
             }
 
             return result;
         } catch (Exception e) {
-            log.error("强制释放锁异常: {}", fullLockKey, e);
+            logUtils.exception()
+                    .business(
+                            "distributed_lock_force_unlock_error",
+                            e,
+                            "medium",
+                            "锁键: " + fullLockKey);
             return false;
         }
     }
@@ -451,7 +505,13 @@ public class DistributedLockManager {
         // 检查租约时间是否过长（防止死锁）
         Duration maxLeaseTime = Duration.ofMinutes(10);
         if (leaseTime.compareTo(maxLeaseTime) > 0) {
-            log.warn("租约时间过长: {}, 建议不超过: {}", leaseTime, maxLeaseTime);
+            logUtils.business()
+                    .trace(
+                            "distributed_lock",
+                            "config",
+                            "warning",
+                            "租约时间过长: " + leaseTime,
+                            "建议不超过: " + maxLeaseTime);
         }
     }
 

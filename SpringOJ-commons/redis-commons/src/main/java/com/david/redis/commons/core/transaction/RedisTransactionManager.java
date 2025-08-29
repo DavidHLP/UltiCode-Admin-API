@@ -1,8 +1,11 @@
 package com.david.redis.commons.core.transaction;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.annotation.RedisTransactional;
 import com.david.redis.commons.exception.RedisTransactionException;
-import lombok.extern.slf4j.Slf4j;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +22,12 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author David
  */
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class RedisTransactionManager {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final LogUtils logUtils;
 
     /** 线程本地事务上下文栈，支持嵌套事务 */
     private final ThreadLocal<List<TransactionContext>> transactionStack = new ThreadLocal<>();
@@ -31,10 +35,6 @@ public class RedisTransactionManager {
     /** 活跃事务映射，用于监控和管理 */
     private final ConcurrentMap<String, TransactionContext> activeTransactions =
             new ConcurrentHashMap<>();
-
-    public RedisTransactionManager(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
 
     /**
      * 开始事务
@@ -45,11 +45,13 @@ public class RedisTransactionManager {
     public TransactionContext beginTransaction(RedisTransactional annotation) {
         String transactionId = generateTransactionId();
 
-        log.debug(
-                "开始Redis事务: {}, 传播行为: {}, 只读: {}",
-                transactionId,
-                annotation.propagation(),
-                annotation.readOnly());
+        logUtils.business()
+                .trace(
+                        transactionId,
+                        "begin_transaction",
+                        "start",
+                        "传播行为: " + annotation.propagation(),
+                        "只读: " + annotation.readOnly());
 
         List<TransactionContext> stack = getOrCreateTransactionStack();
         TransactionContext parentContext = stack.isEmpty() ? null : stack.get(stack.size() - 1);
@@ -66,7 +68,7 @@ public class RedisTransactionManager {
             try {
                 redisTemplate.multi();
                 context.setTransactionStarted(true);
-                log.debug("Redis MULTI命令已执行，事务ID: {}", transactionId);
+                logUtils.business().trace(transactionId, "redis_multi", "executed");
             } catch (Exception e) {
                 // 清理上下文
                 stack.remove(context);
@@ -88,7 +90,7 @@ public class RedisTransactionManager {
         String transactionId = context.getTransactionId();
 
         try {
-            log.debug("提交Redis事务: {}", transactionId);
+            logUtils.business().trace(transactionId, "commit_transaction", "start");
 
             // 只有新事务且已开始的事务才需要执行EXEC
             if (context.isNewTransaction()
@@ -96,25 +98,29 @@ public class RedisTransactionManager {
                     && !context.isReadOnly()) {
                 List<Object> results = redisTemplate.exec();
 
-                if (results == null) {
-                    // EXEC返回null表示事务被DISCARD或WATCH的键被修改
-                    throw new RedisTransactionException(
-                            "Redis事务执行失败，可能由于WATCH的键被修改", new ArrayList<>(), transactionId, false);
-                }
-
-                log.debug("Redis事务提交成功: {}, 执行了{}个操作", transactionId, results.size());
+                logUtils.performance()
+                        .timing(
+                                "redis_transaction_commit",
+                                0,
+                                "事务ID: " + transactionId,
+                                "操作数: " + results.size());
             }
 
             context.setCommitted(true);
 
         } catch (Exception e) {
-            log.error("Redis事务提交失败: {}", transactionId, e);
+            logUtils.exception()
+                    .business("redis_transaction_commit_failed", e, "事务ID: " + transactionId);
 
             // 尝试回滚
             try {
                 rollbackTransaction(context);
             } catch (Exception rollbackException) {
-                log.error("事务回滚也失败了: {}", transactionId, rollbackException);
+                logUtils.exception()
+                        .system(
+                                "redis_transaction_rollback_also_failed",
+                                rollbackException,
+                                "high");
                 throw RedisTransactionException.rollbackFailed(transactionId, rollbackException);
             }
 
@@ -138,20 +144,21 @@ public class RedisTransactionManager {
         String transactionId = context.getTransactionId();
 
         try {
-            log.debug("回滚Redis事务: {}", transactionId);
+            logUtils.business().trace(transactionId, "rollback_transaction", "start");
 
             // 只有新事务且已开始的事务才需要执行DISCARD
             if (context.isNewTransaction()
                     && context.isTransactionStarted()
                     && !context.isReadOnly()) {
                 redisTemplate.discard();
-                log.debug("Redis DISCARD命令已执行，事务ID: {}", transactionId);
+                logUtils.business().trace(transactionId, "redis_discard", "executed");
             }
 
             context.setRolledBack(true);
 
         } catch (Exception e) {
-            log.error("Redis事务回滚失败: {}", transactionId, e);
+            logUtils.exception()
+                    .business("redis_transaction_rollback_failed", e, "事务ID: " + transactionId);
             throw RedisTransactionException.rollbackFailed(transactionId, e);
         } finally {
             cleanupTransaction(context);
@@ -318,7 +325,7 @@ public class RedisTransactionManager {
             }
         }
 
-        log.debug("事务上下文已清理: {}", transactionId);
+        logUtils.business().trace(transactionId, "cleanup_transaction", "completed");
     }
 
     /** 生成事务ID */

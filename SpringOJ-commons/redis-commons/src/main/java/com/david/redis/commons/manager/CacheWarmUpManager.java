@@ -1,8 +1,11 @@
 package com.david.redis.commons.manager;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.RedisUtils;
 import com.david.redis.commons.enums.WarmUpPriority;
-import lombok.extern.slf4j.Slf4j;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,29 +24,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author David
  * @since 1.0.0
  */
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class CacheWarmUpManager {
 
     private final RedisUtils redisUtils;
     private final BatchOperationManager batchManager;
+    private final LogUtils logUtils;
 
     // 预热任务队列，按优先级排序
     private final PriorityBlockingQueue<WarmUpTask> warmUpQueue = new PriorityBlockingQueue<>();
     private final Map<String, WarmUpTask> registeredTasks = new ConcurrentHashMap<>();
     private final AtomicBoolean isWarming = new AtomicBoolean(false);
 
-    public CacheWarmUpManager(RedisUtils redisUtils, BatchOperationManager batchManager) {
-        this.redisUtils = redisUtils;
-        this.batchManager = batchManager;
-    }
-
     /**
      * 应用启动时预热
      */
     @EventListener(ApplicationReadyEvent.class)
     public void warmUpOnStartup() {
-        log.info("应用启动完成，开始缓存预热...");
+        logUtils.business().event("cache_warmup_startup", "应用启动完成，开始缓存预热");
 
         CompletableFuture.runAsync(() -> {
             try {
@@ -57,9 +56,9 @@ public class CacheWarmUpManager {
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.warn("启动预热被中断", e);
+                logUtils.exception().system("cache_warmup_interrupted", e, "medium");
             } catch (Exception e) {
-                log.error("启动预热失败", e);
+                logUtils.exception().system("cache_warmup_startup_failed", e, "high");
             }
         });
     }
@@ -70,11 +69,11 @@ public class CacheWarmUpManager {
     @Scheduled(fixedRate = 300000)
     public void scheduledWarmUp() {
         if (isWarming.get()) {
-            log.debug("预热正在进行中，跳过定时预热");
+            logUtils.business().trace("cache_warmup_scheduled", "skip", "预热正在进行中，跳过定时预热");
             return;
         }
 
-        log.debug("开始定时预热...");
+        logUtils.business().trace("cache_warmup_scheduled", "start", "开始定时预热");
         executeWarmUp(WarmUpPriority.LOW);
     }
 
@@ -86,7 +85,7 @@ public class CacheWarmUpManager {
      */
     public void triggerWarmUp(String pattern, WarmUpPriority priority) {
         if (pattern == null || pattern.trim().isEmpty()) {
-            log.warn("预热模式为空，跳过预热");
+            logUtils.business().trace("cache_warmup_trigger", "empty_pattern", "预热模式为空，跳过预热");
             return;
         }
 
@@ -94,7 +93,7 @@ public class CacheWarmUpManager {
         registeredTasks.put(pattern, task);
         warmUpQueue.offer(task);
 
-        log.info("触发预热任务 - 模式: {}, 优先级: {}", pattern, priority);
+        logUtils.business().audit("system", "cache_warmup_trigger", "success", "模式: " + pattern, "优先级: " + priority);
 
         // 如果是高优先级，立即执行
         if (priority == WarmUpPriority.HIGH) {
@@ -114,7 +113,7 @@ public class CacheWarmUpManager {
         task.setDataLoader(dataLoader);
         registeredTasks.put(pattern, task);
 
-        log.info("注册预热任务 - 模式: {}, 优先级: {}", pattern, priority);
+        logUtils.business().audit("system", "cache_warmup_register", "success", "模式: " + pattern, "优先级: " + priority);
     }
 
     /**
@@ -122,7 +121,7 @@ public class CacheWarmUpManager {
      */
     private void executeWarmUp(WarmUpPriority targetPriority) {
         if (!isWarming.compareAndSet(false, true)) {
-            log.debug("预热正在进行中，跳过本次预热");
+            logUtils.business().trace("cache_warmup_execute", "skip", "预热正在进行中，跳过本次预热");
             return;
         }
 
@@ -142,11 +141,11 @@ public class CacheWarmUpManager {
             }
 
             if (tasksToExecute.isEmpty()) {
-                log.debug("没有找到优先级为 {} 的预热任务", targetPriority);
+                logUtils.business().trace("cache_warmup_execute", "no_tasks", "没有找到优先级为 " + targetPriority + " 的预热任务");
                 return;
             }
 
-            log.info("开始执行预热 - 优先级: {}, 任务数: {}", targetPriority, tasksToExecute.size());
+            logUtils.business().event("cache_warmup_execute_start", "优先级: " + targetPriority, "任务数: " + tasksToExecute.size());
 
             int totalWarmed = 0;
             for (WarmUpTask warmUpTask : tasksToExecute) {
@@ -158,14 +157,14 @@ public class CacheWarmUpManager {
                     Thread.sleep(100);
 
                 } catch (Exception e) {
-                    log.error("预热任务执行失败 - 模式: {}", warmUpTask.getPattern(), e);
+                    logUtils.exception().business("cache_warmup_task_failed", e, "模式: " + warmUpTask.getPattern());
                 }
             }
 
-            log.info("预热完成 - 优先级: {}, 预热键数: {}", targetPriority, totalWarmed);
+            logUtils.performance().timing("cache_warmup_complete", 0, "优先级: " + targetPriority, "预热键数: " + totalWarmed);
 
         } catch (Exception e) {
-            log.error("预热执行失败 - 优先级: {}", targetPriority, e);
+            logUtils.exception().system("cache_warmup_execute_failed", e, "high");
         } finally {
             isWarming.set(false);
         }
@@ -187,7 +186,7 @@ public class CacheWarmUpManager {
                     Map<String, Object> data = task.getDataLoader().loadData(pattern);
                     if (!data.isEmpty()) {
                         batchManager.batchSet(data, 3600); // 默认1小时TTL
-                        log.debug("预热加载新数据 - 模式: {}, 数据量: {}", pattern, data.size());
+                        logUtils.business().trace("cache_warmup_load_data", "success", "模式: " + pattern, "数据量: " + data.size());
                         return data.size();
                     }
                 }
@@ -208,15 +207,15 @@ public class CacheWarmUpManager {
                 for (String key : keysToRefresh) {
                     redisUtils.strings().expire(key, 3600, java.util.concurrent.TimeUnit.SECONDS);
                 }
-                log.debug("预热刷新缓存 - 模式: {}, 刷新数: {}", pattern, keysToRefresh.size());
+                logUtils.business().trace("cache_warmup_refresh", "success", "模式: " + pattern, "刷新数: " + keysToRefresh.size());
                 return keysToRefresh.size();
             }
 
-            log.debug("预热检查完成 - 模式: {}, 现有键数: {}", pattern, existingKeys.size());
+            logUtils.business().trace("cache_warmup_check", "complete", "模式: " + pattern, "现有键数: " + existingKeys.size());
             return existingKeys.size();
 
         } catch (Exception e) {
-            log.error("预热任务执行失败 - 模式: {}", pattern, e);
+            logUtils.exception().business("cache_warmup_task_execute_failed", e, "模式: " + pattern);
             return 0;
         }
     }
@@ -229,6 +228,14 @@ public class CacheWarmUpManager {
                 registeredTasks.size(),
                 warmUpQueue.size(),
                 isWarming.get());
+    }
+
+    /**
+     * 数据加载器接口
+     */
+    @FunctionalInterface
+    public interface DataLoader {
+        Map<String, Object> loadData(String pattern);
     }
 
     /**
@@ -276,37 +283,8 @@ public class CacheWarmUpManager {
     }
 
     /**
-     * 数据加载器接口
-     */
-    @FunctionalInterface
-    public interface DataLoader {
-        Map<String, Object> loadData(String pattern);
-    }
-
-    /**
-     * 预热统计信息
-     */
-    public static class WarmUpStats {
-        private final int registeredTasks;
-        private final int pendingTasks;
-        private final boolean isWarming;
-
-        public WarmUpStats(int registeredTasks, int pendingTasks, boolean isWarming) {
-            this.registeredTasks = registeredTasks;
-            this.pendingTasks = pendingTasks;
-            this.isWarming = isWarming;
-        }
-
-        public int getRegisteredTasks() {
-            return registeredTasks;
-        }
-
-        public int getPendingTasks() {
-            return pendingTasks;
-        }
-
-        public boolean isWarming() {
-            return isWarming;
-        }
+         * 预热统计信息
+         */
+        public record WarmUpStats(int registeredTasks,int pendingTasks,boolean isWarming) {
     }
 }

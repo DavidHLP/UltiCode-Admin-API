@@ -109,8 +109,6 @@ public @interface RedisTransactional {
      */
     long lockLeaseTimeMs() default 30000;
 
-    // ==================== 新增功能属性 ====================
-
     /**
      * 锁策略
      * 定义获取锁的策略和类型

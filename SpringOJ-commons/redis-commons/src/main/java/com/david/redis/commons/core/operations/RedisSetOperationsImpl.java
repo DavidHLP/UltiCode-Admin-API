@@ -1,5 +1,6 @@
 package com.david.redis.commons.core.operations;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.operations.interfaces.RedisSetOperations;
 import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
 import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
@@ -21,15 +22,9 @@ import java.util.Set;
  */
 public class RedisSetOperationsImpl extends AbstractRedisOperations implements RedisSetOperations {
 
-    /**
-     * 构造函数 - 完整版本
-     */
-    public RedisSetOperationsImpl(RedisTemplate<String, Object> redisTemplate,
-            RedisTransactionManager transactionManager,
-            RedisOperationExecutor executor,
-            RedisResultProcessor resultProcessor,
-            RedisLoggerHelper loggerHelper) {
-        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper);
+
+    public RedisSetOperationsImpl(RedisTemplate<String, Object> redisTemplate, RedisTransactionManager transactionManager, RedisOperationExecutor executor, RedisResultProcessor resultProcessor, RedisLoggerHelper loggerHelper, LogUtils logUtils) {
+        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper, logUtils);
     }
 
     @Override

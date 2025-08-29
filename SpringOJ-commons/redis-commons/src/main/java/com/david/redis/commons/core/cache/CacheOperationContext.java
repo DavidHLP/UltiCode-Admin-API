@@ -1,5 +1,8 @@
 package com.david.redis.commons.core.cache;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import java.lang.reflect.Method;
 
 /**
@@ -7,13 +10,23 @@ import java.lang.reflect.Method;
  *
  * @author David
  */
+@Getter
 public class CacheOperationContext {
 
+    /** -- GETTER -- 获取目标方法 */
     private final Method method;
+
+    /** -- GETTER -- 获取方法参数 */
     private final Object[] args;
+
+    /** -- GETTER -- 获取目标对象 */
     private final Object target;
+
+    /** -- GETTER -- 获取生成的缓存键 */
     private final String[] generatedKeys;
-    private Object result;
+
+    /** -- GETTER -- 获取方法执行结果 -- SETTER -- 设置方法执行结果 */
+    @Setter private Object result;
 
     public CacheOperationContext(Method method, Object[] args, Object target) {
         this.method = method;
@@ -22,58 +35,15 @@ public class CacheOperationContext {
         this.generatedKeys = new String[0];
     }
 
-    public CacheOperationContext(Method method, Object[] args, Object target, String[] generatedKeys) {
+    public CacheOperationContext(
+            Method method, Object[] args, Object target, String[] generatedKeys) {
         this.method = method;
         this.args = args;
         this.target = target;
         this.generatedKeys = generatedKeys != null ? generatedKeys : new String[0];
     }
 
-    /**
-     * 获取目标方法
-     */
-    public Method getMethod() {
-        return method;
-    }
-
-    /**
-     * 获取方法参数
-     */
-    public Object[] getArgs() {
-        return args;
-    }
-
-    /**
-     * 获取目标对象
-     */
-    public Object getTarget() {
-        return target;
-    }
-
-    /**
-     * 获取生成的缓存键
-     */
-    public String[] getGeneratedKeys() {
-        return generatedKeys;
-    }
-
-    /**
-     * 获取方法执行结果
-     */
-    public Object getResult() {
-        return result;
-    }
-
-    /**
-     * 设置方法执行结果
-     */
-    public void setResult(Object result) {
-        this.result = result;
-    }
-
-    /**
-     * 获取方法签名字符串
-     */
+    /** 获取方法签名字符串 */
     public String getMethodSignature() {
         StringBuilder sb = new StringBuilder();
         sb.append(method.getDeclaringClass().getSimpleName())
@@ -93,9 +63,7 @@ public class CacheOperationContext {
         return sb.toString();
     }
 
-    /**
-     * 获取参数值的字符串表示
-     */
+    /** 获取参数值的字符串表示 */
     public String getArgsString() {
         if (args == null || args.length == 0) {
             return "[]";

@@ -1,6 +1,7 @@
 package com.david.redis.commons.monitor;
 
-import lombok.extern.slf4j.Slf4j;
+import com.david.log.commons.core.LogUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,8 +14,8 @@ import java.util.concurrent.atomic.LongAdder;
  * @author David
  * @since 1.0.0
  */
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class CacheMetricsCollector {
 
     // 全局统计
@@ -22,6 +23,7 @@ public class CacheMetricsCollector {
     private final LongAdder totalMisses = new LongAdder();
     private final LongAdder totalOperations = new LongAdder();
     private final LongAdder totalResponseTime = new LongAdder();
+    private final LogUtils logUtils;
 
     // 按键前缀统计
     private final ConcurrentHashMap<String, KeyMetrics> keyMetricsMap = new ConcurrentHashMap<>();
@@ -180,7 +182,7 @@ public class CacheMetricsCollector {
         keyMetricsMap.clear();
         operationMetricsMap.clear();
 
-        log.info("缓存性能统计已重置");
+        logUtils.business().event("cache_metrics_reset", "缓存性能统计已重置");
     }
 
     /**

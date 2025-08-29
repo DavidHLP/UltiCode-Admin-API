@@ -9,7 +9,8 @@ import com.david.redis.commons.core.lock.interfaces.RedisLock;
 import com.david.redis.commons.core.cache.CacheKeyGenerator;
 import com.david.redis.commons.enums.TimeoutStrategy;
 import com.david.redis.commons.monitor.CacheMetricsCollector;
-import lombok.extern.slf4j.Slf4j;
+import com.david.log.commons.core.LogUtils;
+import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -24,16 +25,13 @@ import java.time.Duration;
 /**
  * Redis事务切面
  *
- * <p>
- * 处理@RedisTransactional注解，管理Redis事务的生命周期，
- * 包括事务的开始、提交、回滚和异常处理。
- * </p>
+ * <p>处理@RedisTransactional注解，管理Redis事务的生命周期， 包括事务的开始、提交、回滚和异常处理。
  *
  * @author David
  */
-@Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 @Order(100) // 确保在其他切面之前执行
 public class TransactionAspect {
 
@@ -41,36 +39,33 @@ public class TransactionAspect {
     private final RedisUtils redisUtils;
     private final CacheKeyGenerator cacheKeyGenerator;
     private final CacheMetricsCollector metricsCollector;
-
-    public TransactionAspect(RedisTransactionManager transactionManager,
-            RedisUtils redisUtils,
-            CacheKeyGenerator cacheKeyGenerator,
-            CacheMetricsCollector metricsCollector) {
-        this.transactionManager = transactionManager;
-        this.redisUtils = redisUtils;
-        this.cacheKeyGenerator = cacheKeyGenerator;
-        this.metricsCollector = metricsCollector;
-    }
+    private final LogUtils logUtils;
 
     /**
      * 处理@RedisTransactional注解的方法
      *
-     * @param joinPoint          连接点
+     * @param joinPoint 连接点
      * @param redisTransactional 事务注解
      * @return 方法执行结果
      * @throws Throwable 方法执行异常
      */
     @Around("@annotation(redisTransactional)")
-    public Object handleTransaction(ProceedingJoinPoint joinPoint, RedisTransactional redisTransactional)
-            throws Throwable {
+    public Object handleTransaction(
+            ProceedingJoinPoint joinPoint, RedisTransactional redisTransactional) throws Throwable {
 
         Method method = ((MethodSignature) joinPoint.getSignature()).getMethod();
         String methodName = method.getDeclaringClass().getSimpleName() + "." + method.getName();
         long startTime = System.currentTimeMillis();
 
-        log.debug("开始处理Redis事务方法: {} - 锁策略: {}, 重试策略: {}, 超时策略: {}",
-                methodName, redisTransactional.lockStrategy(),
-                redisTransactional.retryPolicy(), redisTransactional.timeoutStrategy());
+        logUtils.business()
+                .trace(
+                        "redis_transaction",
+                        "method_start",
+                        "handling",
+                        "方法: " + methodName,
+                        "锁策略: " + redisTransactional.lockStrategy(),
+                        "重试策略: " + redisTransactional.retryPolicy(),
+                        "超时策略: " + redisTransactional.timeoutStrategy());
 
         TransactionContext context = null;
 
@@ -78,28 +73,48 @@ public class TransactionAspect {
         String lockKeyExp = redisTransactional.lockKey();
         String resolvedLockKey = null;
         if (StringUtils.hasText(lockKeyExp)) {
-            resolvedLockKey = cacheKeyGenerator.resolveSpELExpression(lockKeyExp, method, joinPoint.getArgs());
+            resolvedLockKey =
+                    cacheKeyGenerator.resolveSpELExpression(
+                            lockKeyExp, method, joinPoint.getArgs());
             long timeoutMs = redisTransactional.timeout();
             long leaseMs = redisTransactional.lockLeaseTimeMs();
-            if (timeoutMs > 0 && leaseMs > 0 && leaseMs < timeoutMs) {
-                log.warn("锁租约时间({}ms)小于事务超时({}ms)，可能导致锁提前释放", leaseMs, timeoutMs);
+            if (leaseMs > 0 && leaseMs < timeoutMs) {
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "lock_config",
+                                "warning",
+                                "锁租约时间(" + leaseMs + "ms)小于事务超时(" + timeoutMs + "ms)，可能导致锁提前释放");
             }
         }
 
         try {
             if (StringUtils.hasText(resolvedLockKey)) {
                 // 锁+事务融合 - 使用新的 RedisUtils 锁操作
-                try (RedisLock ignored = redisUtils.locks().tryLock(
-                        resolvedLockKey,
-                        Duration.ofMillis(Math.max(0, redisTransactional.lockWaitTimeMs())),
-                        Duration.ofMillis(Math.max(0, redisTransactional.lockLeaseTimeMs())))) {
+                try (RedisLock ignored =
+                        redisUtils
+                                .locks()
+                                .tryLock(
+                                        resolvedLockKey,
+                                        Duration.ofMillis(
+                                                Math.max(0, redisTransactional.lockWaitTimeMs())),
+                                        Duration.ofMillis(
+                                                Math.max(
+                                                        0,
+                                                        redisTransactional.lockLeaseTimeMs())))) {
 
                     // 检查超时配置
                     validateTimeout(redisTransactional.timeout());
 
                     // 开始事务
                     context = transactionManager.beginTransaction(redisTransactional);
-                    log.debug("Redis事务已开始(带锁): {} | 锁键: {}", context.getTransactionId(), resolvedLockKey);
+                    logUtils.business()
+                            .trace(
+                                    "redis_transaction",
+                                    "transaction_start",
+                                    "with_lock",
+                                    "事务ID: " + context.getTransactionId(),
+                                    "锁键: " + resolvedLockKey);
 
                     // 记录方法调用
                     transactionManager.addOperation("METHOD_CALL: " + methodName);
@@ -115,7 +130,12 @@ public class TransactionAspect {
 
                     // 提交事务
                     transactionManager.commitTransaction(context);
-                    log.debug("Redis事务提交成功(带锁): {}", context.getTransactionId());
+                    logUtils.business()
+                            .trace(
+                                    "redis_transaction",
+                                    "transaction_commit",
+                                    "success_with_lock",
+                                    "事务ID: " + context.getTransactionId());
 
                     // 记录事务性能指标
                     recordTransactionMetrics(context, methodName, startTime, redisTransactional);
@@ -129,7 +149,12 @@ public class TransactionAspect {
 
                 // 开始事务
                 context = transactionManager.beginTransaction(redisTransactional);
-                log.debug("Redis事务已开始: {}", context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "transaction_start",
+                                "no_lock",
+                                "事务ID: " + context.getTransactionId());
 
                 // 记录方法调用
                 transactionManager.addOperation("METHOD_CALL: " + methodName);
@@ -145,7 +170,12 @@ public class TransactionAspect {
 
                 // 提交事务
                 transactionManager.commitTransaction(context);
-                log.debug("Redis事务提交成功: {}", context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "transaction_commit",
+                                "success",
+                                "事务ID: " + context.getTransactionId());
 
                 // 记录事务性能指标
                 recordTransactionMetrics(context, methodName, startTime, redisTransactional);
@@ -153,16 +183,31 @@ public class TransactionAspect {
                 return result;
             }
         } catch (Throwable throwable) {
-            log.error("Redis事务方法执行异常: {}, 事务ID: {}",
-                    methodName, context != null ? context.getTransactionId() : "unknown", throwable);
+            logUtils.exception()
+                    .business(
+                            "redis_transaction_error",
+                            throwable,
+                            "high",
+                            "方法: " + methodName,
+                            "事务ID: " + (context != null ? context.getTransactionId() : "unknown"));
 
             // 判断是否需要回滚
             if (context != null && shouldRollback(throwable, redisTransactional)) {
                 try {
                     transactionManager.rollbackTransaction(context);
-                    log.debug("Redis事务回滚成功: {}", context.getTransactionId());
+                    logUtils.business()
+                            .trace(
+                                    "redis_transaction",
+                                    "transaction_rollback",
+                                    "success",
+                                    "事务ID: " + context.getTransactionId());
                 } catch (Exception rollbackException) {
-                    log.error("Redis事务回滚失败: {}", context.getTransactionId(), rollbackException);
+                    logUtils.exception()
+                            .business(
+                                    "redis_transaction_rollback_failed",
+                                    rollbackException,
+                                    "high",
+                                    "事务ID: " + context.getTransactionId());
                     // 将回滚异常作为抑制异常添加到原始异常中
                     throwable.addSuppressed(rollbackException);
                 }
@@ -181,19 +226,24 @@ public class TransactionAspect {
     /**
      * 判断是否应该回滚事务
      *
-     * @param throwable  抛出的异常
+     * @param throwable 抛出的异常
      * @param annotation 事务注解
      * @return 如果应该回滚返回true
      */
     private boolean shouldRollback(Throwable throwable, RedisTransactional annotation) {
         // 检查noRollbackFor配置
         Class<? extends Throwable>[] noRollbackFor = annotation.noRollbackFor();
-        if (noRollbackFor.length > 0) {
-            for (Class<? extends Throwable> exceptionClass : noRollbackFor) {
-                if (exceptionClass.isAssignableFrom(throwable.getClass())) {
-                    log.debug("异常{}在noRollbackFor列表中，不进行回滚", throwable.getClass().getSimpleName());
-                    return false;
-                }
+        for (Class<? extends Throwable> exceptionClass : noRollbackFor) {
+            if (exceptionClass.isAssignableFrom(throwable.getClass())) {
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "rollback_check",
+                                "no_rollback",
+                                "异常: "
+                                        + throwable.getClass().getSimpleName()
+                                        + " 在noRollbackFor列表中");
+                return false;
             }
         }
 
@@ -202,22 +252,47 @@ public class TransactionAspect {
         if (rollbackFor.length > 0) {
             for (Class<? extends Throwable> exceptionClass : rollbackFor) {
                 if (exceptionClass.isAssignableFrom(throwable.getClass())) {
-                    log.debug("异常{}在rollbackFor列表中，进行回滚", throwable.getClass().getSimpleName());
+                    logUtils.business()
+                            .trace(
+                                    "redis_transaction",
+                                    "rollback_check",
+                                    "will_rollback",
+                                    "异常: "
+                                            + throwable.getClass().getSimpleName()
+                                            + " 在rollbackFor列表中");
                     return true;
                 }
             }
             // 如果指定了rollbackFor但异常不在列表中，则不回滚
-            log.debug("异常{}不在rollbackFor列表中，不进行回滚", throwable.getClass().getSimpleName());
+            logUtils.business()
+                    .trace(
+                            "redis_transaction",
+                            "rollback_check",
+                            "no_rollback",
+                            "异常: " + throwable.getClass().getSimpleName() + " 不在rollbackFor列表中");
             return false;
         }
 
         // 默认行为：RuntimeException和Error会触发回滚
-        boolean shouldRollback = (throwable instanceof RuntimeException) || (throwable instanceof Error);
+        boolean shouldRollback =
+                (throwable instanceof RuntimeException) || (throwable instanceof Error);
 
         if (shouldRollback) {
-            log.debug("异常{}是RuntimeException或Error，进行回滚", throwable.getClass().getSimpleName());
+            logUtils.business()
+                    .trace(
+                            "redis_transaction",
+                            "rollback_check",
+                            "will_rollback",
+                            "异常: "
+                                    + throwable.getClass().getSimpleName()
+                                    + " 是RuntimeException或Error");
         } else {
-            log.debug("异常{}是受检异常，不进行回滚", throwable.getClass().getSimpleName());
+            logUtils.business()
+                    .trace(
+                            "redis_transaction",
+                            "rollback_check",
+                            "no_rollback",
+                            "异常: " + throwable.getClass().getSimpleName() + " 是受检异常");
         }
 
         return shouldRollback;
@@ -234,31 +309,52 @@ public class TransactionAspect {
         }
 
         if (timeout > 0 && timeout < 1000) {
-            log.warn("事务超时时间过短: {}ms，建议至少设置为1000ms", timeout);
+            logUtils.business()
+                    .trace(
+                            "redis_transaction",
+                            "timeout_config",
+                            "warning",
+                            "事务超时时间过短: " + timeout + "ms，建议至少设置为1000ms");
         }
 
         if (timeout > 300000) { // 5分钟
-            log.warn("事务超时时间过长: {}ms，建议不超过300000ms(5分钟)", timeout);
+            logUtils.business()
+                    .trace(
+                            "redis_transaction",
+                            "timeout_config",
+                            "warning",
+                            "事务超时时间过长: " + timeout + "ms，建议不超过300000ms(5分钟)");
         }
     }
 
     /**
      * 记录事务性能指标
      *
-     * @param context    事务上下文
+     * @param context 事务上下文
      * @param methodName 方法名
-     * @param startTime  开始时间
+     * @param startTime 开始时间
      * @param annotation 事务注解
      */
-    private void recordTransactionMetrics(TransactionContext context, String methodName,
-            long startTime, RedisTransactional annotation) {
+    private void recordTransactionMetrics(
+            TransactionContext context,
+            String methodName,
+            long startTime,
+            RedisTransactional annotation) {
         if (context != null) {
             long executionTime = System.currentTimeMillis() - startTime;
             int operationCount = context.getOperations().size();
-            String status = context.getStatus().toString();
+            String status = context.getStatus();
 
-            log.debug("Redis事务性能指标 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}, 状态: {}",
-                    methodName, context.getTransactionId(), executionTime, operationCount, status);
+            logUtils.business()
+                    .trace(
+                            "redis_transaction",
+                            "performance",
+                            "metrics",
+                            "方法: " + methodName,
+                            "事务ID: " + context.getTransactionId(),
+                            "执行时间: " + executionTime + "ms",
+                            "操作数: " + operationCount,
+                            "状态: " + status);
 
             // 使用新的性能监控组件
             if (annotation.enableMetrics()) {
@@ -272,15 +368,31 @@ public class TransactionAspect {
 
             // 记录慢事务警告
             if (executionTime > 1000) { // 超过1秒的事务
-                log.warn("检测到慢Redis事务 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 操作数: {}, 锁策略: {}, 重试策略: {}",
-                        methodName, context.getTransactionId(), executionTime, operationCount,
-                        annotation.lockStrategy(), annotation.retryPolicy());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "performance",
+                                "slow_transaction",
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId(),
+                                "执行时间: " + executionTime + "ms",
+                                "操作数: " + operationCount,
+                                "锁策略: " + annotation.lockStrategy(),
+                                "重试策略: " + annotation.retryPolicy());
             }
 
             // 检查死锁检测
             if (annotation.deadlockDetection() && executionTime > annotation.timeout()) {
-                log.warn("事务执行时间超过配置超时 - 方法: {}, 事务ID: {}, 执行时间: {}ms, 配置超时: {}ms, 可能存在死锁",
-                        methodName, context.getTransactionId(), executionTime, annotation.timeout());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "deadlock_detection",
+                                "timeout_exceeded",
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId(),
+                                "执行时间: " + executionTime + "ms",
+                                "配置超时: " + annotation.timeout() + "ms",
+                                "可能存在死锁");
             }
 
             // 处理超时策略
@@ -290,29 +402,59 @@ public class TransactionAspect {
         }
     }
 
-    /**
-     * 处理超时策略
-     */
-    private void handleTimeoutStrategy(TransactionContext context, TimeoutStrategy strategy, String methodName) {
+    /** 处理超时策略 */
+    private void handleTimeoutStrategy(
+            TransactionContext context, TimeoutStrategy strategy, String methodName) {
         switch (strategy) {
             case ROLLBACK:
-                log.info("执行超时策略 ROLLBACK - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "timeout_strategy",
+                                "rollback",
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId());
                 // 超时回滚逻辑已在主流程中处理
                 break;
             case FORCE_COMMIT:
-                log.warn("执行超时策略 FORCE_COMMIT - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "timeout_strategy",
+                                "force_commit",
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId());
                 // 强制提交，忽略超时
                 break;
             case THROW_EXCEPTION:
-                log.error("执行超时策略 THROW_EXCEPTION - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "timeout_strategy",
+                                "throw_exception",
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId());
                 // 异常已在主流程中抛出
                 break;
             case EXTEND_TIMEOUT:
-                log.info("执行超时策略 EXTEND_TIMEOUT - 方法: {}, 事务ID: {}", methodName, context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "timeout_strategy",
+                                "extend_timeout",
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId());
                 // 延长超时时间的逻辑
                 break;
             default:
-                log.warn("未知的超时策略: {} - 方法: {}, 事务ID: {}", strategy, methodName, context.getTransactionId());
+                logUtils.business()
+                        .trace(
+                                "redis_transaction",
+                                "timeout_strategy",
+                                "unknown",
+                                "策略: " + strategy,
+                                "方法: " + methodName,
+                                "事务ID: " + context.getTransactionId());
         }
     }
 }

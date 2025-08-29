@@ -1,7 +1,8 @@
 package com.david.redis.commons.manager;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.RedisUtils;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -16,21 +17,18 @@ import java.util.concurrent.TimeUnit;
  * @author David
  * @since 1.0.0
  */
-@Slf4j
 @Component
+@RequiredArgsConstructor
 public class BatchOperationManager {
 
     private final RedisUtils redisUtils;
+    private final LogUtils logUtils;
     private final Map<String, List<String>> batchBuffer = new ConcurrentHashMap<>();
     private final Map<String, Long> lastFlushTime = new ConcurrentHashMap<>();
 
     // 批量操作配置
     private static final int DEFAULT_BATCH_SIZE = 10;
     private static final long FLUSH_INTERVAL_MS = 1000; // 1秒
-
-    public BatchOperationManager(RedisUtils redisUtils) {
-        this.redisUtils = redisUtils;
-    }
 
     /**
      * 批量获取缓存
@@ -59,16 +57,16 @@ public class BatchOperationManager {
                         T typedValue = (T) value;
                         result.put(keys.get(i), typedValue);
                     } catch (ClassCastException e) {
-                        log.warn("类型转换失败 - 键: {}, 期望类型: {}, 实际类型: {}",
-                                keys.get(i), type.getSimpleName(), value.getClass().getSimpleName());
+                        logUtils.exception().business("batch_get_type_cast_failed", e, 
+                                "键: " + keys.get(i), "期望类型: " + type.getSimpleName(), "实际类型: " + value.getClass().getSimpleName());
                     }
                 }
             }
 
-            log.debug("批量获取缓存完成 - 请求键数: {}, 命中数: {}", keys.size(), result.size());
+            logUtils.performance().timing("batch_get_complete", 0, "请求键数: " + keys.size(), "命中数: " + result.size());
 
         } catch (Exception e) {
-            log.error("批量获取缓存失败 - 键数: {}", keys.size(), e);
+            logUtils.exception().system("batch_get_failed", e, "high");
         }
 
         return result;
@@ -110,10 +108,10 @@ public class BatchOperationManager {
                 }
             }
 
-            log.debug("批量设置缓存完成 - 键数: {}, TTL: {}秒", keyValues.size(), ttl);
+            logUtils.performance().timing("batch_set_complete", 0, "键数: " + keyValues.size(), "TTL: " + ttl + "秒");
 
         } catch (Exception e) {
-            log.error("批量设置缓存失败 - 键数: {}", keyValues.size(), e);
+            logUtils.exception().system("batch_set_failed", e, "high");
         }
     }
 
@@ -132,11 +130,11 @@ public class BatchOperationManager {
             Long deleted = redisUtils.strings().delete(keys.toArray(new String[0]));
             long deletedCount = deleted != null ? deleted : 0;
 
-            log.debug("批量删除缓存完成 - 请求删除: {}, 实际删除: {}", keys.size(), deletedCount);
+            logUtils.performance().timing("batch_delete_complete", 0, "请求删除: " + keys.size(), "实际删除: " + deletedCount);
             return deletedCount;
 
         } catch (Exception e) {
-            log.error("批量删除缓存失败 - 键数: {}", keys.size(), e);
+            logUtils.exception().system("batch_delete_failed", e, "high");
             return 0;
         }
     }
@@ -198,7 +196,7 @@ public class BatchOperationManager {
                 // 可以添加其他批量操作类型
 
             } catch (Exception e) {
-                log.error("批量操作执行失败 - 操作: {}, 键数: {}", batchKey, batch.size(), e);
+                logUtils.exception().system("batch_operation_failed", e, "high");
             }
         });
     }

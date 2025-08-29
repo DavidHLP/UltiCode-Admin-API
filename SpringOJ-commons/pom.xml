@@ -19,6 +19,7 @@
         <module>servlet-commons</module>
         <module>webflux-commons</module>
         <module>mybatis-commons</module>
+        <module>log-commons</module>
     </modules>
 
     <artifactId>SpringOJ-commons</artifactId>

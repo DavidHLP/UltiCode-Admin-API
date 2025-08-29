@@ -1,6 +1,5 @@
 package com.david.redis.commons.core.operations.support;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -14,7 +13,6 @@ import java.util.function.Supplier;
  *
  * @author David
  */
-@Slf4j
 @Component
 public class RedisResultProcessor {
 

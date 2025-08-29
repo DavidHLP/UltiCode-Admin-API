@@ -2,7 +2,6 @@ package com.david.redis.commons.core.operations.support;
 
 import com.david.redis.commons.exception.RedisOperationException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.function.Supplier;
@@ -15,7 +14,6 @@ import java.util.function.Supplier;
  * 
  * @author David
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RedisOperationExecutor {

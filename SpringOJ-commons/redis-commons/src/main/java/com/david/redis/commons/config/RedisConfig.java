@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.david.log.commons.core.LogUtils;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,11 +31,11 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  *
  * @author david
  */
-@Slf4j
 @Configuration
 @RequiredArgsConstructor
 @ConditionalOnClass(RedisTemplate.class)
 public class RedisConfig {
+    private final LogUtils logUtils;
 
     private final RedisCommonsProperties redisCommonsProperties;
 
@@ -43,7 +43,7 @@ public class RedisConfig {
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        log.info("正在配置 RedisTemplate...");
+        logUtils.business().event("redis_config", "configure_template", "start", "正在配置 RedisTemplate");
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
@@ -66,7 +66,7 @@ public class RedisConfig {
 
         template.afterPropertiesSet();
 
-        log.info("RedisTemplate 配置完成");
+        logUtils.business().event("redis_config", "configure_template", "success", "RedisTemplate 配置完成");
         return template;
     }
 
@@ -113,7 +113,7 @@ public class RedisConfig {
                     try {
                         return LocalDateTime.parse(dateString);
                     } catch (Exception ex) {
-                        log.warn("无法解析日期时间字符串: {}", dateString, ex);
+                        logUtils.business().trace("redis_serializer", "parse_datetime", "parse_failed", "dateString: " + dateString);
                         return null;
                     }
                 }
@@ -131,7 +131,7 @@ public class RedisConfig {
         // 忽略未知属性，避免反序列化时出错
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        log.info("已配置自定义 LocalDateTime 反序列化器，支持多种日期格式");
+        logUtils.business().event("redis_config", "configure_serializer", "success", "已配置自定义 LocalDateTime 反序列化器");
         return new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
     }
 }

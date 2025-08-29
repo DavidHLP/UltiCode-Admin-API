@@ -6,7 +6,7 @@ import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
-import lombok.extern.slf4j.Slf4j;
+import com.david.log.commons.core.LogUtils;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -30,15 +30,10 @@ import java.util.concurrent.TimeUnit;
  * 
  * @author David
  */
-@Slf4j
 public class RedisStringOperationsImpl extends AbstractRedisOperations implements RedisStringOperations {
 
-    public RedisStringOperationsImpl(RedisTemplate<String, Object> redisTemplate,
-            RedisTransactionManager transactionManager,
-            RedisOperationExecutor executor,
-            RedisResultProcessor resultProcessor,
-            RedisLoggerHelper loggerHelper) {
-        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper);
+    public RedisStringOperationsImpl(RedisTemplate<String, Object> redisTemplate, RedisTransactionManager transactionManager, RedisOperationExecutor executor, RedisResultProcessor resultProcessor, RedisLoggerHelper loggerHelper, LogUtils logUtils) {
+        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper, logUtils);
     }
 
     @Override
@@ -135,7 +130,7 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations implement
         RedisConnectionFactory factory = redisTemplate.getConnectionFactory();
 
         if (factory == null) {
-            log.warn("RedisConnectionFactory is null, fallback to RedisTemplate.keys()");
+            logUtils.business().trace("redis_scan_keys", "fallback", "RedisConnectionFactory is null, fallback to RedisTemplate.keys()");
             return keys(pattern);
         }
 
@@ -155,10 +150,10 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations implement
             }
 
         } catch (InvalidDataAccessApiUsageException e) {
-            log.warn("SCAN not allowed in current mode, fallback to KEYS - pattern: {}", pattern, e);
+            logUtils.business().trace("redis_scan_keys", "scan_not_allowed", "SCAN not allowed in current mode, fallback to KEYS", "pattern: " + pattern);
             return fallbackToKeysWithConnection(factory, pattern);
         } catch (Exception e) {
-            log.error("Failed to scan keys by pattern (will fallback to KEYS via RedisTemplate): {}", pattern, e);
+            logUtils.exception().business("redis_scan_keys_failed", e, "Failed to scan keys by pattern", "pattern: " + pattern);
             return keys(pattern);
         }
     }
@@ -184,7 +179,7 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations implement
         try (RedisConnection connection = factory.getConnection()) {
             return fallbackToKeysCommand(connection, pattern);
         } catch (Exception ex) {
-            log.error("Fallback KEYS failed on standalone connection, final fallback to RedisTemplate.keys()", ex);
+            logUtils.exception().business("redis_keys_fallback_failed", ex, "Fallback KEYS failed on standalone connection");
             return keys(pattern);
         }
     }

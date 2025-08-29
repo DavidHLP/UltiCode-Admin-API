@@ -51,8 +51,6 @@ public @interface RedisEvict {
      */
     boolean beforeInvocation() default false;
 
-    // ==================== 新增功能属性 ====================
-
     /**
      * 延迟删除时间（毫秒）
      * 延迟指定时间后删除缓存，避免缓存雪崩

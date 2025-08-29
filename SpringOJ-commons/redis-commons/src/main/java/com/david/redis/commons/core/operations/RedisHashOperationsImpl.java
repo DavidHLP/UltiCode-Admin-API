@@ -1,5 +1,6 @@
 package com.david.redis.commons.core.operations;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.core.operations.interfaces.RedisHashOperations;
 import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
 import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
@@ -8,6 +9,7 @@ import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
 
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
@@ -18,16 +20,12 @@ import java.util.*;
  *
  * @author David
  */
+@Component
 public class RedisHashOperationsImpl extends AbstractRedisOperations
         implements RedisHashOperations {
 
-    public RedisHashOperationsImpl(
-            RedisTemplate<String, Object> redisTemplate,
-            RedisTransactionManager transactionManager,
-            RedisOperationExecutor executor,
-            RedisResultProcessor resultProcessor,
-            RedisLoggerHelper loggerHelper) {
-        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper);
+    public RedisHashOperationsImpl(RedisTemplate<String, Object> redisTemplate, RedisTransactionManager transactionManager, RedisOperationExecutor executor, RedisResultProcessor resultProcessor, RedisLoggerHelper loggerHelper, LogUtils logUtils) {
+        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper, logUtils);
     }
 
     @Override

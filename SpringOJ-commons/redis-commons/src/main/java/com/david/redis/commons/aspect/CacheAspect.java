@@ -1,21 +1,26 @@
 package com.david.redis.commons.aspect;
 
+import com.david.log.commons.core.LogUtils;
 import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.redis.commons.annotation.RedisEvict;
+import com.david.redis.commons.core.RedisUtils;
 import com.david.redis.commons.core.cache.CacheConditionEvaluator;
 import com.david.redis.commons.core.cache.CacheKeyGenerator;
 import com.david.redis.commons.core.cache.CacheOperationContext;
-import com.david.redis.commons.core.RedisUtils;
 import com.david.redis.commons.enums.WarmUpPriority;
 import com.david.redis.commons.manager.BatchOperationManager;
 import com.david.redis.commons.manager.CacheWarmUpManager;
 import com.david.redis.commons.monitor.CacheMetricsCollector;
 import com.david.redis.commons.properties.RedisCommonsProperties;
-import lombok.extern.slf4j.Slf4j;
+
+import lombok.RequiredArgsConstructor;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -29,10 +34,12 @@ import java.util.concurrent.CompletableFuture;
  *
  * @author David
  */
-@Slf4j
 @Aspect
 @Component
+@RequiredArgsConstructor
 public class CacheAspect {
+
+    private static final Logger log = LoggerFactory.getLogger(CacheAspect.class);
 
     private final RedisUtils redisUtils;
     private final CacheKeyGenerator keyGenerator;
@@ -41,22 +48,7 @@ public class CacheAspect {
     private final BatchOperationManager batchManager;
     private final CacheWarmUpManager warmUpManager;
     private final CacheMetricsCollector metricsCollector;
-
-    public CacheAspect(RedisUtils redisUtils,
-            CacheKeyGenerator keyGenerator,
-            CacheConditionEvaluator conditionEvaluator,
-            RedisCommonsProperties properties,
-            BatchOperationManager batchManager,
-            CacheWarmUpManager warmUpManager,
-            CacheMetricsCollector metricsCollector) {
-        this.redisUtils = redisUtils;
-        this.keyGenerator = keyGenerator;
-        this.conditionEvaluator = conditionEvaluator;
-        this.properties = properties;
-        this.batchManager = batchManager;
-        this.warmUpManager = warmUpManager;
-        this.metricsCollector = metricsCollector;
-    }
+    private final LogUtils logUtils;
 
     /**
      * 处理@RedisCacheable注解的方法
@@ -75,8 +67,7 @@ public class CacheAspect {
         try {
             // 生成缓存键
             String cacheKey = generateCacheKey(redisCacheable, method, args);
-            log.debug("处理缓存注解 @RedisCacheable - 方法: {}, 缓存键: {}",
-                    context.getMethodSignature(), cacheKey);
+            logUtils.business().trace("cache_aspect", "cacheable", "process", "method: " + context.getMethodSignature(), "cacheKey: " + cacheKey);
 
             // 处理批量操作
             if (redisCacheable.batchSize() > 1) {
@@ -93,7 +84,7 @@ public class CacheAspect {
                     metricsCollector.recordHit(cacheKey, responseTime);
                 }
 
-                log.debug("缓存命中 - 键: {}, 值类型: {}", cacheKey, cachedValue.getClass().getSimpleName());
+                logUtils.business().trace("cache_aspect", "cacheable", "hit", "cacheKey: " + cacheKey, "valueType: " + cachedValue.getClass().getSimpleName());
 
                 // 检查是否需要刷新缓存
                 if (shouldRefreshCache(cacheKey, redisCacheable)) {
@@ -108,7 +99,7 @@ public class CacheAspect {
                 metricsCollector.recordMiss(cacheKey, responseTime);
             }
 
-            log.debug("缓存未命中 - 键: {}, 执行原方法", cacheKey);
+            logUtils.business().trace("cache_aspect", "cacheable", "miss", "cacheKey: " + cacheKey, "executing original method");
 
             // 执行原方法
             Object result = joinPoint.proceed();
@@ -125,14 +116,14 @@ public class CacheAspect {
                     metricsCollector.recordSet(cacheKey, writeTime);
                 }
 
-                log.debug("缓存结果已保存 - 键: {}, TTL: {}秒", cacheKey, redisCacheable.ttl());
+                logUtils.business().trace("cache_aspect", "cacheable", "cached", "cacheKey: " + cacheKey, "ttl: " + redisCacheable.ttl() + " seconds");
 
                 // 触发预热
                 if (redisCacheable.warmUp()) {
                     triggerWarmUp(cacheKey, redisCacheable);
                 }
             } else {
-                log.debug("缓存条件不满足，跳过缓存 - 键: {}", cacheKey);
+                logUtils.business().trace("cache_aspect", "cacheable", "condition_not_met", "cacheKey: " + cacheKey);
             }
 
             return result;
@@ -143,8 +134,7 @@ public class CacheAspect {
                 metricsCollector.recordError("CACHE_GET", errorTime);
             }
 
-            log.error("缓存操作失败 - 方法: {}, 参数: {}",
-                    context.getMethodSignature(), context.getArgsString(), e);
+            logUtils.exception().business("cache_operation_failed", e, "缓存操作失败", "method: " + context.getMethodSignature(), "args: " + context.getArgsString());
 
             // 缓存失败时仍然执行原方法
             return joinPoint.proceed();
@@ -169,7 +159,7 @@ public class CacheAspect {
 
             // 如果需要在方法执行前驱逐缓存
             if (redisEvict.beforeInvocation()) {
-                log.debug("方法执行前驱逐缓存 - 方法: {}", context.getMethodSignature());
+                logUtils.business().trace("cache_aspect", "evict", "before_invocation", "method: " + context.getMethodSignature());
                 evictCache(redisEvict, method, args, null);
             }
 
@@ -179,15 +169,14 @@ public class CacheAspect {
 
             // 如果需要在方法执行后驱逐缓存（默认行为）
             if (!redisEvict.beforeInvocation()) {
-                log.debug("方法执行后驱逐缓存 - 方法: {}", context.getMethodSignature());
+                logUtils.business().trace("cache_aspect", "evict", "after_invocation", "method: " + context.getMethodSignature());
                 evictCache(redisEvict, method, args, result);
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("缓存驱逐操作失败 - 方法: {}, 参数: {}",
-                    context.getMethodSignature(), context.getArgsString(), e);
+            logUtils.exception().business("cache_evict_failed", e, "缓存驱逐操作失败", "method: " + context.getMethodSignature(), "args: " + context.getArgsString());
             throw e;
         }
     }
@@ -221,28 +210,28 @@ public class CacheAspect {
             }
         } catch (org.springframework.data.redis.serializer.SerializationException e) {
             // 反序列化失败，可能是数据格式不兼容，删除损坏的缓存
-            log.warn("缓存反序列化失败，删除损坏的缓存 - 键: {}, 错误: {}", cacheKey, e.getMessage());
+            logUtils.business().trace("cache_aspect", "deserialization_failed", "corrupted_cache", "cacheKey: " + cacheKey, "error: " + e.getMessage());
             try {
                 redisUtils.strings().delete(cacheKey);
             } catch (Exception deleteEx) {
-                log.warn("删除损坏缓存失败 - 键: {}", cacheKey, deleteEx);
+                logUtils.exception().business("cache_delete_corrupted_failed", deleteEx, "high", "删除损坏缓存失败", "cacheKey: " + cacheKey);
             }
             return null;
         } catch (com.david.redis.commons.exception.RedisOperationException e) {
             // Redis操作异常，可能包含反序列化错误
             if (e.getCause() instanceof org.springframework.data.redis.serializer.SerializationException) {
-                log.warn("缓存反序列化失败，删除损坏的缓存 - 键: {}, 错误: {}", cacheKey, e.getMessage());
+                logUtils.business().trace("cache_aspect", "deserialization_failed", "redis_operation_exception", "cacheKey: " + cacheKey, "error: " + e.getMessage());
                 try {
                     redisUtils.strings().delete(cacheKey);
                 } catch (Exception deleteEx) {
-                    log.warn("删除损坏缓存失败 - 键: {}", cacheKey, deleteEx);
+                    logUtils.exception().business("cache_delete_corrupted_failed", deleteEx, "删除损坏缓存失败", "cacheKey: " + cacheKey);
                 }
                 return null;
             }
-            log.warn("从缓存获取数据失败 - 键: {}", cacheKey, e);
+            logUtils.business().trace("cache_aspect", "get_cache_failed", "Redis操作异常", "cacheKey: " + cacheKey, "error: " + e.getMessage());
             return null;
         } catch (Exception e) {
-            log.warn("从缓存获取数据失败 - 键: {}", cacheKey, e);
+            logUtils.business().trace("cache_aspect", "get_cache_failed", "获取缓存异常", "cacheKey: " + cacheKey, "error: " + e.getMessage());
             return null;
         }
     }
@@ -274,7 +263,7 @@ public class CacheAspect {
                 redisUtils.strings().set(cacheKey, result, defaultTtl);
             }
         } catch (Exception e) {
-            log.error("缓存结果失败 - 键: {}", cacheKey, e);
+            logUtils.exception().business("cache_result_failed", e, "medium", "缓存结果失败", "cacheKey: " + cacheKey);
         }
     }
 
@@ -285,7 +274,7 @@ public class CacheAspect {
         try {
             // 评估驱逐条件
             if (!conditionEvaluator.evaluateCondition(redisEvict.condition(), method, args, result)) {
-                log.debug("缓存驱逐条件不满足，跳过驱逐操作");
+                logUtils.business().trace("cache_aspect", "evict", "condition_not_met", "缓存驱逐条件不满足");
                 return;
             }
 
@@ -297,7 +286,7 @@ public class CacheAspect {
                 evictSpecificKeys(redisEvict, method, args);
             }
         } catch (Exception e) {
-            log.error("缓存驱逐失败", e);
+            logUtils.exception().business("cache_evict_general_failed", e, "medium", "缓存驱逐失败");
         }
     }
 
@@ -318,9 +307,9 @@ public class CacheAspect {
 
         if (!keys.isEmpty()) {
             Long deletedCount = redisUtils.strings().delete(keys.toArray(new String[0]));
-            log.info("批量驱逐缓存完成 - 模式: {}, 删除数量: {}", pattern, deletedCount);
+            logUtils.business().event("cache_aspect", "evict_all", "batch_complete", "pattern: " + pattern, "deletedCount: " + deletedCount);
         } else {
-            log.debug("未找到匹配的缓存键 - 模式: {}", pattern);
+            logUtils.business().trace("cache_aspect", "evict_all", "no_match", "pattern: " + pattern);
         }
     }
 
@@ -330,7 +319,7 @@ public class CacheAspect {
     private void evictSpecificKeys(RedisEvict redisEvict, Method method, Object[] args) {
         String[] keyExpressions = redisEvict.keys();
         if (keyExpressions.length == 0) {
-            log.warn("@RedisEvict注解未指定要驱逐的键");
+            logUtils.business().trace("cache_aspect", "evict_specific", "no_keys_specified", "@RedisEvict注解未指定要驱逐的键");
             return;
         }
 
@@ -345,7 +334,7 @@ public class CacheAspect {
                 String fullKey = keyPrefix + generatedKey;
                 keysToEvict.add(fullKey);
             } catch (Exception e) {
-                log.error("生成驱逐键失败 - 表达式: {}", keyExpression, e);
+                logUtils.exception().business("evict_key_generation_failed", e, "medium", "生成驱逐键失败", "keyExpression: " + keyExpression);
             }
         }
 
@@ -369,20 +358,20 @@ public class CacheAspect {
             if (!exactKeys.isEmpty()) {
                 Long exactDeleted = redisUtils.strings().delete(exactKeys.toArray(new String[0]));
                 totalDeleted += (exactDeleted != null ? exactDeleted.intValue() : 0);
-                log.debug("删除精确键 {} 个，成功删除: {}", exactKeys.size(), exactDeleted);
+                logUtils.business().trace("cache_aspect", "evict_specific", "exact_keys_deleted", "count: " + exactKeys.size(), "deleted: " + exactDeleted);
             }
 
             // 处理模式键 - 使用 KEYS + DEL 组合
             for (String pattern : patternKeys) {
                 Long patternDeleted = deleteByPattern(pattern);
                 totalDeleted += (patternDeleted != null ? patternDeleted.intValue() : 0);
-                log.debug("删除模式键 '{}' 匹配的缓存，成功删除: {}", pattern, patternDeleted);
+                logUtils.business().trace("cache_aspect", "evict_specific", "pattern_keys_deleted", "pattern: " + pattern, "deleted: " + patternDeleted);
             }
 
-            log.info("缓存驱逐完成 - 原始键数量: {}, 总删除数量: {}", keysToEvict.size(), totalDeleted);
+            logUtils.business().event("缓存驱逐完成 - 原始键数量: {}, 总删除数量: {}", String.valueOf(keysToEvict.size()), String.valueOf(totalDeleted));
 
             if (log.isDebugEnabled()) {
-                log.debug("驱逐键详情 - 精确键: {}, 模式键: {}", exactKeys, patternKeys);
+                logUtils.business().trace("cache_aspect", "evict_keys_detail", "驱逐键详情", "exactKeys: " + exactKeys, "patternKeys: " + patternKeys);
             }
         }
     }
@@ -403,7 +392,7 @@ public class CacheAspect {
             }
             return 0L;
         } catch (Exception e) {
-            log.error("根据模式删除缓存失败 - 模式: {}", pattern, e);
+            logUtils.exception().business("根据模式删除缓存失败", e, "pattern: " + pattern);
             return 0L;
         }
     }
@@ -418,7 +407,7 @@ public class CacheAspect {
             Object cachedValue = getCachedValue(cacheKey, redisCacheable.type());
             
             if (cachedValue != null) {
-                log.debug("批量缓存命中 - 键: {}", cacheKey);
+                logUtils.business().trace("cache_aspect", "batch_cache", "hit", "cacheKey: " + cacheKey);
                 return cachedValue;
             }
 
@@ -430,13 +419,13 @@ public class CacheAspect {
                 Map<String, Object> batchData = new HashMap<>();
                 batchData.put(cacheKey, result);
                 batchManager.batchSet(batchData, redisCacheable.ttl());
-                log.debug("批量缓存结果已保存 - 键: {}", cacheKey);
+                logUtils.business().trace("cache_aspect", "batch_cache", "saved", "cacheKey: " + cacheKey);
             }
 
             return result;
 
         } catch (Exception e) {
-            log.error("批量缓存操作失败 - 键: {}", cacheKey, e);
+            logUtils.exception().business("批量缓存操作失败", e, "cacheKey: " + cacheKey);
             return joinPoint.proceed();
         }
     }
@@ -457,7 +446,7 @@ public class CacheAspect {
                 return ttl < redisCacheable.refreshThreshold();
             }
         } catch (Exception e) {
-            log.warn("检查缓存刷新条件失败 - 键: {}", cacheKey, e);
+            logUtils.business().trace("cache_aspect", "refresh_cache", "检查刷新条件异常", "cacheKey: " + cacheKey, "error: " + e.getMessage());
         }
 
         return false;
@@ -473,10 +462,10 @@ public class CacheAspect {
             if (newValue != null) {
                 // 更新缓存
                 cacheResult(cacheKey, newValue, redisCacheable);
-                log.debug("异步刷新缓存完成 - 键: {}", cacheKey);
+                logUtils.business().trace("cache_aspect", "refresh_cache", "异步刷新完成", "cacheKey: " + cacheKey);
             }
         } catch (Throwable e) {
-            log.error("异步刷新缓存失败 - 键: {}", cacheKey, e);
+            logUtils.exception().business("异步刷新缓存失败", e, "cacheKey: " + cacheKey);
         }
     }
 
@@ -492,10 +481,10 @@ public class CacheAspect {
             // 触发预热任务
             warmUpManager.triggerWarmUp(pattern, priority);
 
-            log.debug("触发缓存预热 - 模式: {}, 优先级: {}", pattern, priority);
+            logUtils.business().trace("cache_aspect", "warm_up", "triggered", "pattern: " + pattern, "priority: " + priority);
 
         } catch (Exception e) {
-            log.error("触发缓存预热失败 - 键: {}", cacheKey, e);
+            logUtils.exception().business("触发缓存预热失败", e, "cacheKey: " + cacheKey);
         }
     }
 
