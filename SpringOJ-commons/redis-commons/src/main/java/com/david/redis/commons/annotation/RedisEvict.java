@@ -79,4 +79,10 @@ public @interface RedisEvict {
      * 软删除只标记删除而不物理删除，便于数据恢复
      */
     boolean softDelete() default false;
+
+    /**
+     * 是否启用缓存统计
+     * 启用后会收集缓存驱逐的性能指标
+     */
+    boolean enableMetrics() default true;
 }

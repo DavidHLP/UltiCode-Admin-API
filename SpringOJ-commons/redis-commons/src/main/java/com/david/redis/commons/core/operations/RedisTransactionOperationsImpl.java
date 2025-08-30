@@ -1,6 +1,6 @@
 package com.david.redis.commons.core.operations;
 
-import com.david.redis.commons.core.lock.RedisCallback;
+import com.david.redis.commons.core.lock.interfaces.RedisCallback;
 import com.david.redis.commons.core.operations.interfaces.RedisTransactionOperations;
 import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
 import com.david.redis.commons.core.operations.support.RedisLoggerHelper;

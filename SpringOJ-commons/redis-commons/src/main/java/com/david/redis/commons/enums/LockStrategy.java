@@ -1,11 +1,14 @@
 package com.david.redis.commons.enums;
 
+import lombok.Getter;
+
 /**
  * 锁策略枚举
  * 
  * @author David
  * @since 1.0.0
  */
+@Getter
 public enum LockStrategy {
 
     /**
@@ -42,10 +45,6 @@ public enum LockStrategy {
 
     LockStrategy(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**

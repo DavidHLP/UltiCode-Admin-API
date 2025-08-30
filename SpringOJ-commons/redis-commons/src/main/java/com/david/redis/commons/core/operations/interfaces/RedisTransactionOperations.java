@@ -1,6 +1,6 @@
 package com.david.redis.commons.core.operations.interfaces;
 
-import com.david.redis.commons.core.lock.RedisCallback;
+import com.david.redis.commons.core.lock.interfaces.RedisCallback;
 import com.david.redis.commons.core.transaction.TransactionContext;
 
 import java.util.function.Consumer;

@@ -1,11 +1,14 @@
 package com.david.redis.commons.enums;
 
+import lombok.Getter;
+
 /**
  * 缓存删除时机枚举
  * 
  * @author David
  * @since 1.0.0
  */
+@Getter
 public enum EvictTiming {
 
     /**
@@ -36,10 +39,6 @@ public enum EvictTiming {
 
     EvictTiming(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**

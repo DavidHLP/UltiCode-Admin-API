@@ -1,11 +1,14 @@
 package com.david.redis.commons.enums;
 
+import lombok.Getter;
+
 /**
  * 缓存级别枚举
  * 
  * @author David
  * @since 1.0.0
  */
+@Getter
 public enum CacheLevel {
 
     /**
@@ -30,10 +33,6 @@ public enum CacheLevel {
 
     CacheLevel(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**

@@ -8,8 +8,7 @@ import java.util.function.Supplier;
 /**
  * Redis结果处理器
  *
- * <p>
- * 统一的Redis操作结果处理和类型转换组件
+ * <p>统一的Redis操作结果处理和类型转换组件
  *
  * @author David
  */
@@ -21,7 +20,7 @@ public class RedisResultProcessor {
      *
      * @param value 原始值
      * @param clazz 目标类型
-     * @param <T>   目标类型
+     * @param <T> 目标类型
      * @return 转换后的值
      */
     public <T> T convertSingle(Object value, Class<T> clazz) {
@@ -34,13 +33,14 @@ public class RedisResultProcessor {
     /**
      * 转换单个值，支持空值默认处理
      *
-     * @param value           原始值
-     * @param clazz           目标类型
+     * @param value 原始值
+     * @param clazz 目标类型
      * @param defaultSupplier 默认值提供器
-     * @param <T>             目标类型
+     * @param <T> 目标类型
      * @return 转换后的值或默认值
      */
-    public <T> T convertSingleWithDefault(Object value, Class<T> clazz, Supplier<T> defaultSupplier) {
+    public <T> T convertSingleWithDefault(
+            Object value, Class<T> clazz, Supplier<T> defaultSupplier) {
         if (value == null) {
             return defaultSupplier != null ? defaultSupplier.get() : null;
         }
@@ -51,8 +51,8 @@ public class RedisResultProcessor {
      * 转换Set集合
      *
      * @param rawSet 原始Set
-     * @param clazz  元素目标类型
-     * @param <T>    元素类型
+     * @param clazz 元素目标类型
+     * @param <T> 元素类型
      * @return 转换后的Set
      */
     public <T> Set<T> convertSet(Set<Object> rawSet, Class<T> clazz) {
@@ -73,8 +73,8 @@ public class RedisResultProcessor {
      * 转换List集合
      *
      * @param rawList 原始List
-     * @param clazz   元素目标类型
-     * @param <T>     元素类型
+     * @param clazz 元素目标类型
+     * @param <T> 元素类型
      * @return 转换后的List
      */
     public <T> List<T> convertList(List<Object> rawList, Class<T> clazz) {
@@ -137,7 +137,7 @@ public class RedisResultProcessor {
     /**
      * 处理可能为null的数值结果
      *
-     * @param value        原始值
+     * @param value 原始值
      * @param defaultValue 默认值
      * @return 处理后的值
      */
@@ -148,7 +148,7 @@ public class RedisResultProcessor {
     /**
      * 处理可能为null的Boolean结果
      *
-     * @param value        原始值
+     * @param value 原始值
      * @param defaultValue 默认值
      * @return 处理后的值
      */
@@ -159,7 +159,7 @@ public class RedisResultProcessor {
     /**
      * 处理可能为null的Double结果
      *
-     * @param value        原始值
+     * @param value 原始值
      * @param defaultValue 默认值
      * @return 处理后的值
      */

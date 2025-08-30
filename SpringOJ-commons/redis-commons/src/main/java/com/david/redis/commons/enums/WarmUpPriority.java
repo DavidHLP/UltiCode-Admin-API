@@ -1,11 +1,14 @@
 package com.david.redis.commons.enums;
 
+import lombok.Getter;
+
 /**
  * 缓存预热优先级枚举
  * 
  * @author David
  * @since 1.0.0
  */
+@Getter
 public enum WarmUpPriority {
 
     /**
@@ -32,14 +35,6 @@ public enum WarmUpPriority {
     WarmUpPriority(int level, String description) {
         this.level = level;
         this.description = description;
-    }
-
-    public int getLevel() {
-        return level;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**

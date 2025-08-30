@@ -10,12 +10,12 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848 #配置Nacos地址
+        server-addr: 129.204.227.158:8848 #配置Nacos地址
         username: nacos
         password: "#Alone117"
     sentinel:
       transport:
-        dashboard: 127.0.0.1:9090
+        dashboard: 129.204.227.158:9090
         port: 8719
     gateway:
       discovery:
@@ -79,9 +79,89 @@ spring:
         - AddResponseHeader=Access-Control-Allow-Headers,*
         - AddResponseHeader=Access-Control-Max-Age,3600
 
-# 日志配置
+# LogCommons 统一日志组件配置示例
+log-commons:
+  # 全局配置
+  enabled: true # 是否启用日志组件
+  default-async: true # 默认是否使用异步处理
+  buffer-size: 1000 # 缓冲区大小
+  flush-interval-seconds: 5 # 刷新间隔(秒)
+  batch-size: 50 # 批处理大小
+
+  # 模块配置
+  modules:
+    business: # 业务日志模块
+      enabled: true
+      level: INFO
+      async: true
+      metrics-enabled: true
+    performance: # 性能日志模块
+      enabled: true
+      level: DEBUG
+      async: true
+      metrics-enabled: true
+    security: # 安全日志模块
+      enabled: true
+      level: WARN
+      async: false # 安全日志使用同步处理
+      metrics-enabled: true
+    exception: # 异常日志模块
+      enabled: true
+      level: ERROR
+      async: false # 异常日志使用同步处理
+      metrics-enabled: true
+
+  # 敏感信息脱敏配置
+  sensitive:
+    enabled: true
+    mask-pattern: "***"
+    keywords: # 敏感关键词
+      - password
+      - pwd
+      - passwd
+      - token
+      - secret
+      - apikey
+      - credit
+      - card
+      - bank
+    patterns: # 敏感数据正则表达式
+      - "1[3-9]\\d{9}" # 手机号
+      - "[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}" # 邮箱
+      - "\\d{17}[\\dXx]" # 身份证号
+      - "\\d{13,19}" # 银行卡号
+      - "[a-zA-Z0-9]{32,}" # 可能的密钥
+
+  # 指标收集配置
+  metrics:
+    enabled: false
+    prefix: "log.commons"
+    detailed: true
+
+# Spring Boot Actuator配置(可选)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  prometheus:
+    metrics:
+      export:
+        enabled: false
+
+# 日志输出配置(基于Logback)
 logging:
   level:
-    com.david: DEBUG
     org.springframework.cloud.gateway: DEBUG
     reactor.netty: DEBUG
+    com.david: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.cloud: DEBUG
+    org.mybatis: DEBUG
+    com.david.log.commons.core.business: INFO
+    com.david.log.commons.core.performance: DEBUG
+    com.david.log.commons.core.security: WARN
+    com.david.log.commons.core.exception: ERROR

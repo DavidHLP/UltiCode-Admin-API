@@ -1,11 +1,14 @@
 package com.david.redis.commons.enums;
 
+import lombok.Getter;
+
 /**
  * 超时处理策略枚举
  * 
  * @author David
  * @since 1.0.0
  */
+@Getter
 public enum TimeoutStrategy {
 
     /**
@@ -36,10 +39,6 @@ public enum TimeoutStrategy {
 
     TimeoutStrategy(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**

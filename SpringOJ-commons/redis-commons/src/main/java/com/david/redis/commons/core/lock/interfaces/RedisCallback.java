@@ -1,4 +1,4 @@
-package com.david.redis.commons.core.lock;
+package com.david.redis.commons.core.lock.interfaces;
 
 import com.david.redis.commons.core.RedisUtils;
 

@@ -1,11 +1,14 @@
 package com.david.redis.commons.enums;
 
+import lombok.Getter;
+
 /**
  * 缓存更新策略枚举
  * 
  * @author David
  * @since 1.0.0
  */
+@Getter
 public enum UpdateStrategy {
 
     /**
@@ -36,10 +39,6 @@ public enum UpdateStrategy {
 
     UpdateStrategy(String description) {
         this.description = description;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     /**
