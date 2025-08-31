@@ -1,14 +1,17 @@
 package com.david.redis.commons.aspect.chain;
 
 import com.david.log.commons.core.LogUtils;
+
 import lombok.RequiredArgsConstructor;
+
+import java.util.Set;
 
 /**
  * 抽象切面处理器基类
  *
  * <p>
  * 提供通用的处理器功能实现。
- * 
+ *
  * @author David
  */
 @RequiredArgsConstructor
@@ -42,7 +45,7 @@ public abstract class AbstractAspectHandler implements AspectHandler {
      *
      * @return 支持的切面类型集合
      */
-    protected abstract java.util.Set<AspectType> getSupportedAspectTypes();
+    protected abstract Set<AspectType> getSupportedAspectTypes();
 
     /**
      * 记录处理器执行日志（简洁版本）

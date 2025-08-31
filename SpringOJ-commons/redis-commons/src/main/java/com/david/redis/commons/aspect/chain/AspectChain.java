@@ -1,11 +1,13 @@
 package com.david.redis.commons.aspect.chain;
 
 import com.david.log.commons.core.LogUtils;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -39,7 +41,7 @@ public class AspectChain {
     public static AspectChain create(List<AspectHandler> handlers, LogUtils logUtils) {
         // 按 order 排序处理器
         List<AspectHandler> sortedHandlers = new ArrayList<>(handlers);
-        sortedHandlers.sort((h1, h2) -> Integer.compare(h1.getOrder(), h2.getOrder()));
+        sortedHandlers.sort(Comparator.comparingInt(AspectHandler::getOrder));
 
         return new AspectChain(sortedHandlers, logUtils);
     }
@@ -141,23 +143,5 @@ public class AspectChain {
             }
             throw e;
         }
-    }
-
-    /**
-     * 获取处理器总数
-     *
-     * @return 处理器总数
-     */
-    public int getHandlerCount() {
-        return handlers.size();
-    }
-
-    /**
-     * 获取剩余处理器数量
-     *
-     * @return 剩余处理器数量
-     */
-    public int getRemainingHandlerCount() {
-        return Math.max(0, handlers.size() - currentIndex);
     }
 }

@@ -1,7 +1,9 @@
 package com.david.redis.commons.aspect.chain;
 
 import com.david.log.commons.core.LogUtils;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -12,8 +14,7 @@ import java.util.stream.Collectors;
 /**
  * 切面处理器链管理器
  *
- * <p>
- * 负责管理和创建不同类型的处理器链。
+ * <p>负责管理和创建不同类型的处理器链。
  *
  * @author David
  */
@@ -31,10 +32,11 @@ public class AspectChainManager {
      * @return 处理器链
      */
     public AspectChain createChain(AspectType aspectType) {
-        List<AspectHandler> typeHandlers = allHandlers.stream()
-                .filter(handler -> handler.supports(aspectType))
-                .sorted((h1, h2) -> Integer.compare(h1.getOrder(), h2.getOrder()))
-                .collect(Collectors.toList());
+        List<AspectHandler> typeHandlers =
+                allHandlers.stream()
+                        .filter(handler -> handler.supports(aspectType))
+                        .sorted((h1, h2) -> Integer.compare(h1.getOrder(), h2.getOrder()))
+                        .collect(Collectors.toList());
 
         logUtils.business()
                 .trace(
@@ -43,9 +45,10 @@ public class AspectChainManager {
                         "success",
                         "aspectType: " + aspectType,
                         "handlerCount: " + typeHandlers.size(),
-                        "handlers: " + typeHandlers.stream()
-                                .map(AspectHandler::getName)
-                                .collect(Collectors.joining(", ")));
+                        "handlers: "
+                                + typeHandlers.stream()
+                                        .map(AspectHandler::getName)
+                                        .collect(Collectors.joining(", ")));
 
         return AspectChain.create(typeHandlers, logUtils);
     }
@@ -57,10 +60,16 @@ public class AspectChainManager {
      */
     public Map<AspectType, List<AspectHandler>> getAllHandlers() {
         return allHandlers.stream()
-                .collect(Collectors.groupingBy(handler -> {
-                    // 获取处理器支持的第一个类型作为分组键
-                    Set<AspectType> supportedTypes = ((AbstractAspectHandler) handler).getSupportedAspectTypes();
-                    return supportedTypes.isEmpty() ? AspectType.GENERAL : supportedTypes.iterator().next();
-                }));
+                .collect(
+                        Collectors.groupingBy(
+                                handler -> {
+                                    // 获取处理器支持的第一个类型作为分组键
+                                    Set<AspectType> supportedTypes =
+                                            ((AbstractAspectHandler) handler)
+                                                    .getSupportedAspectTypes();
+                                    return supportedTypes.isEmpty()
+                                            ? AspectType.GENERAL
+                                            : supportedTypes.iterator().next();
+                                }));
     }
 }
