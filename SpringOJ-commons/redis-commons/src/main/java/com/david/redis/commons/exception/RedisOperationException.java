@@ -4,7 +4,7 @@ import lombok.Getter;
 
 /**
  * Redis操作异常基类
- *
+ * <p>
  * 提供Redis操作过程中发生异常时的统一异常处理机制，
  * 包含操作上下文信息以便于问题诊断和调试。
  *
@@ -18,7 +18,6 @@ public class RedisOperationException extends RuntimeException {
      * -- GETTER --
      *  获取操作名称
      *
-     * @return 操作名称，可能为null
      */
     private final String operation;
 
@@ -27,30 +26,7 @@ public class RedisOperationException extends RuntimeException {
      */
     private final Object[] parameters;
 
-    /**
-     * 构造函数
-     *
-     * @param message 异常消息
-     */
-    public RedisOperationException(String message) {
-        super(message);
-        this.operation = null;
-        this.parameters = null;
-    }
-
-    /**
-     * 构造函数
-     *
-     * @param message 异常消息
-     * @param cause   原始异常
-     */
-    public RedisOperationException(String message, Throwable cause) {
-        super(message, cause);
-        this.operation = null;
-        this.parameters = null;
-    }
-
-    /**
+	/**
      * 构造函数，包含操作上下文
      *
      * @param message    异常消息
@@ -75,15 +51,6 @@ public class RedisOperationException extends RuntimeException {
         super(buildDetailedMessage(message, operation, parameters), cause);
         this.operation = operation;
         this.parameters = parameters != null ? parameters.clone() : null;
-    }
-
-    /**
-     * 获取操作参数
-     *
-     * @return 操作参数数组的副本，可能为null
-     */
-    public Object[] getParameters() {
-        return parameters != null ? parameters.clone() : null;
     }
 
     /**
@@ -115,4 +82,5 @@ public class RedisOperationException extends RuntimeException {
 
         return sb.toString();
     }
+
 }

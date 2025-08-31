@@ -1,3 +1,5 @@
+server:
+  port: 9094
 spring:
   profiles:
     active: cloud,kafka,datasource,redis,mybatis,utils,log,actuator

@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect.chain.cache;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.redis.commons.aspect.chain.AbstractAspectHandler;
 import com.david.redis.commons.aspect.chain.AspectChain;
@@ -112,7 +112,7 @@ public class CacheWarmUpHandler extends AbstractAspectHandler {
 	 */
 	private void triggerWarmUp(AspectContext context) {
 		Optional.ofNullable(context.getMethod())
-				.flatMap(method -> Optional.ofNullable(context.getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR))
+				.flatMap(method -> Optional.ofNullable(context.getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR , RedisCacheable.class))
 						.map(cacheKey -> new Object[]{method, cacheKey}))
 				.ifPresent(pair -> {
 					try {

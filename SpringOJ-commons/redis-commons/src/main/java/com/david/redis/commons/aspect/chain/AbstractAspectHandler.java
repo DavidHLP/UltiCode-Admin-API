@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect.chain;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 
 import lombok.RequiredArgsConstructor;
 

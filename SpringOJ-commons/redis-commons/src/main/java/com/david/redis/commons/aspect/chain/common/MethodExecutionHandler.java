@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect.chain.common;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.aspect.chain.AbstractAspectHandler;
 import com.david.redis.commons.aspect.chain.AspectChain;
 import com.david.redis.commons.aspect.chain.AspectContext;
@@ -43,7 +43,7 @@ public class MethodExecutionHandler extends AbstractAspectHandler {
 
         // 对于缓存切面，如果已经缓存命中，则不需要执行原方法
         if (context.getAspectType() == AspectType.CACHE) {
-            Boolean cacheHit = context.getAttribute(CacheRetrievalHandler.CACHE_HIT_ATTR, false);
+            Boolean cacheHit = context.getAttribute(CacheRetrievalHandler.CACHE_HIT_ATTR, Boolean.class,false);
             return !cacheHit && !context.isMethodExecuted();
         }
 

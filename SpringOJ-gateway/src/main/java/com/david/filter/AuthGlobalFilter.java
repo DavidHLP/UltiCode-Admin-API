@@ -2,7 +2,7 @@ package com.david.filter;
 
 import com.david.auth.AuthUserInfo;
 import com.david.interfaces.AuthFeignClient;
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.utils.ResponseResult;
 import com.david.utils.enums.ResponseCode;
 

@@ -36,3 +36,4 @@ application-myself.yml
 **.rdb
 
 **.log
+**/data

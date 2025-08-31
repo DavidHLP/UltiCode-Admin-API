@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect.chain.cache;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.redis.commons.aspect.chain.AbstractAspectHandler;
 import com.david.redis.commons.aspect.chain.AspectChain;
@@ -69,8 +69,10 @@ public class CacheRetrievalHandler extends AbstractAspectHandler {
     @Override
     public boolean canHandle(AspectContext context) {
         return super.canHandle(context)
-                && context.getAttribute(CacheConditionHandler.CACHE_CONDITION_MET_ATTR, false)
-                && context.getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR) != null;
+                && context.getAttribute(
+                        CacheConditionHandler.CACHE_CONDITION_MET_ATTR, Boolean.class, false)
+                && context.getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR, String.class)
+                        != null;
     }
 
     /**
@@ -85,7 +87,7 @@ public class CacheRetrievalHandler extends AbstractAspectHandler {
      */
     @Override
     public Object handle(AspectContext context, AspectChain chain) throws Throwable {
-        var cacheKey = context.<String>getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR);
+        var cacheKey = context.getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR, String.class);
 
         var cachedValue = getCachedValueSafely(context, cacheKey);
         var cacheHit = cachedValue.isPresent();

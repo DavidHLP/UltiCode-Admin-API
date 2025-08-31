@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect.chain.cache;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.redis.commons.annotation.RedisEvict;
 import com.david.redis.commons.aspect.chain.AbstractAspectHandler;
@@ -120,7 +120,9 @@ public class MetricsCollectionHandler extends AbstractAspectHandler {
      * @param context 切面上下文
      */
     private void collectMetrics(AspectContext context) {
-        String cacheKey = context.getAttribute(CacheKeyGenerationHandler.CACHE_KEY_ATTR, "unknown");
+        String cacheKey =
+                context.getAttribute(
+                        CacheKeyGenerationHandler.CACHE_KEY_ATTR, String.class, "unknown");
         long executionTime = context.getExecutionTime();
 
         switch (context.getAspectType()) {
@@ -140,7 +142,8 @@ public class MetricsCollectionHandler extends AbstractAspectHandler {
      * @param executionTime 方法执行耗时
      */
     private void collectCacheMetrics(AspectContext context, String cacheKey, long executionTime) {
-        boolean cacheHit = context.getAttribute(CacheRetrievalHandler.CACHE_HIT_ATTR, false);
+        boolean cacheHit =
+                context.getAttribute(CacheRetrievalHandler.CACHE_HIT_ATTR, Boolean.class, false);
 
         Optional.of(context)
                 .filter(AspectContext::hasException)

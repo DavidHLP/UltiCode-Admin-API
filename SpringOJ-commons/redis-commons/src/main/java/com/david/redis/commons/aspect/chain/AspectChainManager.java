@@ -1,14 +1,13 @@
 package com.david.redis.commons.aspect.chain;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -35,7 +34,7 @@ public class AspectChainManager {
         List<AspectHandler> typeHandlers =
                 allHandlers.stream()
                         .filter(handler -> handler.supports(aspectType))
-                        .sorted((h1, h2) -> Integer.compare(h1.getOrder(), h2.getOrder()))
+                        .sorted(Comparator.comparingInt(AspectHandler::getOrder))
                         .collect(Collectors.toList());
 
         logUtils.business()
@@ -53,23 +52,4 @@ public class AspectChainManager {
         return AspectChain.create(typeHandlers, logUtils);
     }
 
-    /**
-     * 获取所有注册的处理器
-     *
-     * @return 按类型分组的处理器映射
-     */
-    public Map<AspectType, List<AspectHandler>> getAllHandlers() {
-        return allHandlers.stream()
-                .collect(
-                        Collectors.groupingBy(
-                                handler -> {
-                                    // 获取处理器支持的第一个类型作为分组键
-                                    Set<AspectType> supportedTypes =
-                                            ((AbstractAspectHandler) handler)
-                                                    .getSupportedAspectTypes();
-                                    return supportedTypes.isEmpty()
-                                            ? AspectType.GENERAL
-                                            : supportedTypes.iterator().next();
-                                }));
-    }
 }

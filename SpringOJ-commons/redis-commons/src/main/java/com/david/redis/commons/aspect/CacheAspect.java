@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.annotation.RedisCacheable;
 import com.david.redis.commons.annotation.RedisEvict;
 import com.david.redis.commons.aspect.chain.AspectChain;

@@ -1,17 +1,15 @@
 package com.david.redis.commons.config;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.aspect.CacheAspect;
-import com.david.redis.commons.aspect.TransactionAspect;
 import com.david.redis.commons.aspect.chain.AspectChainManager;
 import com.david.redis.commons.aspect.chain.AspectHandler;
-import com.david.redis.commons.core.RedisUtils;
 import com.david.redis.commons.aspect.chain.utils.CacheConditionEvaluator;
 import com.david.redis.commons.aspect.chain.utils.CacheKeyGenerator;
+import com.david.redis.commons.core.RedisUtils;
 import com.david.redis.commons.core.lock.DistributedLockManager;
 import com.david.redis.commons.core.operations.RedisLockOperationsImpl;
 import com.david.redis.commons.core.operations.interfaces.RedisLockOperations;
-import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
@@ -23,8 +21,6 @@ import com.david.redis.commons.properties.RedisCommonsProperties;
 import lombok.RequiredArgsConstructor;
 
 import org.redisson.api.RedissonClient;
-
-import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -35,6 +31,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
+
+import java.util.List;
 
 /**
  * Redis Commons 自动配置类
@@ -48,9 +46,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 @Import({ RedisConfig.class, RedissonConfig.class })
 @RequiredArgsConstructor
 public class RedisCommonsAutoConfiguration {
-
-        private final LogUtils logUtils;
-
         /**
          * 配置切面处理器链管理器
          *
@@ -73,7 +68,7 @@ public class RedisCommonsAutoConfiguration {
         /** 配置Redis操作执行器 */
         @Bean
         @ConditionalOnMissingBean(RedisOperationExecutor.class)
-        public RedisOperationExecutor redisOperationExecutor(RedisLoggerHelper loggerHelper) {
+        public RedisOperationExecutor redisOperationExecutor(RedisResultProcessor resultProcessor, LogUtils logUtils) {
                 this.logUtils
                                 .business()
                                 .event(
@@ -81,7 +76,7 @@ public class RedisCommonsAutoConfiguration {
                                                 "bean_creation",
                                                 "redis_operation_executor",
                                                 "配置Redis操作执行器");
-                return new RedisOperationExecutor(loggerHelper);
+                return new RedisOperationExecutor(resultProcessor, logUtils);
         }
 
         /** 配置Redis结果处理器 */
@@ -92,16 +87,6 @@ public class RedisCommonsAutoConfiguration {
                                 .business()
                                 .event("redis_commons", "bean_creation", "redis_result_processor", "配置Redis结果处理器");
                 return new RedisResultProcessor();
-        }
-
-        /** 配置Redis日志助手 */
-        @Bean
-        @ConditionalOnMissingBean(RedisLoggerHelper.class)
-        public RedisLoggerHelper redisLoggerHelper(LogUtils logUtils) {
-                this.logUtils
-                                .business()
-                                .event("redis_commons", "bean_creation", "redis_logger_helper", "配置Redis日志助手");
-                return new RedisLoggerHelper(logUtils);
         }
 
         /**
@@ -117,7 +102,6 @@ public class RedisCommonsAutoConfiguration {
                         RedisLockOperations lockOperations,
                         RedisOperationExecutor executor,
                         RedisResultProcessor resultProcessor,
-                        RedisLoggerHelper loggerHelper,
                         RedisTransactionManager transactionManager,
                         LogUtils logUtils) {
                 this.logUtils
@@ -129,7 +113,7 @@ public class RedisCommonsAutoConfiguration {
                                 lockOperations,
                                 executor,
                                 resultProcessor,
-                                loggerHelper,
+
                                 transactionManager);
         }
 
@@ -213,7 +197,6 @@ public class RedisCommonsAutoConfiguration {
                         RedisTransactionManager transactionManager,
                         RedisOperationExecutor executor,
                         RedisResultProcessor resultProcessor,
-                        RedisLoggerHelper loggerHelper,
                         DistributedLockManager distributedLockManager,
                         RedissonClient redissonClient,
                         RedisCommonsProperties redisCommonsProperties,
@@ -226,7 +209,7 @@ public class RedisCommonsAutoConfiguration {
                                 transactionManager,
                                 executor,
                                 resultProcessor,
-                                loggerHelper,
+
                                 logUtils,
                                 distributedLockManager,
                                 redissonClient,

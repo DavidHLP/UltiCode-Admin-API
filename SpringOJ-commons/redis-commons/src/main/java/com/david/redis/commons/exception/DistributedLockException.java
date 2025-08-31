@@ -6,7 +6,7 @@ import java.time.Duration;
 
 /**
  * 分布式锁异常类
- *
+ * <p>
  * 用于处理分布式锁操作过程中发生的异常，包括锁获取超时、
  * 锁释放失败、锁续期失败等场景。
  *
@@ -20,7 +20,6 @@ public class DistributedLockException extends RedisOperationException {
      * -- GETTER --
      *  获取锁键名
      *
-     * @return 锁键名
 
      */
     private final String lockKey;
@@ -30,7 +29,6 @@ public class DistributedLockException extends RedisOperationException {
      * -- GETTER --
      *  获取等待时间
      *
-     * @return 等待时间，可能为null
 
      */
     private final Duration waitTime;

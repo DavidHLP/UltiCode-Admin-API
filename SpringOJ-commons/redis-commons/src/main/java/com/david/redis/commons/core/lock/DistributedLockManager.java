@@ -1,6 +1,6 @@
 package com.david.redis.commons.core.lock;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.core.lock.interfaces.RedisLock;
 import com.david.redis.commons.exception.DistributedLockException;
 import com.david.redis.commons.properties.RedisCommonsProperties;

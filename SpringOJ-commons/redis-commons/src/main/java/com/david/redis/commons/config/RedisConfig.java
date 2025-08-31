@@ -1,6 +1,6 @@
 package com.david.redis.commons.config;
 
-import com.david.redis.commons.properties.RedisCommonsProperties;
+import com.david.log.commons.LogUtils;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -11,11 +11,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
 import lombok.RequiredArgsConstructor;
-import com.david.log.commons.core.LogUtils;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -25,6 +21,9 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Redis 基础配置类
@@ -37,13 +36,12 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 public class RedisConfig {
     private final LogUtils logUtils;
 
-    private final RedisCommonsProperties redisCommonsProperties;
-
-    /** 配置 RedisTemplate */
+	/** 配置 RedisTemplate */
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        logUtils.business().event("redis_config", "configure_template", "start", "正在配置 RedisTemplate");
+        logUtils.business()
+                .event("redis_config", "configure_template", "start", "正在配置 RedisTemplate");
 
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
@@ -66,7 +64,8 @@ public class RedisConfig {
 
         template.afterPropertiesSet();
 
-        logUtils.business().event("redis_config", "configure_template", "success", "RedisTemplate 配置完成");
+        logUtils.business()
+                .event("redis_config", "configure_template", "success", "RedisTemplate 配置完成");
         return template;
     }
 
@@ -85,43 +84,54 @@ public class RedisConfig {
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         // 自定义 LocalDateTime 反序列化器，支持多种格式
-        javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(dateTimeFormatter) {
-            @Override
-            public LocalDateTime deserialize(com.fasterxml.jackson.core.JsonParser parser,
-                    com.fasterxml.jackson.databind.DeserializationContext context) throws java.io.IOException {
-                String dateString = parser.getValueAsString();
-                if (dateString == null || dateString.trim().isEmpty()) {
-                    return null;
-                }
-
-                try {
-                    // 尝试完整的日期时间格式
-                    if (dateString.contains(" ") || dateString.contains("T")) {
-                        if (dateString.contains("T")) {
-                            // ISO 格式
-                            return LocalDateTime.parse(dateString);
-                        } else {
-                            // 自定义格式 yyyy-MM-dd HH:mm:ss
-                            return LocalDateTime.parse(dateString, dateTimeFormatter);
+        javaTimeModule.addDeserializer(
+                LocalDateTime.class,
+                new LocalDateTimeDeserializer(dateTimeFormatter) {
+                    @Override
+                    public LocalDateTime deserialize(
+                            com.fasterxml.jackson.core.JsonParser parser,
+                            com.fasterxml.jackson.databind.DeserializationContext context)
+                            throws java.io.IOException {
+                        String dateString = parser.getValueAsString();
+                        if (dateString == null || dateString.trim().isEmpty()) {
+                            return null;
                         }
-                    } else {
-                        // 只有日期的情况，添加默认时间 00:00:00
-                        return java.time.LocalDate.parse(dateString, dateFormatter).atStartOfDay();
+
+                        try {
+                            // 尝试完整的日期时间格式
+                            if (dateString.contains(" ") || dateString.contains("T")) {
+                                if (dateString.contains("T")) {
+                                    // ISO 格式
+                                    return LocalDateTime.parse(dateString);
+                                } else {
+                                    // 自定义格式 yyyy-MM-dd HH:mm:ss
+                                    return LocalDateTime.parse(dateString, dateTimeFormatter);
+                                }
+                            } else {
+                                // 只有日期的情况，添加默认时间 00:00:00
+                                return java.time.LocalDate.parse(dateString, dateFormatter)
+                                        .atStartOfDay();
+                            }
+                        } catch (Exception e) {
+                            // 最后尝试 ISO 格式
+                            try {
+                                return LocalDateTime.parse(dateString);
+                            } catch (Exception ex) {
+                                logUtils.business()
+                                        .trace(
+                                                "redis_serializer",
+                                                "parse_datetime",
+                                                "parse_failed",
+                                                "dateString: " + dateString);
+                                return null;
+                            }
+                        }
                     }
-                } catch (Exception e) {
-                    // 最后尝试 ISO 格式
-                    try {
-                        return LocalDateTime.parse(dateString);
-                    } catch (Exception ex) {
-                        logUtils.business().trace("redis_serializer", "parse_datetime", "parse_failed", "dateString: " + dateString);
-                        return null;
-                    }
-                }
-            }
-        });
+                });
 
         // 配置序列化器
-        javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
+        javaTimeModule.addSerializer(
+                LocalDateTime.class, new LocalDateTimeSerializer(dateTimeFormatter));
 
         // 注册自定义的 JavaTimeModule
         objectMapper.registerModule(javaTimeModule);
@@ -131,7 +141,12 @@ public class RedisConfig {
         // 忽略未知属性，避免反序列化时出错
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        logUtils.business().event("redis_config", "configure_serializer", "success", "已配置自定义 LocalDateTime 反序列化器");
+        logUtils.business()
+                .event(
+                        "redis_config",
+                        "configure_serializer",
+                        "success",
+                        "已配置自定义 LocalDateTime 反序列化器");
         return new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
     }
 }

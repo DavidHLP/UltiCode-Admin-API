@@ -1,6 +1,6 @@
 package com.david.redis.commons.aspect.chain.config;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.aspect.chain.AspectChainManager;
 import com.david.redis.commons.aspect.chain.AspectHandler;
 

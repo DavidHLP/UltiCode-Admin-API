@@ -23,4 +23,5 @@ openfeign-commons 封装了统一的 RequestInterceptor，它会从当前请求�
 
 ### Redis缓存注解化
 
-设计了基础操作RedisTypeConverter提供Redis类型转换底层是ObjectMapper，RedisResultProcessor是调用RedisTypeConverter进行的二次封装主要进行一些方法构建，
+在 CodeForge 系统中，我们通过自定义注解的方式实现了对 Redis 缓存操作的简化和统一管理。具体来说，我们定义了
+`@RedisCacheable` 和 `@RedisCacheEvict` 两个注解，分别对应缓存读取和删除操作。每个注解都包含了缓存键的生成规则、过期时间等配置参数。SpEL

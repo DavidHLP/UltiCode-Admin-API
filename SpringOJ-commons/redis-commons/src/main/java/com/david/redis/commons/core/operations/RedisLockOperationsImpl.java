@@ -1,12 +1,12 @@
 package com.david.redis.commons.core.operations;
 
-import com.david.log.commons.core.LogUtils;
+import com.david.log.commons.LogUtils;
 import com.david.redis.commons.core.lock.DistributedLockManager;
 import com.david.redis.commons.core.lock.interfaces.RedisLock;
 import com.david.redis.commons.core.operations.interfaces.RedisLockOperations;
 import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
-import com.david.redis.commons.core.operations.support.RedisLoggerHelper;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
+import com.david.redis.commons.core.operations.support.RedisOperationType;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import com.david.redis.commons.core.transaction.RedisTransactionManager;
 import com.david.redis.commons.properties.RedisCommonsProperties;
@@ -14,7 +14,6 @@ import com.david.redis.commons.properties.RedisCommonsProperties;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -39,40 +38,33 @@ public class RedisLockOperationsImpl extends AbstractRedisOperations
             RedisTransactionManager transactionManager,
             RedisOperationExecutor executor,
             RedisResultProcessor resultProcessor,
-            RedisLoggerHelper loggerHelper,
             LogUtils logUtils,
             DistributedLockManager distributedLockManager,
             RedissonClient redissonClient,
             RedisCommonsProperties redisCommonsProperties) {
-        super(redisTemplate, transactionManager, executor, resultProcessor, loggerHelper, logUtils);
+        super(redisTemplate, transactionManager, executor, resultProcessor, logUtils);
         this.distributedLockManager = distributedLockManager;
         this.redissonClient = redissonClient;
         this.redisCommonsProperties = redisCommonsProperties;
     }
 
-    @Override
-    protected String getOperationType() {
-        return "LOCK";
-    }
-
-    @Override
+	@Override
     public RedisLock tryLock(String lockKey, Duration waitTime, Duration leaseTime) {
         return executeOperation(
-                "TRY_LOCK",
+                RedisOperationType.TRY_LOCK,
                 lockKey,
-                () -> {
-                    return distributedLockManager.tryLock(lockKey, waitTime, leaseTime);
-                });
+                new Object[]{waitTime, leaseTime},
+                RedisLock.class,
+                () -> distributedLockManager.tryLock(lockKey, waitTime, leaseTime));
     }
 
     @Override
     public RedisLock tryLock(String lockKey) {
         return executeOperation(
-                "TRY_LOCK_DEFAULT",
+                RedisOperationType.TRY_LOCK_DEFAULT,
                 lockKey,
-                () -> {
-                    return distributedLockManager.tryLock(lockKey);
-                });
+                RedisLock.class,
+                () -> distributedLockManager.tryLock(lockKey));
     }
 
     @Override
@@ -234,28 +226,24 @@ public class RedisLockOperationsImpl extends AbstractRedisOperations
 
     @Override
     public boolean isLockExists(String lockKey) {
-        return executeOperation(
-                "IS_LOCK_EXISTS",
+        return executeBooleanOperation(
+                RedisOperationType.IS_LOCK_EXISTS,
                 lockKey,
-                () -> {
-                    return distributedLockManager.isLockExists(lockKey);
-                });
+                () -> distributedLockManager.isLockExists(lockKey));
     }
 
     @Override
     public boolean forceUnlock(String lockKey) {
-        return executeOperation(
-                "FORCE_UNLOCK",
+        return executeBooleanOperation(
+                RedisOperationType.FORCE_UNLOCK,
                 lockKey,
-                () -> {
-                    return distributedLockManager.forceUnlock(lockKey);
-                });
+                () -> distributedLockManager.forceUnlock(lockKey));
     }
 
     @Override
     public long getRemainingTimeToLive(String lockKey) {
-        return executeOperation(
-                "GET_REMAINING_TTL",
+        return executeLongOperation(
+                RedisOperationType.GET_REMAINING_TTL,
                 lockKey,
                 () -> {
                     validateLockKey(lockKey);
