@@ -7,7 +7,7 @@ import com.david.redis.commons.aspect.chain.AspectHandler;
 import com.david.redis.commons.aspect.chain.utils.CacheConditionEvaluator;
 import com.david.redis.commons.aspect.chain.utils.CacheKeyGenerator;
 import com.david.redis.commons.core.RedisUtils;
-import com.david.redis.commons.core.lock.DistributedLockManager;
+import com.david.redis.commons.core.operations.lock.DistributedLockManager;
 import com.david.redis.commons.core.operations.RedisLockOperationsImpl;
 import com.david.redis.commons.core.operations.interfaces.RedisLockOperations;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;

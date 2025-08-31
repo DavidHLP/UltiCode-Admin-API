@@ -2,9 +2,9 @@ package com.david.redis.commons.core.operations;
 
 import com.david.log.commons.LogUtils;
 import com.david.redis.commons.core.operations.interfaces.RedisStringOperations;
-import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
+import com.david.redis.commons.core.operations.abstracts.AbstractRedisOperations;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
-import com.david.redis.commons.core.operations.support.RedisOperationType;
+import com.david.redis.commons.core.operations.enums.RedisOperationType;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -37,13 +38,12 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
     public RedisStringOperationsImpl(
             RedisTemplate<String, Object> redisTemplate,
             RedisOperationExecutor executor,
-            RedisResultProcessor resultProcessor,
-            LogUtils logUtils) {
-        super(redisTemplate, executor, resultProcessor, logUtils);
+            RedisResultProcessor resultProcessor) {
+        super(redisTemplate, executor, resultProcessor);
     }
 
     @Override
-    public void set(String key, Object value) {
+    public <T> void set(String key, T value) {
         executeVoidOperation(
                 RedisOperationType.SET,
                 key,
@@ -52,7 +52,7 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
     }
 
     @Override
-    public void set(String key, Object value, Duration timeout) {
+    public <T> void set(String key, T value, Duration timeout) {
         executeVoidOperation(
                 RedisOperationType.SETEX,
                 key,
@@ -70,14 +70,8 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
     }
 
     @Override
-    public String getString(String key) {
+    public String get(String key) {
         return executeStringOperation(key, () -> redisTemplate.opsForValue().get(key));
-    }
-
-    @Override
-    public Boolean delete(String key) {
-        return executeBooleanOperation(
-                RedisOperationType.DEL, key, () -> redisTemplate.delete(key));
     }
 
     @Override
@@ -112,15 +106,14 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
     }
 
     @Override
-    public Set<String> keys(String pattern) {
-        return executeOperation(
-                RedisOperationType.KEYS, pattern, Set.class, () -> redisTemplate.keys(pattern));
+    public Set<String> scanKeys(String pattern) {
+        return executeOperation(RedisOperationType.SCAN, pattern, () -> performScanKeys(pattern));
     }
 
-    @Override
-    public Set<String> scanKeys(String pattern) {
+    /** 内部使用的keys方法，用于回退场景 */
+    private Set<String> keys(String pattern) {
         return executeOperation(
-                RedisOperationType.SCAN, pattern, Set.class, () -> performScanKeys(pattern));
+                RedisOperationType.KEYS, pattern, () -> redisTemplate.keys(pattern));
     }
 
     /**
@@ -134,11 +127,7 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
         RedisConnectionFactory factory = redisTemplate.getConnectionFactory();
 
         if (factory == null) {
-            // 优化后的写法
-            LogUtils.business()
-                    .auto()
-                    .message("Redis扫描键失败，原因：RedisConnectionFactory为空，已回退到RedisTemplate.keys()方法")
-                    .info();
+            LogUtils.error("Redis扫描键失败，原因：RedisConnectionFactory为空，已回退到RedisTemplate.keys()方法");
             return keys(pattern);
         }
 
@@ -154,20 +143,10 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
             return result;
 
         } catch (InvalidDataAccessApiUsageException e) {
-            LogUtils.business()
-                    .trace(
-                            "redis_scan_keys",
-                            "scan_not_allowed",
-                            "SCAN not allowed in current mode, fallback to KEYS",
-                            "pattern: " + pattern);
+            LogUtils.error("按模式扫描Redis键失败，已回退到RedisTemplate的keys()方法。模式: " + pattern, e);
             return fallbackToKeysWithConnection(factory, pattern);
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_scan_keys_failed",
-                            e,
-                            "Failed to scan keys by pattern",
-                            "pattern: " + pattern);
+            LogUtils.error("按模式扫描Redis键失败，已回退到RedisTemplate的keys()方法。模式: " + pattern, e);
             return keys(pattern);
         }
     }
@@ -189,34 +168,32 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
             RedisConnectionFactory factory, String pattern) {
         try (RedisConnection connection = factory.getConnection()) {
             return fallbackToKeysCommand(connection, pattern);
-        } catch (Exception ex) {
-            logUtils.exception()
-                    .business(
-                            "redis_keys_fallback_failed",
-                            ex,
-                            "Fallback KEYS failed on standalone connection");
+        } catch (Exception e) {
+            LogUtils.error("回退到KEYS方法在单机连接上失败", e);
             return keys(pattern);
         }
     }
 
     @Override
-    public java.util.List<Object> multiGet(java.util.List<String> keys) {
+    public <T> List<T> multiGet(java.util.List<String> keys, Class<T> clazz) {
         String keyStr = keys != null && !keys.isEmpty() ? keys.get(0) : "batch";
         return executeOperation(
-                RedisOperationType.MGET,
-                keyStr,
-                keys,
-                java.util.List.class,
-                () -> {
-                    if (keys == null || keys.isEmpty()) {
-                        throw new IllegalArgumentException("Keys list cannot be null or empty");
-                    }
-                    return redisTemplate.opsForValue().multiGet(keys);
-                });
+                        RedisOperationType.MGET,
+                        keyStr,
+                        keys,
+                        () -> {
+                            if (keys == null || keys.isEmpty()) {
+                                throw new IllegalArgumentException(
+                                        "Keys list cannot be null or empty");
+                            }
+                            java.util.List<Object> rawResults =
+                                    redisTemplate.opsForValue().multiGet(keys);
+                            return resultProcessor.convertList(rawResults, clazz);
+                        });
     }
 
     @Override
-    public void multiSet(java.util.Map<String, Object> keyValues) {
+    public <T> void multiSet(java.util.Map<String, T> keyValues) {
         String keyStr =
                 keyValues != null && !keyValues.isEmpty()
                         ? keyValues.keySet().iterator().next()
@@ -230,25 +207,6 @@ public class RedisStringOperationsImpl extends AbstractRedisOperations
                         throw new IllegalArgumentException("Key-value map cannot be null or empty");
                     }
                     redisTemplate.opsForValue().multiSet(keyValues);
-                });
-    }
-
-    @Override
-    public Boolean expire(String key, long timeout, java.util.concurrent.TimeUnit timeUnit) {
-        return executeBooleanOperation(
-                key,
-                new Object[] {timeout, timeUnit},
-                () -> {
-                    if (key == null || key.trim().isEmpty()) {
-                        throw new IllegalArgumentException("Key cannot be null or empty");
-                    }
-                    if (timeout <= 0) {
-                        throw new IllegalArgumentException("Timeout must be positive");
-                    }
-                    if (timeUnit == null) {
-                        throw new IllegalArgumentException("TimeUnit cannot be null");
-                    }
-                    return redisTemplate.expire(key, timeout, timeUnit);
                 });
     }
 }

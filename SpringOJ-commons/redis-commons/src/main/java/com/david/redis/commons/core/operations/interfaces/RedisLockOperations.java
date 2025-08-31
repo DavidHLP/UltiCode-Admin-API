@@ -1,7 +1,5 @@
 package com.david.redis.commons.core.operations.interfaces;
 
-import com.david.redis.commons.core.lock.interfaces.RedisLock;
-
 import java.time.Duration;
 import java.util.function.Supplier;
 

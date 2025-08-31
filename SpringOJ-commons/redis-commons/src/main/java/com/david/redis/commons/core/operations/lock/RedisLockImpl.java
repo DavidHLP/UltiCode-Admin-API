@@ -1,7 +1,7 @@
-package com.david.redis.commons.core.lock;
+package com.david.redis.commons.core.operations.lock;
 
 import com.david.log.commons.LogUtils;
-import com.david.redis.commons.core.lock.interfaces.RedisLock;
+import com.david.redis.commons.core.operations.interfaces.RedisLock;
 import com.david.redis.commons.exception.DistributedLockException;
 
 import org.redisson.api.RLock;
@@ -17,8 +17,6 @@ import java.time.Duration;
  */
 public class RedisLockImpl implements RedisLock {
 
-    private final LogUtils logUtils;
-
     private final RLock rLock;
     private final String lockKey;
     private volatile boolean closed = false;
@@ -29,8 +27,7 @@ public class RedisLockImpl implements RedisLock {
      * @param rLock Redisson锁对象
      * @param lockKey 锁键名
      */
-    public RedisLockImpl(LogUtils logUtils, RLock rLock, String lockKey) {
-        this.logUtils = logUtils;
+    public RedisLockImpl(RLock rLock, String lockKey) {
         this.rLock = rLock;
         this.lockKey = lockKey;
     }
@@ -41,9 +38,7 @@ public class RedisLockImpl implements RedisLock {
         try {
             return rLock.isLocked();
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_lock_check_status_failed", e, "检查锁状态失败", "lockKey: " + lockKey);
+            LogUtils.error("检查锁状态失败:{}", "lockKey: " + lockKey, e);
             return false;
         }
     }
@@ -54,9 +49,7 @@ public class RedisLockImpl implements RedisLock {
         try {
             return rLock.isLocked();
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_lock_check_held_failed", e, "检查锁持有状态失败", "lockKey: " + lockKey);
+            LogUtils.error("检查锁持有状态失败:{}", "lockKey: " + lockKey, e);
             return false;
         }
     }
@@ -67,17 +60,15 @@ public class RedisLockImpl implements RedisLock {
         try {
             if (rLock.isHeldByCurrentThread()) {
                 rLock.unlock();
-                logUtils.business().trace("redis_lock", "unlock", "success", "lockKey: " + lockKey);
+                LogUtils.info("释放锁成功:{}", "lockKey: " + lockKey);
             } else {
-                logUtils.business()
-                        .trace("redis_lock", "unlock", "not_held_warning", "lockKey: " + lockKey);
+                LogUtils.warn("当前线程未持有锁:{}", "lockKey: " + lockKey);
                 throw new IllegalStateException("当前线程未持有锁: " + lockKey);
             }
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
-            logUtils.exception()
-                    .business("redis_lock_unlock_failed", e, "释放锁失败", "lockKey: " + lockKey);
+            LogUtils.error("释放锁失败:{}", "lockKey: " + lockKey, e);
             throw DistributedLockException.lockReleaseFailed(lockKey);
         }
     }
@@ -86,54 +77,29 @@ public class RedisLockImpl implements RedisLock {
     public boolean tryExtendLease(Duration additionalTime) {
         checkNotClosed();
         if (additionalTime == null || additionalTime.isNegative() || additionalTime.isZero()) {
-            logUtils.business()
-                    .trace(
-                            "redis_lock",
-                            "extend_lease",
-                            "invalid_time",
-                            "additionalTime: " + additionalTime);
+            LogUtils.warn("无效的续期时间:{}", "additionalTime: " + additionalTime);
             return false;
         }
 
         try {
             if (!rLock.isHeldByCurrentThread()) {
-                logUtils.business()
-                        .trace(
-                                "redis_lock",
-                                "extend_lease",
-                                "not_held_warning",
-                                "lockKey: " + lockKey);
+                LogUtils.warn("当前线程未持有锁，无法续期:{}", "lockKey: " + lockKey);
                 return false;
             }
 
             // Redisson的RLock可以通过重新获取锁来延长租约时间
             // 但这种方式比较复杂，我们简化实现，记录日志并返回true表示尝试成功
-            logUtils.business()
-                    .trace(
-                            "redis_lock",
-                            "extend_lease",
-                            "attempt",
-                            "lockKey: " + lockKey,
-                            "additionalTime: " + additionalTime);
+            LogUtils.info(
+                    "尝试延长锁租约时间:{},{}", "lockKey: " + lockKey, "additionalTime: " + additionalTime);
 
             // 注意：Redisson的锁续期需要通过看门狗机制或重新获取锁来实现
             // 这里我们简化处理，实际项目中可以考虑使用Redisson的自动续期功能
-            logUtils.business()
-                    .trace(
-                            "redis_lock",
-                            "extend_lease",
-                            "simplified_implementation",
-                            "锁续期功能需要配合Redisson的看门狗机制使用");
+            LogUtils.info("锁续期功能需要配合Redisson的看门狗机制使用");
 
             return true;
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_lock_extend_failed",
-                            e,
-                            "续期锁异常",
-                            "lockKey: " + lockKey,
-                            "additionalTime: " + additionalTime);
+            LogUtils.error(
+                    "续期锁异常:{},{}", "lockKey: " + lockKey, "additionalTime: " + additionalTime, e);
             throw DistributedLockException.lockExtendFailed(lockKey, additionalTime);
         }
     }
@@ -153,12 +119,7 @@ public class RedisLockImpl implements RedisLock {
                 return Duration.ofMillis(remainingTimeToLive);
             }
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_lock_get_remaining_time_failed",
-                            e,
-                            "获取锁剩余时间失败",
-                            "lockKey: " + lockKey);
+            LogUtils.error("获取锁剩余时间失败:{}", "lockKey: " + lockKey, e);
             return Duration.ZERO;
         }
     }
@@ -179,8 +140,7 @@ public class RedisLockImpl implements RedisLock {
                 unlock();
             }
         } catch (Exception e) {
-            logUtils.exception()
-                    .business("redis_lock_close_failed", e, "关闭锁时释放失败", "lockKey: " + lockKey);
+            LogUtils.error("关闭锁时释放失败:{}", "lockKey: " + lockKey, e);
         } finally {
             closed = true;
         }
@@ -207,12 +167,7 @@ public class RedisLockImpl implements RedisLock {
         try {
             return rLock.isHeldByCurrentThread();
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_lock_check_current_thread_failed",
-                            e,
-                            "检查当前线程锁持有状态失败",
-                            "lockKey: " + lockKey);
+            LogUtils.error("检查当前线程锁持有状态失败:{}", "lockKey: " + lockKey, e);
             return false;
         }
     }

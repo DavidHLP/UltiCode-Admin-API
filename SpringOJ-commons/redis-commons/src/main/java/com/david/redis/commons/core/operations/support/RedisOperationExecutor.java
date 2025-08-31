@@ -1,6 +1,6 @@
 package com.david.redis.commons.core.operations.support;
 
-import com.david.log.commons.LogUtils;
+import com.david.redis.commons.core.operations.records.OperationContext;
 import com.david.redis.commons.exception.RedisOperationException;
 
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 public class RedisOperationExecutor {
 
     private final RedisResultProcessor resultProcessor;
-    private final LogUtils logUtils;
 
     /**
      * 执行有返回值的Redis操作（类型安全版本）
@@ -38,8 +37,6 @@ public class RedisOperationExecutor {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 记录操作开始日志
-            logOperationStart(context);
 
             // 执行操作
             Object rawResult = action.get();
@@ -47,14 +44,9 @@ public class RedisOperationExecutor {
             // 类型安全的结果转换
             R result = convertResult(rawResult, context);
 
-            // 记录操作成功日志
-            logOperationSuccess(context, startTime);
-
             return result;
 
         } catch (Exception e) {
-            // 记录操作失败日志
-            logOperationFailure(context, startTime, e);
             throw createRedisOperationException(context, e);
         }
     }
@@ -72,19 +64,12 @@ public class RedisOperationExecutor {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 记录操作开始日志
-            logOperationStart(context);
 
             T result = action.get();
-
-            // 记录操作成功日志
-            logOperationSuccess(context, startTime);
 
             return result;
 
         } catch (Exception e) {
-            // 记录操作失败日志
-            logOperationFailure(context, startTime, e);
             throw createRedisOperationException(context, e);
         }
     }
@@ -127,17 +112,6 @@ public class RedisOperationExecutor {
         try {
             return resultProcessor.convertSingle(rawResult, returnType);
         } catch (Exception e) {
-            logUtils.exception()
-                    .business(
-                            "redis_result_conversion_failed",
-                            e,
-                            "Redis结果类型转换失败",
-                            String.format("操作: %s, 键: %s, 期望类型: %s, 实际类型: %s",
-                                    context.operation(),
-                                    context.key(),
-                                    returnType.getSimpleName(),
-                                    rawResult.getClass().getSimpleName()));
-
             // 转换失败时，如果期望类型可以直接赋值，则返回原始结果
             if (returnType.isAssignableFrom(rawResult.getClass())) {
                 return (R) rawResult;
@@ -151,59 +125,6 @@ public class RedisOperationExecutor {
         }
     }
 
-    /**
-     * 记录操作开始日志
-     *
-     * @param context 操作上下文
-     */
-    private void logOperationStart(OperationContext<?, ?> context) {
-        logUtils.business()
-                .trace(
-                        "redis_operation_start",
-                        context.operation(),
-                        context.getFormattedDescription());
-    }
-
-    /**
-     * 记录操作成功日志
-     *
-     * @param context   操作上下文
-     * @param startTime 开始时间
-     */
-    private void logOperationSuccess(OperationContext<?, ?> context, long startTime) {
-        long duration = System.currentTimeMillis() - startTime;
-
-        logUtils.performance()
-                .timing(
-                        "redis_operation_success",
-                        duration,
-                        String.format("操作: %s, 键: %s", context.operation(), context.key()));
-
-        logUtils.business()
-                .trace(
-                        "redis_operation_success",
-                        context.operation(),
-                        String.format("%s 执行成功，耗时: %dms",
-                                context.getFormattedDescription(), duration));
-    }
-
-    /**
-     * 记录操作失败日志
-     *
-     * @param context   操作上下文
-     * @param startTime 开始时间
-     * @param exception 异常
-     */
-    private void logOperationFailure(OperationContext<?, ?> context, long startTime, Exception exception) {
-        long duration = System.currentTimeMillis() - startTime;
-
-        logUtils.exception()
-                .business(
-                        "redis_operation_failed",
-                        exception,
-                        String.format("Redis操作失败: %s", context.getFormattedDescription()),
-                        String.format("耗时: %dms", duration));
-    }
 
     /**
      * 创建Redis操作异常

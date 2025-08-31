@@ -1,4 +1,6 @@
-package com.david.redis.commons.core.operations.support;
+package com.david.redis.commons.core.operations.enums;
+
+import lombok.Getter;
 
 /**
  * Redis操作类型枚举
@@ -8,6 +10,7 @@ package com.david.redis.commons.core.operations.support;
  *
  * @author David
  */
+@Getter
 public enum RedisOperationType {
 
     // ===== String Operations =====
@@ -151,30 +154,24 @@ public enum RedisOperationType {
     /** 管道操作 */
     PIPELINE("PIPELINE", "管道操作");
 
+    /**
+     * -- GETTER --
+     *  获取操作命令
+     *
+     * @return 操作命令
+     */
     private final String command;
+    /**
+     * -- GETTER --
+     *  获取操作描述
+     *
+     * @return 操作描述
+     */
     private final String description;
 
     RedisOperationType(String command, String description) {
         this.command = command;
         this.description = description;
-    }
-
-    /**
-     * 获取操作命令
-     *
-     * @return 操作命令
-     */
-    public String getCommand() {
-        return command;
-    }
-
-    /**
-     * 获取操作描述
-     *
-     * @return 操作描述
-     */
-    public String getDescription() {
-        return description;
     }
 
     /**

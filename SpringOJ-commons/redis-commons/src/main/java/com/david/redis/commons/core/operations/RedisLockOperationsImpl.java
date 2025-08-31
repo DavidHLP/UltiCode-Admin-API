@@ -1,19 +1,19 @@
 package com.david.redis.commons.core.operations;
 
 import com.david.log.commons.LogUtils;
-import com.david.redis.commons.core.lock.DistributedLockManager;
-import com.david.redis.commons.core.lock.interfaces.RedisLock;
+import com.david.redis.commons.core.operations.lock.DistributedLockManager;
+import com.david.redis.commons.core.operations.interfaces.RedisLock;
 import com.david.redis.commons.core.operations.interfaces.RedisLockOperations;
-import com.david.redis.commons.core.operations.support.AbstractRedisOperations;
+import com.david.redis.commons.core.operations.abstracts.AbstractRedisOperations;
 import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
-import com.david.redis.commons.core.operations.support.RedisOperationType;
+import com.david.redis.commons.core.operations.enums.RedisOperationType;
 import com.david.redis.commons.core.operations.support.RedisResultProcessor;
-import com.david.redis.commons.core.transaction.RedisTransactionManager;
 import com.david.redis.commons.properties.RedisCommonsProperties;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
@@ -26,6 +26,7 @@ import java.util.function.Supplier;
  *
  * @author David
  */
+@Component
 public class RedisLockOperationsImpl extends AbstractRedisOperations
         implements RedisLockOperations {
 
@@ -35,25 +36,23 @@ public class RedisLockOperationsImpl extends AbstractRedisOperations
 
     public RedisLockOperationsImpl(
             RedisTemplate<String, Object> redisTemplate,
-            RedisTransactionManager transactionManager,
             RedisOperationExecutor executor,
             RedisResultProcessor resultProcessor,
-            LogUtils logUtils,
             DistributedLockManager distributedLockManager,
             RedissonClient redissonClient,
             RedisCommonsProperties redisCommonsProperties) {
-        super(redisTemplate, transactionManager, executor, resultProcessor, logUtils);
+        super(redisTemplate, executor, resultProcessor);
         this.distributedLockManager = distributedLockManager;
         this.redissonClient = redissonClient;
         this.redisCommonsProperties = redisCommonsProperties;
     }
 
-	@Override
+    @Override
     public RedisLock tryLock(String lockKey, Duration waitTime, Duration leaseTime) {
         return executeOperation(
                 RedisOperationType.TRY_LOCK,
                 lockKey,
-                new Object[]{waitTime, leaseTime},
+                new Object[] {waitTime, leaseTime},
                 RedisLock.class,
                 () -> distributedLockManager.tryLock(lockKey, waitTime, leaseTime));
     }
@@ -253,12 +252,7 @@ public class RedisLockOperationsImpl extends AbstractRedisOperations
                         RLock rLock = redissonClient.getLock(fullLockKey);
                         return rLock.remainTimeToLive();
                     } catch (Exception e) {
-                        logUtils.exception()
-                                .business(
-                                        "redis_lock_get_remaining_lease_failed",
-                                        e,
-                                        "获取锁剩余租约时间失败",
-                                        "lockKey: " + fullLockKey);
+                        LogUtils.error("获取锁剩余租约时间失败: " + "lockKey: " + fullLockKey, e);
                         return -1L;
                     }
                 });
@@ -277,12 +271,7 @@ public class RedisLockOperationsImpl extends AbstractRedisOperations
                         RLock rLock = redissonClient.getLock(fullLockKey);
                         return rLock.isHeldByCurrentThread();
                     } catch (Exception e) {
-                        logUtils.exception()
-                                .business(
-                                        "redis_lock_check_current_thread_failed",
-                                        e,
-                                        "检查当前线程是否持有锁失败",
-                                        "lockKey: " + fullLockKey);
+                        LogUtils.error("检查当前线程是否持有锁失败: " + "lockKey: " + fullLockKey, e);
                         return false;
                     }
                 });
@@ -301,12 +290,7 @@ public class RedisLockOperationsImpl extends AbstractRedisOperations
                         RLock rLock = redissonClient.getLock(fullLockKey);
                         return rLock.getHoldCount();
                     } catch (Exception e) {
-                        logUtils.exception()
-                                .business(
-                                        "redis_lock_get_hold_count_failed",
-                                        e,
-                                        "获取锁持有计数失败",
-                                        "lockKey: " + fullLockKey);
+                        LogUtils.error("获取锁持有计数失败: " + "lockKey: " + fullLockKey, e);
                         return 0;
                     }
                 });

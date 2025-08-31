@@ -1,5 +1,6 @@
-package com.david.redis.commons.core.operations.support;
+package com.david.redis.commons.core.operations.records;
 
+import com.david.redis.commons.core.operations.enums.RedisOperationType;
 import lombok.Builder;
 import lombok.experimental.Accessors;
 
@@ -80,6 +81,22 @@ public record OperationContext<T, R>(
 				.build();
 	}
 
+    /**
+     * 使用操作类型枚举创建无参数的操作上下文
+     *
+     * @param operationType 操作类型枚举
+     * @param key           Redis键名
+     * @param <R>           返回值的类型
+     * @return OperationContext实例
+     */
+    public static <R> OperationContext<Void, R> of(RedisOperationType operationType, String key) {
+        return OperationContext.<Void, R>builder()
+                .operation(operationType.getCommand())
+                .key(key)
+                .description(operationType.getDescription())
+                .build();
+    }
+
 	/**
 	 * 使用操作类型枚举创建带参数的操作上下文
 	 *
@@ -101,6 +118,25 @@ public record OperationContext<T, R>(
 				.description(operationType.getDescription())
 				.build();
 	}
+
+    /**
+     * 使用操作类型枚举创建带参数的操作上下文
+     *
+     * @param operationType 操作类型枚举
+     * @param key           Redis键名
+     * @param param         参数
+     * @param <T>           参数类型
+     * @param <R>           返回值类型
+     * @return OperationContext实例
+     */
+    public static <T, R> OperationContext<T, R> of(RedisOperationType operationType, String key, T param) {
+        return OperationContext.<T, R>builder()
+                .operation(operationType.getCommand())
+                .key(key)
+                .params(param)
+                .description(operationType.getDescription())
+                .build();
+    }
 
 	/**
 	 * 创建自定义描述的操作上下文

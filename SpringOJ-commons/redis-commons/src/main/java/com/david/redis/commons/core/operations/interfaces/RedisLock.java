@@ -1,4 +1,4 @@
-package com.david.redis.commons.core.lock.interfaces;
+package com.david.redis.commons.core.operations.interfaces;
 
 import java.time.Duration;
 

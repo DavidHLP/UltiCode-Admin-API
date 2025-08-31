@@ -1,7 +1,9 @@
-package com.david.redis.commons.core.operations.support;
+package com.david.redis.commons.core.operations.abstracts;
 
-import com.david.log.commons.LogUtils;
-
+import com.david.redis.commons.core.operations.records.OperationContext;
+import com.david.redis.commons.core.operations.support.RedisOperationExecutor;
+import com.david.redis.commons.core.operations.enums.RedisOperationType;
+import com.david.redis.commons.core.operations.support.RedisResultProcessor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +25,6 @@ public abstract class AbstractRedisOperations {
     protected final RedisTemplate<String, Object> redisTemplate;
     protected final RedisOperationExecutor executor;
     protected final RedisResultProcessor resultProcessor;
-    protected final LogUtils logUtils;
 
     // ===== 类型安全的操作方法 =====
 
@@ -38,8 +39,28 @@ public abstract class AbstractRedisOperations {
      * @return 类型安全的操作结果
      */
     protected final <R> R executeOperation(
-            RedisOperationType operationType, String key, Class<R> returnType, Supplier<Object> action) {
+            RedisOperationType operationType,
+            String key,
+            Class<R> returnType,
+            Supplier<Object> action) {
         OperationContext<Void, R> context = OperationContext.of(operationType, key, returnType);
+        return executor.executeTypeSafe(context, action);
+    }
+
+    /**
+     * 执行类型安全的Redis操作（使用操作类型枚举）
+     *
+     * @param operationType 操作类型枚举
+     * @param key Redis键名
+     * @param action 要执行的操作
+     * @param <R> 返回值类型
+     * @return 类型安全的操作结果
+     */
+    protected final <R> R executeOperation(
+            RedisOperationType operationType,
+            String key,
+            Supplier<Object> action) {
+        OperationContext<Void, R> context = OperationContext.of(operationType, key);
         return executor.executeTypeSafe(context, action);
     }
 
@@ -56,8 +77,34 @@ public abstract class AbstractRedisOperations {
      * @return 类型安全的操作结果
      */
     protected final <T, R> R executeOperation(
-            RedisOperationType operationType, String key, T params, Class<R> returnType, Supplier<Object> action) {
-        OperationContext<T, R> context = OperationContext.of(operationType, key, params, returnType);
+            RedisOperationType operationType,
+            String key,
+            T params,
+            Class<R> returnType,
+            Supplier<Object> action) {
+        OperationContext<T, R> context =
+                OperationContext.of(operationType, key, params, returnType);
+        return executor.executeTypeSafe(context, action);
+    }
+
+    /**
+     * 执行带参数的类型安全Redis操作（使用操作类型枚举）
+     *
+     * @param operationType 操作类型枚举
+     * @param key Redis键名
+     * @param params 操作参数
+     * @param action 要执行的操作
+     * @param <T> 参数类型
+     * @param <R> 返回值类型
+     * @return 类型安全的操作结果
+     */
+    protected final <T, R> R executeOperation(
+            RedisOperationType operationType,
+            String key,
+            T params,
+            Supplier<Object> action) {
+        OperationContext<T, R> context =
+                OperationContext.of(operationType, key, params);
         return executor.executeTypeSafe(context, action);
     }
 
@@ -107,7 +154,8 @@ public abstract class AbstractRedisOperations {
      * @return 操作结果
      */
     protected final <T> T executeOperation(String operation, String key, Supplier<T> action) {
-        OperationContext<Void, Object> context = OperationContext.ofNoParams(operation, key, Object.class);
+        OperationContext<Void, Object> context =
+                OperationContext.ofNoParams(operation, key, Object.class);
         return executor.execute(context, action);
     }
 
@@ -123,7 +171,8 @@ public abstract class AbstractRedisOperations {
      */
     protected final <T> T executeOperation(
             String operation, String key, Object params, Supplier<T> action) {
-        OperationContext<Object, Object> context = OperationContext.of(operation, key, params, Object.class);
+        OperationContext<Object, Object> context =
+                OperationContext.of(operation, key, params, Object.class);
         return executor.execute(context, action);
     }
 
@@ -135,16 +184,17 @@ public abstract class AbstractRedisOperations {
      * @param action 要执行的操作
      */
     protected final void executeOperation(String operation, String key, Runnable action) {
-        OperationContext<Void, Object> context = OperationContext.ofNoParams(operation, key, Object.class);
+        OperationContext<Void, Object> context =
+                OperationContext.ofNoParams(operation, key, Object.class);
         executor.execute(context, action);
     }
 
-	// ===== 便捷方法 =====
+    // ===== 便捷方法 =====
 
     /**
      * 执行String类型返回值的操作
      *
-     * @param key    Redis键名
+     * @param key Redis键名
      * @param action 要执行的操作
      * @return String类型结果
      */
@@ -160,7 +210,8 @@ public abstract class AbstractRedisOperations {
      * @param action 要执行的操作
      * @return Boolean类型结果
      */
-    protected final Boolean executeBooleanOperation(RedisOperationType operationType, String key, Supplier<Object> action) {
+    protected final Boolean executeBooleanOperation(
+            RedisOperationType operationType, String key, Supplier<Object> action) {
         return executeOperation(operationType, key, Boolean.class, action);
     }
 
@@ -172,7 +223,8 @@ public abstract class AbstractRedisOperations {
      * @param action 要执行的操作
      * @return Long类型结果
      */
-    protected final Long executeLongOperation(RedisOperationType operationType, String key, Supplier<Object> action) {
+    protected final Long executeLongOperation(
+            RedisOperationType operationType, String key, Supplier<Object> action) {
         return executeOperation(operationType, key, Long.class, action);
     }
 
@@ -194,8 +246,8 @@ public abstract class AbstractRedisOperations {
     /**
      * 执行带参数的Boolean类型返回值的操作
      *
-     * @param <T>    参数类型
-     * @param key    Redis键名
+     * @param <T> 参数类型
+     * @param key Redis键名
      * @param params 操作参数
      * @param action 要执行的操作
      * @return Boolean类型结果
@@ -208,14 +260,13 @@ public abstract class AbstractRedisOperations {
     /**
      * 执行带参数的Long类型返回值的操作
      *
-     * @param <T>    参数类型
-     * @param key    Redis键名
+     * @param <T> 参数类型
+     * @param key Redis键名
      * @param params 操作参数
      * @param action 要执行的操作
      * @return Long类型结果
      */
-    protected final <T> Long executeLongOperation(
-            String key, T params, Supplier<Object> action) {
+    protected final <T> Long executeLongOperation(String key, T params, Supplier<Object> action) {
         return executeOperation(RedisOperationType.DEL, key, params, Long.class, action);
     }
 
@@ -226,7 +277,8 @@ public abstract class AbstractRedisOperations {
      * @param key Redis键名
      * @param action 要执行的操作
      */
-    protected final void executeVoidOperation(RedisOperationType operationType, String key, Runnable action) {
+    protected final void executeVoidOperation(
+            RedisOperationType operationType, String key, Runnable action) {
         OperationContext<Void, Void> context = OperationContext.of(operationType, key, Void.class);
         executor.execute(context, action);
     }
@@ -242,7 +294,8 @@ public abstract class AbstractRedisOperations {
      */
     protected final <T> void executeVoidOperation(
             RedisOperationType operationType, String key, T params, Runnable action) {
-        OperationContext<T, Void> context = OperationContext.of(operationType, key, params, Void.class);
+        OperationContext<T, Void> context =
+                OperationContext.of(operationType, key, params, Void.class);
         executor.execute(context, action);
     }
 }
