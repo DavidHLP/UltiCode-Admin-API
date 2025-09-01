@@ -10,12 +10,12 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 192.168.252.1:8848 #配置Nacos地址
+        server-addr: 192.168.139.49:8848 #配置Nacos地址
         username: nacos
         password: "#Alone117"
     sentinel:
       transport:
-        dashboard: 192.168.252.1:9090
+        dashboard: 192.168.139.49:9090
         port: 8719
     gateway:
       discovery:

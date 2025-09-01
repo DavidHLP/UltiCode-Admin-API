@@ -44,7 +44,7 @@ import java.time.Duration;
 public abstract class RealRedisTestBase {
 
     // Redis连接配置常量
-    protected static final String REDIS_HOST = "192.168.252.1";
+    protected static final String REDIS_HOST = "192.168.139.49";
     protected static final int REDIS_PORT = 6379;
     protected static final int REDIS_DATABASE = 0;
     protected static final long REDIS_TIMEOUT = 1800000; // 30分钟，毫秒格式
