@@ -1,13 +1,25 @@
 package com.david.commons.redis.exception;
 
+import lombok.Getter;
+
 /**
  * Redis Commons 基础异常类
  *
  * @author David
  */
+@Getter
 public class RedisCommonsException extends RuntimeException {
 
+    /**
+     * -- GETTER -- 获取错误码
+     *
+     */
     private final String errorCode;
+
+    /**
+     * -- GETTER -- 获取错误参数
+     *
+     */
     private final Object[] args;
 
     public RedisCommonsException(String message) {
@@ -40,27 +52,10 @@ public class RedisCommonsException extends RuntimeException {
         this.args = args;
     }
 
-    public RedisCommonsException(String errorCode, String message, Throwable cause, Object... args) {
+    public RedisCommonsException(
+            String errorCode, String message, Throwable cause, Object... args) {
         super(message, cause);
         this.errorCode = errorCode;
         this.args = args;
-    }
-
-    /**
-     * 获取错误码
-     *
-     * @return 错误码
-     */
-    public String getErrorCode() {
-        return errorCode;
-    }
-
-    /**
-     * 获取错误参数
-     *
-     * @return 错误参数
-     */
-    public Object[] getArgs() {
-        return args;
     }
 }

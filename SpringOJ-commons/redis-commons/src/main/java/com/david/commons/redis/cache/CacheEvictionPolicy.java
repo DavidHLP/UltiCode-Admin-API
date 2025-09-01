@@ -1,10 +1,13 @@
 package com.david.commons.redis.cache;
 
+import lombok.Getter;
+
 /**
  * 缓存淘汰策略枚举
  *
  * @author David
  */
+@Getter
 public enum CacheEvictionPolicy {
 
     /**
@@ -33,11 +36,7 @@ public enum CacheEvictionPolicy {
         this.code = code;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    /**
+	/**
      * 根据代码获取淘汰策略
      */
     public static CacheEvictionPolicy fromCode(String code) {

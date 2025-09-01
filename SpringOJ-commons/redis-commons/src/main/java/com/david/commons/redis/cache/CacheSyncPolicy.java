@@ -1,10 +1,13 @@
 package com.david.commons.redis.cache;
 
+import lombok.Getter;
+
 /**
  * 缓存同步策略枚举
  *
  * @author David
  */
+@Getter
 public enum CacheSyncPolicy {
 
     /**
@@ -28,11 +31,7 @@ public enum CacheSyncPolicy {
         this.code = code;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    /**
+	/**
      * 根据代码获取同步策略
      */
     public static CacheSyncPolicy fromCode(String code) {

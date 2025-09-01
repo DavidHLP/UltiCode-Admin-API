@@ -10,27 +10,6 @@ import java.util.concurrent.TimeUnit;
 public interface LockRetryStrategy {
 
     /**
-     * 计算下次重试的延迟时间
-     *
-     * @param attempt   当前重试次数（从1开始）
-     * @param baseDelay 基础延迟时间
-     * @param unit      时间单位
-     * @return 延迟时间（毫秒）
-     */
-    long calculateDelay(int attempt, long baseDelay, TimeUnit unit);
-
-    /**
-     * 判断是否应该继续重试
-     *
-     * @param attempt     当前重试次数（从1开始）
-     * @param maxAttempts 最大重试次数
-     * @param elapsedTime 已经过的时间（毫秒）
-     * @param maxWaitTime 最大等待时间（毫秒）
-     * @return 是否继续重试
-     */
-    boolean shouldRetry(int attempt, int maxAttempts, long elapsedTime, long maxWaitTime);
-
-    /**
      * 固定延迟重试策略
      */
     static LockRetryStrategy fixedDelay() {
@@ -50,6 +29,27 @@ public interface LockRetryStrategy {
     static LockRetryStrategy linearBackoff() {
         return new LinearBackoffRetryStrategy();
     }
+
+    /**
+     * 计算下次重试的延迟时间
+     *
+     * @param attempt   当前重试次数（从1开始）
+     * @param baseDelay 基础延迟时间
+     * @param unit      时间单位
+     * @return 延迟时间（毫秒）
+     */
+    long calculateDelay(int attempt, long baseDelay, TimeUnit unit);
+
+    /**
+     * 判断是否应该继续重试
+     *
+     * @param attempt     当前重试次数（从1开始）
+     * @param maxAttempts 最大重试次数
+     * @param elapsedTime 已经过的时间（毫秒）
+     * @param maxWaitTime 最大等待时间（毫秒）
+     * @return 是否继续重试
+     */
+    boolean shouldRetry(int attempt, int maxAttempts, long elapsedTime, long maxWaitTime);
 
     /**
      * 固定延迟重试策略实现

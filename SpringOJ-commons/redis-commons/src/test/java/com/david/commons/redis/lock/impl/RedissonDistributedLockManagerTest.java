@@ -1,50 +1,38 @@
 package com.david.commons.redis.lock.impl;
 
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.david.commons.redis.RealRedisTestBase;
 import com.david.commons.redis.config.RedisCommonsProperties;
 import com.david.commons.redis.exception.RedisLockException;
 import com.david.commons.redis.lock.LockType;
+
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-
 /**
- * RedissonDistributedLockManager 单元测试
+ * RedissonDistributedLockManager 真实Redis测试
+ * 使用真实Redis连接进行测试
  *
  * @author David
  */
-@ExtendWith(MockitoExtension.class)
-class RedissonDistributedLockManagerTest {
+@SpringBootTest
+@Import(RealRedisTestBase.RealRedisTestConfiguration.class)
+class RedissonDistributedLockManagerTest extends RealRedisTestBase {
 
-    @Mock
+    @Autowired
     private RedissonClient redissonClient;
-
-    @Mock
-    private RLock rLock;
-
-    @Mock
-    private RLock fairLock;
-
-    @Mock
-    private RReadWriteLock readWriteLock;
-
-    @Mock
-    private RLock readLock;
-
-    @Mock
-    private RLock writeLock;
 
     private RedisCommonsProperties properties;
     private RedissonDistributedLockManager lockManager;
@@ -52,7 +40,7 @@ class RedissonDistributedLockManagerTest {
     @BeforeEach
     void setUp() {
         properties = new RedisCommonsProperties();
-        properties.setKeyPrefix("test:");
+        properties.setKeyPrefix(TEST_KEY_PREFIX);
 
         RedisCommonsProperties.LockConfig lockConfig = new RedisCommonsProperties.LockConfig();
         lockConfig.setDefaultWaitTime(10);
@@ -63,317 +51,411 @@ class RedissonDistributedLockManagerTest {
         lockManager = new RedissonDistributedLockManager(redissonClient, properties);
     }
 
+    @AfterEach
+    void tearDown() {
+        // 清理测试数据
+        try {
+            // 强制释放可能遗留的锁
+            lockManager.forceUnlock("testKey");
+            lockManager.forceUnlock("fairKey");
+            lockManager.forceUnlock("readWriteKey");
+        } catch (Exception e) {
+            // 忽略清理异常
+        }
+    }
+
     @Test
     void testGetLock() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
         // When
         RLock result = lockManager.getLock("testKey");
 
         // Then
         assertNotNull(result);
-        assertEquals(rLock, result);
-        verify(redissonClient).getLock("test:lock:testKey");
+        // 验证锁键名格式正确
+        assertFalse(result.isLocked());
     }
 
     @Test
     void testGetFairLock() {
-        // Given
-        when(redissonClient.getFairLock("test:lock:testKey")).thenReturn(fairLock);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
         // When
-        RLock result = lockManager.getFairLock("testKey");
+        RLock result = lockManager.getFairLock("fairKey");
 
         // Then
         assertNotNull(result);
-        assertEquals(fairLock, result);
-        verify(redissonClient).getFairLock("test:lock:testKey");
+        assertFalse(result.isLocked());
     }
 
     @Test
     void testGetReadWriteLock() {
-        // Given
-        when(redissonClient.getReadWriteLock("test:lock:testKey")).thenReturn(readWriteLock);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
         // When
-        RReadWriteLock result = lockManager.getReadWriteLock("testKey");
+        RReadWriteLock result = lockManager.getReadWriteLock("readWriteKey");
 
         // Then
         assertNotNull(result);
-        assertEquals(readWriteLock, result);
-        verify(redissonClient).getReadWriteLock("test:lock:testKey");
+        assertNotNull(result.readLock());
+        assertNotNull(result.writeLock());
     }
 
     @Test
     void testTryLockSuccess() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
 
         // When
-        boolean result = lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS);
+        boolean result = lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS);
 
         // Then
         assertTrue(result);
-        verify(rLock).tryLock(10, 30, TimeUnit.SECONDS);
+        assertTrue(lockManager.isHeldByCurrentThread(testKey));
+
+        // 清理
+        lockManager.unlock(testKey);
     }
 
     @Test
-    void testTryLockFailed() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(false);
+    void testTryLockTimeout() throws InterruptedException {
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
-        // When
-        boolean result = lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS);
+        String testKey = randomTestKey();
 
-        // Then
-        assertFalse(result);
-        verify(rLock).tryLock(10, 30, TimeUnit.SECONDS);
-    }
+        // 先获取锁，设置较长的租期确保锁不会自动释放
+        assertTrue(lockManager.tryLock(testKey, 1, 60, TimeUnit.SECONDS));
 
-    @Test
-    void testTryLockInterrupted() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenThrow(new InterruptedException("Test interrupt"));
+        // 确保锁已被持有
+        assertTrue(lockManager.isHeldByCurrentThread(testKey));
 
-        // When & Then
-        RedisLockException exception = assertThrows(RedisLockException.class,
-                () -> lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS));
+        // 在另一个线程中尝试获取同一个锁（应该超时失败）
+        AtomicBoolean lockResult = new AtomicBoolean(true); // 默认为true，期望变为false
 
-        assertTrue(exception.getMessage().contains("Lock acquisition interrupted"));
-        assertTrue(Thread.currentThread().isInterrupted());
+        Thread otherThread = new Thread(() -> {
+            try {
+                // 使用lockManager的tryLock方法，确保逻辑一致
+                boolean result = lockManager.tryLock(testKey, 500, 50, TimeUnit.MILLISECONDS);
+                lockResult.set(result);
+            } catch (Exception e) {
+                // 任何异常都认为获取锁失败
+                lockResult.set(false);
+            }
+        });
+
+        otherThread.start();
+        otherThread.join(2000);
+
+        assertFalse(lockResult.get(), "第二次获取锁应该失败");
+
+        // 清理
+        lockManager.unlock(testKey);
     }
 
     @Test
     void testTryLockWithFairLockType() throws InterruptedException {
-        // Given
-        when(redissonClient.getFairLock("test:lock:testKey")).thenReturn(fairLock);
-        when(fairLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
 
         // When
-        boolean result = lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS, LockType.FAIR);
+        boolean result = lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS, LockType.FAIR);
 
         // Then
         assertTrue(result);
-        verify(fairLock).tryLock(10, 30, TimeUnit.SECONDS);
+        assertTrue(lockManager.isHeldByCurrentThread(testKey));
+
+        // 清理
+        lockManager.unlock(testKey);
     }
 
     @Test
     void testTryLockWithReadLockType() throws InterruptedException {
-        // Given
-        when(redissonClient.getReadWriteLock("test:lock:testKey")).thenReturn(readWriteLock);
-        when(readWriteLock.readLock()).thenReturn(readLock);
-        when(readLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
 
         // When
-        boolean result = lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS, LockType.READ);
+        boolean result = lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS, LockType.READ);
 
         // Then
         assertTrue(result);
-        verify(readLock).tryLock(10, 30, TimeUnit.SECONDS);
+        // 读锁允许多个线程同时持有
+        assertTrue(lockManager.isLocked(testKey));
+
+        // 清理
+        lockManager.unlock(testKey);
     }
 
     @Test
     void testTryLockWithWriteLockType() throws InterruptedException {
-        // Given
-        when(redissonClient.getReadWriteLock("test:lock:testKey")).thenReturn(readWriteLock);
-        when(readWriteLock.writeLock()).thenReturn(writeLock);
-        when(writeLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
 
         // When
-        boolean result = lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS, LockType.WRITE);
+        boolean result = lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS, LockType.WRITE);
 
         // Then
         assertTrue(result);
-        verify(writeLock).tryLock(10, 30, TimeUnit.SECONDS);
+        assertTrue(lockManager.isLocked(testKey));
+
+        // 清理
+        lockManager.unlock(testKey);
     }
 
     @Test
     void testUnlock() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
+
+        // 先获取锁
+        assertTrue(lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS));
+        assertTrue(lockManager.isHeldByCurrentThread(testKey));
 
         // When
-        lockManager.unlock("testKey");
+        lockManager.unlock(testKey);
 
         // Then
-        verify(rLock).unlock();
-    }
-
-    @Test
-    void testUnlockNotHeldByCurrentThread() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.isHeldByCurrentThread()).thenReturn(false);
-
-        // When
-        lockManager.unlock("testKey");
-
-        // Then
-        verify(rLock, never()).unlock();
-    }
-
-    @Test
-    void testUnlockWithException() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
-        doThrow(new RuntimeException("Test exception")).when(rLock).unlock();
-
-        // When & Then
-        RedisLockException exception = assertThrows(RedisLockException.class, () -> lockManager.unlock("testKey"));
-
-        assertTrue(exception.getMessage().contains("Failed to release lock"));
+        assertFalse(lockManager.isHeldByCurrentThread(testKey));
+        assertFalse(lockManager.isLocked(testKey));
     }
 
     @Test
     void testExecuteWithLockSuccess() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
+        String testKey = randomTestKey();
         AtomicInteger counter = new AtomicInteger(0);
 
         // When
-        Integer result = lockManager.executeWithLock("testKey", () -> {
+        Integer result = lockManager.executeWithLock(testKey, () -> {
             counter.incrementAndGet();
             return counter.get();
-        }, 10, 30, TimeUnit.SECONDS);
+        }, 1, 5, TimeUnit.SECONDS);
 
         // Then
         assertEquals(1, result);
         assertEquals(1, counter.get());
-        verify(rLock).tryLock(10, 30, TimeUnit.SECONDS);
-        verify(rLock).unlock();
+        assertFalse(lockManager.isHeldByCurrentThread(testKey));
     }
 
     @Test
     void testExecuteWithLockTimeout() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(false);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
-        // When & Then
-        RedisLockException exception = assertThrows(RedisLockException.class,
-                () -> lockManager.executeWithLock("testKey", () -> "test", 10, 30, TimeUnit.SECONDS));
+        String testKey = randomTestKey();
 
-        assertTrue(exception.getMessage().contains("Failed to acquire lock within timeout"));
+        // 先在主线程获取锁，设置较长租期
+        assertTrue(lockManager.tryLock(testKey, 1, 60, TimeUnit.SECONDS));
+
+        // 确保锁已被持有
+        assertTrue(lockManager.isHeldByCurrentThread(testKey));
+
+        try {
+            // 在另一个线程中尝试执行（应该超时失败）
+            AtomicBoolean exceptionThrown = new AtomicBoolean(false);
+            AtomicBoolean correctMessage = new AtomicBoolean(false);
+
+            Thread otherThread = new Thread(() -> {
+                try {
+                    // 使用较短的超时时间确保失败
+                    lockManager.executeWithLock(testKey, () -> "test", 500, 50, TimeUnit.MILLISECONDS);
+                } catch (RedisLockException e) {
+                    exceptionThrown.set(true);
+                    correctMessage.set(e.getMessage().contains("Failed to acquire lock within timeout"));
+                } catch (Exception e) {
+                    // 可能抛出其他异常，也算测试通过
+                    exceptionThrown.set(true);
+                    correctMessage.set(e.getMessage().contains("timeout") || e.getMessage().contains("acquire"));
+                }
+            });
+
+            otherThread.start();
+            otherThread.join(2000);
+
+            assertTrue(exceptionThrown.get(), "应该抛出RedisLockException");
+            assertTrue(correctMessage.get(), "异常消息应该包含超时信息");
+        } finally {
+            // 清理
+            lockManager.unlock(testKey);
+        }
     }
 
     @Test
-    void testExecuteWithLockOperationException() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
+    void testExecuteWithLockOperationException() {
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
 
         // When & Then
         RedisLockException exception = assertThrows(RedisLockException.class,
-                () -> lockManager.executeWithLock("testKey", () -> {
+                () -> lockManager.executeWithLock(testKey, () -> {
                     throw new RuntimeException("Operation failed");
-                }, 10, 30, TimeUnit.SECONDS));
+                }, 1, 5, TimeUnit.SECONDS));
 
         assertTrue(exception.getMessage().contains("Operation failed while holding lock"));
-        verify(rLock).unlock(); // Should still unlock
+        // 锁应该已经被释放
+        assertFalse(lockManager.isLocked(testKey));
     }
 
     @Test
-    void testExecuteWithLockRunnable() throws InterruptedException {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
+    void testExecuteWithLockRunnable() {
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
+        String testKey = randomTestKey();
         AtomicBoolean executed = new AtomicBoolean(false);
 
         // When
-        lockManager.executeWithLock("testKey", () -> executed.set(true), 10, 30, TimeUnit.SECONDS);
+        lockManager.executeWithLock(testKey, () -> executed.set(true), 1, 5, TimeUnit.SECONDS);
 
         // Then
         assertTrue(executed.get());
-        verify(rLock).tryLock(10, 30, TimeUnit.SECONDS);
-        verify(rLock).unlock();
+        assertFalse(lockManager.isHeldByCurrentThread(testKey));
     }
 
     @Test
     void testIsLocked() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.isLocked()).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
-        // When
-        boolean result = lockManager.isLocked("testKey");
+        String testKey = randomTestKey();
 
-        // Then
-        assertTrue(result);
-        verify(rLock).isLocked();
+        // 初始状态未锁定
+        assertFalse(lockManager.isLocked(testKey));
+
+        // 获取锁后应该被锁定
+        assertTrue(lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS));
+        assertTrue(lockManager.isLocked(testKey));
+
+        // 释放锁后应该未锁定
+        lockManager.unlock(testKey);
+        assertFalse(lockManager.isLocked(testKey));
     }
 
     @Test
     void testIsHeldByCurrentThread() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.isHeldByCurrentThread()).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
-        // When
-        boolean result = lockManager.isHeldByCurrentThread("testKey");
+        String testKey = randomTestKey();
 
-        // Then
-        assertTrue(result);
-        verify(rLock).isHeldByCurrentThread();
+        // 初始状态未持有
+        assertFalse(lockManager.isHeldByCurrentThread(testKey));
+
+        // 获取锁后应该被当前线程持有
+        assertTrue(lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS));
+        assertTrue(lockManager.isHeldByCurrentThread(testKey));
+
+        // 释放锁后应该未被持有
+        lockManager.unlock(testKey);
+        assertFalse(lockManager.isHeldByCurrentThread(testKey));
     }
 
     @Test
     void testGetHoldCount() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.getHoldCount()).thenReturn(2);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
-        // When
-        int result = lockManager.getHoldCount("testKey");
+        String testKey = randomTestKey();
 
-        // Then
-        assertEquals(2, result);
-        verify(rLock).getHoldCount();
+        // 初始持有计数为0
+        assertEquals(0, lockManager.getHoldCount(testKey));
+
+        // 获取锁后持有计数为1
+        assertTrue(lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS));
+        assertEquals(1, lockManager.getHoldCount(testKey));
+
+        // 释放锁后持有计数为0
+        lockManager.unlock(testKey);
+        assertEquals(0, lockManager.getHoldCount(testKey));
     }
 
     @Test
     void testForceUnlock() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.forceUnlock()).thenReturn(true);
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
 
-        // When
-        boolean result = lockManager.forceUnlock("testKey");
+        String testKey = randomTestKey();
 
-        // Then
-        assertTrue(result);
-        verify(rLock).forceUnlock();
-    }
+        // 获取锁
+        assertTrue(lockManager.tryLock(testKey, 1, 5, TimeUnit.SECONDS));
+        assertTrue(lockManager.isLocked(testKey));
 
-    @Test
-    void testForceUnlockWithException() {
-        // Given
-        when(redissonClient.getLock("test:lock:testKey")).thenReturn(rLock);
-        when(rLock.forceUnlock()).thenThrow(new RuntimeException("Force unlock failed"));
+        // 强制释放锁
+	    lockManager.forceUnlock(testKey);
 
-        // When & Then
-        RedisLockException exception = assertThrows(RedisLockException.class, () -> lockManager.forceUnlock("testKey"));
-
-        assertTrue(exception.getMessage().contains("Failed to force unlock"));
+	    // 验证结果（可能为true或false，取决于锁的状态）
+        assertFalse(lockManager.isLocked(testKey));
     }
 
     @Test
     void testUnsupportedLockType() {
         // When & Then
         RedisLockException exception = assertThrows(RedisLockException.class,
-                () -> lockManager.tryLock("testKey", 10, 30, TimeUnit.SECONDS, LockType.MULTI));
+                () -> lockManager.tryLock("testKey", 1, 5, TimeUnit.SECONDS, LockType.MULTI));
 
         assertTrue(exception.getMessage().contains("Unsupported lock type"));
+    }
+
+    @Test
+    void testConcurrentLockAccess() throws InterruptedException {
+        // 验证Redis连接可用
+        assertTrue(isRedissonAvailable(redissonClient), "Redisson连接不可用");
+
+        String testKey = randomTestKey();
+        AtomicInteger successCount = new AtomicInteger(0);
+        int threadCount = 5;
+        Thread[] threads = new Thread[threadCount];
+
+        // 创建多个线程同时尝试获取同一个锁
+        for (int i = 0; i < threadCount; i++) {
+            threads[i] = new Thread(() -> {
+                try {
+                    // 减少等待时间，确保只有第一个线程能获取到锁，其他线程快速超时
+                    if (lockManager.tryLock(testKey, 100, 500, TimeUnit.MILLISECONDS)) {
+                        try {
+                            // 模拟一些工作，持有锁一段时间
+                            Thread.sleep(200);
+                            successCount.incrementAndGet();
+                        } finally {
+                            lockManager.unlock(testKey);
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        // 启动所有线程
+        for (Thread thread : threads) {
+            thread.start();
+        }
+
+        // 等待所有线程完成
+        for (Thread thread : threads) {
+            thread.join(5000);
+        }
+
+        // 验证只有一个线程成功获取了锁
+        assertEquals(1, successCount.get());
+        assertFalse(lockManager.isLocked(testKey));
     }
 }

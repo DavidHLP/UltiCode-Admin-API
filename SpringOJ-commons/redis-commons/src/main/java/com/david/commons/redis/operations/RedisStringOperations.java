@@ -14,7 +14,7 @@ public interface RedisStringOperations<T> {
     /**
      * 设置键值
      *
-     * @param key   键
+     * @param key 键
      * @param value 值
      * @return 操作结果
      */
@@ -23,10 +23,10 @@ public interface RedisStringOperations<T> {
     /**
      * 设置键值并指定过期时间
      *
-     * @param key     键
-     * @param value   值
+     * @param key 键
+     * @param value 值
      * @param timeout 过期时间
-     * @param unit    时间单位
+     * @param unit 时间单位
      * @return 操作结果
      */
     Boolean set(String key, T value, long timeout, TimeUnit unit);
@@ -34,8 +34,8 @@ public interface RedisStringOperations<T> {
     /**
      * 设置键值并指定过期时间
      *
-     * @param key      键
-     * @param value    值
+     * @param key 键
+     * @param value 值
      * @param duration 过期时间
      * @return 操作结果
      */
@@ -44,7 +44,7 @@ public interface RedisStringOperations<T> {
     /**
      * 仅当键不存在时设置
      *
-     * @param key   键
+     * @param key 键
      * @param value 值
      * @return 是否设置成功
      */
@@ -53,10 +53,10 @@ public interface RedisStringOperations<T> {
     /**
      * 仅当键不存在时设置并指定过期时间
      *
-     * @param key     键
-     * @param value   值
+     * @param key 键
+     * @param value 值
      * @param timeout 过期时间
-     * @param unit    时间单位
+     * @param unit 时间单位
      * @return 是否设置成功
      */
     Boolean setIfAbsent(String key, T value, long timeout, TimeUnit unit);
@@ -72,7 +72,7 @@ public interface RedisStringOperations<T> {
     /**
      * 获取并设置新值
      *
-     * @param key   键
+     * @param key 键
      * @param value 新值
      * @return 旧值
      */
@@ -89,7 +89,7 @@ public interface RedisStringOperations<T> {
     /**
      * 按指定步长递增
      *
-     * @param key   键
+     * @param key 键
      * @param delta 步长
      * @return 递增后的值
      */
@@ -106,7 +106,7 @@ public interface RedisStringOperations<T> {
     /**
      * 按指定步长递减
      *
-     * @param key   键
+     * @param key 键
      * @param delta 步长
      * @return 递减后的值
      */

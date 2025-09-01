@@ -7,13 +7,16 @@ import com.david.commons.redis.lock.DistributedLockManager;
 import com.david.commons.redis.lock.LockRecoveryHandler;
 import com.david.commons.redis.lock.LockRetryStrategy;
 import com.david.commons.redis.lock.LockType;
+
+import jakarta.annotation.PreDestroy;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
-import jakarta.annotation.PreDestroy;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -33,11 +36,13 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
     private final LockRetryStrategy retryStrategy;
     private final LockRecoveryHandler recoveryHandler;
 
-    public RedissonDistributedLockManager(RedissonClient redissonClient, RedisCommonsProperties properties) {
+    public RedissonDistributedLockManager(
+            RedissonClient redissonClient, RedisCommonsProperties properties) {
         this.redissonClient = redissonClient;
         this.properties = properties;
         this.retryStrategy = LockRetryStrategy.exponentialBackoff();
         this.recoveryHandler = new LockRecoveryHandler();
+        this.recoveryHandler.startRecoveryTask();
     }
 
     @Override
@@ -64,14 +69,18 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
     }
 
     @Override
-    public boolean tryLock(String key, long waitTime, long leaseTime, TimeUnit unit, LockType lockType) {
+    public boolean tryLock(
+            String key, long waitTime, long leaseTime, TimeUnit unit, LockType lockType) {
         return tryLockWithRetry(key, waitTime, leaseTime, unit, lockType, 3);
     }
 
-    /**
-     * 带重试机制的锁获取
-     */
-    public boolean tryLockWithRetry(String key, long waitTime, long leaseTime, TimeUnit unit, LockType lockType,
+	/** 带重试机制的锁获取 */
+    public boolean tryLockWithRetry(
+            String key,
+            long waitTime,
+            long leaseTime,
+            TimeUnit unit,
+            LockType lockType,
             int maxAttempts) {
         RLock lock = getLockByType(key, lockType);
         long startTime = System.currentTimeMillis();
@@ -82,52 +91,98 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 if (elapsedTime >= maxWaitTimeMs) {
                     log.warn("Lock acquisition timeout for key: {} after {}ms", key, elapsedTime);
-                    break;
+                    return false;
                 }
 
-                // 计算本次尝试的等待时间
+                // 计算本次尝试的等待时间，确保不超过剩余时间
                 long remainingTime = maxWaitTimeMs - elapsedTime;
-                long attemptWaitTime = Math.min(remainingTime, unit.toMillis(waitTime) / maxAttempts);
+                long attemptWaitTime = Math.min(remainingTime, unit.toMillis(waitTime));
 
-                boolean acquired = lock.tryLock(attemptWaitTime, leaseTime, TimeUnit.MILLISECONDS);
+                // 将租期统一换算为毫秒，避免单位不一致导致的过期异常
+                long leaseTimeMs = unit.toMillis(leaseTime);
+
+                boolean acquired =
+                        lock.tryLock(attemptWaitTime, leaseTimeMs, TimeUnit.MILLISECONDS);
                 if (acquired) {
-                    log.debug("Successfully acquired {} lock for key: {} on attempt {}", lockType, key, attempt);
+                    log.debug(
+                            "Successfully acquired {} lock for key: {} on attempt {}",
+                            lockType,
+                            key,
+                            attempt);
                     // 注册到恢复处理器
                     recoveryHandler.registerLock(key, lock, leaseTime, unit);
                     return true;
                 }
 
-                // 检查是否应该重试
+                // 检查总等待时间是否已超时
                 elapsedTime = System.currentTimeMillis() - startTime;
+                if (elapsedTime >= maxWaitTimeMs) {
+                    log.warn("Lock acquisition timeout for key: {} after {}ms", key, elapsedTime);
+                    return false;
+                }
+
+                // 检查是否应该重试
                 if (!retryStrategy.shouldRetry(attempt, maxAttempts, elapsedTime, maxWaitTimeMs)) {
                     break;
                 }
 
                 // 计算重试延迟
                 if (attempt < maxAttempts) {
-                    long retryDelay = retryStrategy.calculateDelay(attempt,
-                            properties.getLock().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    long retryDelay =
+                            retryStrategy.calculateDelay(
+                                    attempt,
+                                    properties.getLock().getRetryInterval(),
+                                    TimeUnit.MILLISECONDS);
 
-                    log.debug("Lock acquisition failed for key: {}, retrying in {}ms (attempt {}/{})",
-                            key, retryDelay, attempt, maxAttempts);
+                    // 确保重试延迟不会导致总超时
+                    if (elapsedTime + retryDelay >= maxWaitTimeMs) {
+                        log.warn(
+                                "Lock acquisition timeout for key: {} after {}ms",
+                                key,
+                                elapsedTime);
+                        return false;
+                    }
+
+                    log.debug(
+                            "Lock acquisition failed for key: {}, retrying in {}ms (attempt {}/{})",
+                            key,
+                            retryDelay,
+                            attempt,
+                            maxAttempts);
 
                     Thread.sleep(retryDelay);
                 }
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new RedisLockException(RedisErrorCodes.LOCK_INTERRUPTED,
-                        "Lock acquisition interrupted for key: " + key, e);
+                throw new RedisLockException(
+                        RedisErrorCodes.LOCK_INTERRUPTED,
+                        "Lock acquisition interrupted for key: " + key,
+                        e);
             } catch (Exception e) {
-                log.warn("Exception during lock acquisition attempt {} for key: {}", attempt, key, e);
+                log.warn(
+                        "Exception during lock acquisition attempt {} for key: {}",
+                        attempt,
+                        key,
+                        e);
                 if (attempt == maxAttempts) {
-                    throw new RedisLockException(RedisErrorCodes.LOCK_ACQUISITION_FAILED,
-                            "Failed to acquire lock for key: " + key + " after " + maxAttempts + " attempts", e);
+                    throw new RedisLockException(
+                            RedisErrorCodes.LOCK_ACQUISITION_FAILED,
+                            "Failed to acquire lock for key: "
+                                    + key
+                                    + " after "
+                                    + maxAttempts
+                                    + " attempts",
+                            e);
                 }
             }
         }
 
-        log.warn("Failed to acquire {} lock for key: {} after {} attempts", lockType, key, maxAttempts);
+        log.warn(
+                "Failed to acquire {} lock for key: {} after {} attempts",
+                lockType,
+                key,
+                maxAttempts);
         return false;
     }
 
@@ -145,7 +200,10 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
                 recoveryHandler.unregisterLock(key);
                 log.debug("Successfully released {} lock for key: {}", lockType, key);
             } else {
-                log.warn("Attempted to unlock {} lock not held by current thread for key: {}", lockType, key);
+                log.warn(
+                        "Attempted to unlock {} lock not held by current thread for key: {}",
+                        lockType,
+                        key);
             }
         } catch (Exception e) {
             log.error("Failed to release {} lock for key: {}", lockType, key, e);
@@ -153,46 +211,57 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             // 尝试恢复
             boolean recovered = recoveryHandler.tryRecoverLock(key, lock, e);
             if (!recovered) {
-                throw new RedisLockException(RedisErrorCodes.LOCK_RELEASE_FAILED,
-                        "Failed to release lock for key: " + key, e);
+                throw new RedisLockException(
+                        RedisErrorCodes.LOCK_RELEASE_FAILED,
+                        "Failed to release lock for key: " + key,
+                        e);
             }
         }
     }
 
     @Override
-    public <T> T executeWithLock(String key, Supplier<T> supplier, long waitTime, long leaseTime, TimeUnit unit) {
+    public <T> T executeWithLock(
+            String key, Supplier<T> supplier, long waitTime, long leaseTime, TimeUnit unit) {
         return executeWithLock(key, supplier, waitTime, leaseTime, unit, LockType.REENTRANT);
     }
 
     @Override
-    public <T> T executeWithLock(String key, Supplier<T> supplier, long waitTime, long leaseTime, TimeUnit unit,
+    public <T> T executeWithLock(
+            String key,
+            Supplier<T> supplier,
+            long waitTime,
+            long leaseTime,
+            TimeUnit unit,
             LockType lockType) {
         RLock lock = getLockByType(key, lockType);
         boolean acquired = false;
 
         try {
+            // 直接使用单次尝试确保严格的超时控制
             acquired = lock.tryLock(waitTime, leaseTime, unit);
             if (!acquired) {
-                throw new RedisLockException(RedisErrorCodes.LOCK_TIMEOUT,
+                throw new RedisLockException(
+                        RedisErrorCodes.LOCK_TIMEOUT,
                         "Failed to acquire lock within timeout for key: " + key);
             }
 
+            // 注册到恢复处理器
+            recoveryHandler.registerLock(key, lock, leaseTime, unit);
             log.debug("Executing operation with {} lock for key: {}", lockType, key);
             return supplier.get();
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RedisLockException(RedisErrorCodes.LOCK_INTERRUPTED,
-                    "Lock acquisition interrupted for key: " + key, e);
         } catch (RedisLockException e) {
             throw e;
         } catch (Exception e) {
-            throw new RedisLockException(RedisErrorCodes.LOCK_OPERATION_FAILED,
-                    "Operation failed while holding lock for key: " + key, e);
+            throw new RedisLockException(
+                    RedisErrorCodes.LOCK_OPERATION_FAILED,
+                    "Operation failed while holding lock for key: " + key,
+                    e);
         } finally {
             if (acquired && lock.isHeldByCurrentThread()) {
                 try {
                     lock.unlock();
+                    recoveryHandler.unregisterLock(key);
                     log.debug("Released {} lock after operation for key: {}", lockType, key);
                 } catch (Exception e) {
                     log.error("Failed to release lock after operation for key: {}", key, e);
@@ -202,17 +271,29 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
     }
 
     @Override
-    public void executeWithLock(String key, Runnable runnable, long waitTime, long leaseTime, TimeUnit unit) {
+    public void executeWithLock(
+            String key, Runnable runnable, long waitTime, long leaseTime, TimeUnit unit) {
         executeWithLock(key, runnable, waitTime, leaseTime, unit, LockType.REENTRANT);
     }
 
     @Override
-    public void executeWithLock(String key, Runnable runnable, long waitTime, long leaseTime, TimeUnit unit,
+    public void executeWithLock(
+            String key,
+            Runnable runnable,
+            long waitTime,
+            long leaseTime,
+            TimeUnit unit,
             LockType lockType) {
-        executeWithLock(key, () -> {
-            runnable.run();
-            return null;
-        }, waitTime, leaseTime, unit, lockType);
+        executeWithLock(
+                key,
+                () -> {
+                    runnable.run();
+                    return null;
+                },
+                waitTime,
+                leaseTime,
+                unit,
+                lockType);
     }
 
     @Override
@@ -244,35 +325,33 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             return result;
         } catch (Exception e) {
             log.error("Failed to force unlock key: {}", key, e);
-            throw new RedisLockException(RedisErrorCodes.LOCK_FORCE_UNLOCK_FAILED,
-                    "Failed to force unlock key: " + key, e);
+            throw new RedisLockException(
+                    RedisErrorCodes.LOCK_FORCE_UNLOCK_FAILED,
+                    "Failed to force unlock key: " + key,
+                    e);
         }
     }
 
-    /**
-     * 根据锁类型获取对应的锁实例
-     */
+    /** 根据锁类型获取对应的锁实例 */
     private RLock getLockByType(String key, LockType lockType) {
         return switch (lockType) {
             case REENTRANT -> getLock(key);
             case FAIR -> getFairLock(key);
             case READ -> getReadWriteLock(key).readLock();
             case WRITE -> getReadWriteLock(key).writeLock();
-            default -> throw new RedisLockException(RedisErrorCodes.UNSUPPORTED_LOCK_TYPE,
-                    "Unsupported lock type: " + lockType);
+            default ->
+                    throw new RedisLockException(
+                            RedisErrorCodes.UNSUPPORTED_LOCK_TYPE,
+                            "Unsupported lock type: " + lockType);
         };
     }
 
-    /**
-     * 构建锁键
-     */
+    /** 构建锁键 */
     private String buildLockKey(String key) {
         return properties.getKeyPrefix() + "lock:" + key;
     }
 
-    /**
-     * 关闭锁管理器
-     */
+    /** 关闭锁管理器 */
     @PreDestroy
     public void shutdown() {
         log.info("Shutting down distributed lock manager");

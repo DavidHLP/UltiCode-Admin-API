@@ -10,12 +10,12 @@ spring:
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848 #配置Nacos地址
+        server-addr: 192.168.252.1:8848 #配置Nacos地址
         username: nacos
         password: "#Alone117"
     sentinel:
       transport:
-        dashboard: 127.0.0.1:9090
+        dashboard: 192.168.252.1:9090
         port: 8719
     loadbalancer:
       nacos:
@@ -23,12 +23,12 @@ spring:
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
+    url: jdbc:mysql://192.168.252.1:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
     username: root
     password: Alone117
   data:
     redis: # 基础 Redis 连接配置
-      host: 127.0.0.1
+      host: 192.168.252.1
       port: 6379
       database: 0
       timeout: 1800000 # 使用毫秒格式，兼容 Redis Lettuce

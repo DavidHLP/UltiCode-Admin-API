@@ -4,7 +4,9 @@ import com.david.commons.redis.exception.RedisCommonsException;
 import com.david.commons.redis.operations.RedisStringOperations;
 import com.david.commons.redis.serialization.RedisSerializer;
 import com.david.commons.redis.serialization.SerializationStrategySelector;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
@@ -12,8 +14,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis 字符串操作实现类
- * 提供强类型支持和链式调用能力
+ * Redis 字符串操作实现类 提供强类型支持和链式调用能力
  *
  * @param <T> 值类型
  * @author David
@@ -21,15 +22,14 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
 
-    private final RedisTemplate<String, Object> redisTemplate;
     private final ValueOperations<String, Object> valueOperations;
     private final SerializationStrategySelector strategySelector;
     private final Class<T> valueType;
 
-    public RedisStringOperationsImpl(RedisTemplate<String, Object> redisTemplate,
+    public RedisStringOperationsImpl(
+            RedisTemplate<String, Object> redisTemplate,
             SerializationStrategySelector strategySelector,
             Class<T> valueType) {
-        this.redisTemplate = redisTemplate;
         this.valueOperations = redisTemplate.opsForValue();
         this.strategySelector = strategySelector;
         this.valueType = valueType;
@@ -43,7 +43,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return true;
         } catch (Exception e) {
             log.error("Failed to set value for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_SET_ERROR", "Failed to set value for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_SET_ERROR", "Failed to set value for key: " + key, e);
         }
     }
 
@@ -55,7 +56,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return true;
         } catch (Exception e) {
             log.error("Failed to set value with timeout for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_SET_ERROR", "Failed to set value with timeout for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_SET_ERROR", "Failed to set value with timeout for key: " + key, e);
         }
     }
 
@@ -67,7 +69,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return true;
         } catch (Exception e) {
             log.error("Failed to set value with duration for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_SET_ERROR", "Failed to set value with duration for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_SET_ERROR", "Failed to set value with duration for key: " + key, e);
         }
     }
 
@@ -79,21 +82,26 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return result != null ? result : false;
         } catch (Exception e) {
             log.error("Failed to set value if absent for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_SET_IF_ABSENT_ERROR",
-                    "Failed to set value if absent for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_SET_IF_ABSENT_ERROR",
+                    "Failed to set value if absent for key: " + key,
+                    e);
         }
     }
 
     @Override
     public Boolean setIfAbsent(String key, T value, long timeout, TimeUnit unit) {
         try {
-            log.debug("Setting value if absent for key: {} with timeout: {} {}", key, timeout, unit);
+            log.debug(
+                    "Setting value if absent for key: {} with timeout: {} {}", key, timeout, unit);
             Boolean result = valueOperations.setIfAbsent(key, value, timeout, unit);
             return result != null ? result : false;
         } catch (Exception e) {
             log.error("Failed to set value if absent with timeout for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_SET_IF_ABSENT_ERROR",
-                    "Failed to set value if absent with timeout for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_SET_IF_ABSENT_ERROR",
+                    "Failed to set value if absent with timeout for key: " + key,
+                    e);
         }
     }
 
@@ -116,7 +124,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return convertValue(value, valueType);
         } catch (Exception e) {
             log.error("Failed to get value for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_GET_ERROR", "Failed to get value for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_GET_ERROR", "Failed to get value for key: " + key, e);
         }
     }
 
@@ -137,8 +146,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return convertValue(oldValue, valueType);
         } catch (Exception e) {
             log.error("Failed to get and set value for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_GET_AND_SET_ERROR", "Failed to get and set value for key: " + key,
-                    e);
+            throw new RedisCommonsException(
+                    "REDIS_GET_AND_SET_ERROR", "Failed to get and set value for key: " + key, e);
         }
     }
 
@@ -149,7 +158,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return valueOperations.increment(key);
         } catch (Exception e) {
             log.error("Failed to increment value for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_INCREMENT_ERROR", "Failed to increment value for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_INCREMENT_ERROR", "Failed to increment value for key: " + key, e);
         }
     }
 
@@ -160,8 +170,10 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return valueOperations.increment(key, delta);
         } catch (Exception e) {
             log.error("Failed to increment value by delta for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_INCREMENT_ERROR",
-                    "Failed to increment value by delta for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_INCREMENT_ERROR",
+                    "Failed to increment value by delta for key: " + key,
+                    e);
         }
     }
 
@@ -172,7 +184,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return valueOperations.decrement(key);
         } catch (Exception e) {
             log.error("Failed to decrement value for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_DECREMENT_ERROR", "Failed to decrement value for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_DECREMENT_ERROR", "Failed to decrement value for key: " + key, e);
         }
     }
 
@@ -183,8 +196,10 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return valueOperations.decrement(key, delta);
         } catch (Exception e) {
             log.error("Failed to decrement value by delta for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_DECREMENT_ERROR",
-                    "Failed to decrement value by delta for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_DECREMENT_ERROR",
+                    "Failed to decrement value by delta for key: " + key,
+                    e);
         }
     }
 
@@ -195,14 +210,15 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             return valueOperations.size(key);
         } catch (Exception e) {
             log.error("Failed to get string length for key: {}", key, e);
-            throw new RedisCommonsException("REDIS_SIZE_ERROR", "Failed to get string length for key: " + key, e);
+            throw new RedisCommonsException(
+                    "REDIS_SIZE_ERROR", "Failed to get string length for key: " + key, e);
         }
     }
 
     /**
      * 类型转换辅助方法
      *
-     * @param value      原始值
+     * @param value 原始值
      * @param targetType 目标类型
      * @return 转换后的值
      */
@@ -223,9 +239,8 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
         }
 
         // 数值类型转换
-        if (value instanceof Number) {
-            Number number = (Number) value;
-            if (targetType == Integer.class || targetType == int.class) {
+        if (value instanceof Number number) {
+	        if (targetType == Integer.class || targetType == int.class) {
                 return (T) Integer.valueOf(number.intValue());
             } else if (targetType == Long.class || targetType == long.class) {
                 return (T) Long.valueOf(number.longValue());
@@ -237,8 +252,7 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
         }
 
         // 字符串到数值类型的转换
-        if (value instanceof String) {
-            String stringValue = (String) value;
+        if (value instanceof String stringValue) {
             try {
                 if (targetType == Integer.class || targetType == int.class) {
                     return (T) Integer.valueOf(stringValue);
@@ -252,14 +266,18 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
                     return (T) Boolean.valueOf(stringValue);
                 }
             } catch (NumberFormatException e) {
-                log.warn("Failed to convert string '{}' to {}", stringValue, targetType.getSimpleName());
+                log.warn(
+                        "Failed to convert string '{}' to {}",
+                        stringValue,
+                        targetType.getSimpleName());
             }
         }
 
         // 如果无法转换，尝试使用序列化器
         try {
-            RedisSerializer<T> serializer = strategySelector.getSerializerWithFallback(
-                    strategySelector.selectStrategy(targetType), targetType);
+            RedisSerializer<T> serializer =
+                    strategySelector.getSerializerWithFallback(
+                            strategySelector.selectStrategy(targetType), targetType);
 
             if (value instanceof byte[]) {
                 return serializer.deserialize((byte[]) value, targetType);
@@ -274,9 +292,12 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
         try {
             return (T) value;
         } catch (ClassCastException e) {
-            throw new RedisCommonsException("REDIS_TYPE_CONVERSION_ERROR",
-                    "Cannot convert value of type " + value.getClass().getSimpleName() +
-                            " to " + targetType.getSimpleName(),
+            throw new RedisCommonsException(
+                    "REDIS_TYPE_CONVERSION_ERROR",
+                    "Cannot convert value of type "
+                            + value.getClass().getSimpleName()
+                            + " to "
+                            + targetType.getSimpleName(),
                     e);
         }
     }

@@ -3,7 +3,9 @@ package com.david.commons.redis.lock.aspect;
 import com.david.commons.redis.exception.RedisLockException;
 import com.david.commons.redis.lock.DistributedLockManager;
 import com.david.commons.redis.lock.annotation.DistributedLock;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -18,7 +20,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 分布式锁 AOP 切面
@@ -39,7 +40,8 @@ public class DistributedLockAspect {
     }
 
     @Around("@annotation(distributedLock)")
-    public Object around(ProceedingJoinPoint joinPoint, DistributedLock distributedLock) throws Throwable {
+    public Object around(ProceedingJoinPoint joinPoint, DistributedLock distributedLock)
+            throws Throwable {
         // 检查条件表达式
         if (!evaluateCondition(joinPoint, distributedLock)) {
             log.debug("Lock condition not met, executing method without lock");
@@ -52,7 +54,8 @@ public class DistributedLockAspect {
             throw new RedisLockException("Lock key cannot be empty");
         }
 
-        log.debug("Attempting to acquire {} lock with key: {}", distributedLock.lockType(), lockKey);
+        log.debug(
+                "Attempting to acquire {} lock with key: {}", distributedLock.lockType(), lockKey);
 
         // 尝试获取锁并执行方法
         try {
@@ -73,17 +76,16 @@ public class DistributedLockAspect {
             return handleLockFailure(joinPoint, distributedLock, e);
         } catch (RuntimeException e) {
             // 解包装方法执行异常
-            if (e.getCause() instanceof Throwable) {
+            if (e.getCause() != null) {
                 throw e.getCause();
             }
             throw e;
         }
     }
 
-    /**
-     * 评估条件表达式
-     */
-    private boolean evaluateCondition(ProceedingJoinPoint joinPoint, DistributedLock distributedLock) {
+    /** 评估条件表达式 */
+    private boolean evaluateCondition(
+            ProceedingJoinPoint joinPoint, DistributedLock distributedLock) {
         String condition = distributedLock.condition();
         if (!StringUtils.hasText(condition)) {
             return true; // 没有条件表达式，默认为 true
@@ -100,9 +102,7 @@ public class DistributedLockAspect {
         }
     }
 
-    /**
-     * 解析锁键
-     */
+    /** 解析锁键 */
     private String parseLockKey(ProceedingJoinPoint joinPoint, DistributedLock distributedLock) {
         String keyExpression = distributedLock.key();
 
@@ -111,8 +111,10 @@ public class DistributedLockAspect {
 
             // 如果包含 #{} 表达式，使用模板解析
             if (keyExpression.contains("#{")) {
-                Expression expression = parser.parseExpression(keyExpression,
-                        new org.springframework.expression.common.TemplateParserContext());
+                Expression expression =
+                        parser.parseExpression(
+                                keyExpression,
+                                new org.springframework.expression.common.TemplateParserContext());
                 Object value = expression.getValue(context);
                 return value != null ? value.toString() : "";
             } else {
@@ -127,9 +129,7 @@ public class DistributedLockAspect {
         }
     }
 
-    /**
-     * 创建 SpEL 评估上下文
-     */
+    /** 创建 SpEL 评估上下文 */
     private EvaluationContext createEvaluationContext(ProceedingJoinPoint joinPoint) {
         StandardEvaluationContext context = new StandardEvaluationContext();
 
@@ -146,43 +146,37 @@ public class DistributedLockAspect {
         }
 
         // 设置根对象信息
-        LockExpressionRootObject rootObject = new LockExpressionRootObject(
-                method, args, joinPoint.getTarget(), joinPoint.getTarget().getClass());
+        LockExpressionRootObject rootObject =
+                new LockExpressionRootObject(
+                        method, args, joinPoint.getTarget(), joinPoint.getTarget().getClass());
         context.setRootObject(rootObject);
 
         return context;
     }
 
-    /**
-     * 处理锁获取失败
-     */
-    private Object handleLockFailure(ProceedingJoinPoint joinPoint, DistributedLock distributedLock,
-            RedisLockException lockException) throws Throwable {
+    /** 处理锁获取失败 */
+    private Object handleLockFailure(
+            ProceedingJoinPoint joinPoint,
+            DistributedLock distributedLock,
+            RedisLockException lockException)
+            throws Throwable {
 
         DistributedLock.LockFailureStrategy strategy = distributedLock.failureStrategy();
         String lockKey = parseLockKey(joinPoint, distributedLock);
 
         log.warn("Failed to acquire lock with key: {}, strategy: {}", lockKey, strategy);
 
-        switch (strategy) {
-            case EXCEPTION:
-                throw lockException;
-
-            case RETURN_DEFAULT:
-                return getDefaultReturnValue(joinPoint);
-
-            case SKIP_LOCK:
+        return switch (strategy) {
+            case RETURN_DEFAULT -> getDefaultReturnValue(joinPoint);
+            case SKIP_LOCK -> {
                 log.info("Skipping lock and executing method directly for key: {}", lockKey);
-                return joinPoint.proceed();
-
-            default:
-                throw lockException;
-        }
+                yield joinPoint.proceed();
+            }
+            default -> throw lockException;
+        };
     }
 
-    /**
-     * 获取默认返回值
-     */
+    /** 获取默认返回值 */
     private Object getDefaultReturnValue(ProceedingJoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
         Class<?> returnType = signature.getReturnType();
@@ -192,61 +186,25 @@ public class DistributedLockAspect {
         }
 
         // 基本类型的默认值
-        if (returnType == boolean.class)
-            return false;
-        if (returnType == byte.class)
-            return (byte) 0;
-        if (returnType == short.class)
-            return (short) 0;
-        if (returnType == int.class)
-            return 0;
-        if (returnType == long.class)
-            return 0L;
-        if (returnType == float.class)
-            return 0.0f;
-        if (returnType == double.class)
-            return 0.0d;
-        if (returnType == char.class)
-            return '\0';
+        if (returnType == boolean.class) return false;
+        if (returnType == byte.class) return (byte) 0;
+        if (returnType == short.class) return (short) 0;
+        if (returnType == int.class) return 0;
+        if (returnType == long.class) return 0L;
+        if (returnType == float.class) return 0.0f;
+        if (returnType == double.class) return 0.0d;
+        if (returnType == char.class) return '\0';
 
         // 对象类型返回 null
         return null;
     }
 
-    /**
-     * SpEL 表达式根对象
-     */
-    public static class LockExpressionRootObject {
-        private final Method method;
-        private final Object[] args;
-        private final Object target;
-        private final Class<?> targetClass;
-
-        public LockExpressionRootObject(Method method, Object[] args, Object target, Class<?> targetClass) {
-            this.method = method;
-            this.args = args;
-            this.target = target;
-            this.targetClass = targetClass;
-        }
-
-        public Method getMethod() {
-            return method;
-        }
+    /** SpEL 表达式根对象 */
+    public record LockExpressionRootObject(
+            Method method, Object[] args, Object target, Class<?> targetClass) {
 
         public String getMethodName() {
             return method.getName();
-        }
-
-        public Object[] getArgs() {
-            return args;
-        }
-
-        public Object getTarget() {
-            return target;
-        }
-
-        public Class<?> getTargetClass() {
-            return targetClass;
         }
     }
 }

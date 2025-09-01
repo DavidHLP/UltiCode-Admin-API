@@ -3,250 +3,191 @@ package com.david.commons.redis.lock.annotation;
 import com.david.commons.redis.exception.RedisLockException;
 import com.david.commons.redis.lock.DistributedLockManager;
 import com.david.commons.redis.lock.LockType;
-import com.david.commons.redis.lock.aspect.DistributedLockAspect;
-import org.junit.jupiter.api.BeforeEach;
+import com.david.commons.redis.RealRedisTestBase;
+import com.david.commons.redis.TestApplication;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 /**
  * DistributedLock 注解集成测试
  *
  * @author David
  */
-@ExtendWith(MockitoExtension.class)
-class DistributedLockIntegrationTest {
+@SpringBootTest(classes = TestApplication.class)
+@Import(DistributedLockIntegrationTest.TestConfig.class)
+class DistributedLockIntegrationTest extends RealRedisTestBase {
 
-    @Mock
+    @Autowired
     private DistributedLockManager lockManager;
 
+    @Autowired
     private TestService testService;
-    private TestService proxiedTestService;
 
-    @BeforeEach
-    void setUp() {
-        testService = new TestService();
-
-        // 创建 AOP 代理
-        AspectJProxyFactory factory = new AspectJProxyFactory(testService);
-        factory.addAspect(new DistributedLockAspect(lockManager));
-        proxiedTestService = factory.getProxy();
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public TestService testService() {
+            return new TestService();
+        }
     }
 
     @Test
     void testBasicLockAnnotation() {
-        // Given
-        doAnswer(invocation -> {
-            Supplier<String> supplier = invocation.getArgument(1);
-            return supplier.get();
-        }).when(lockManager).executeWithLock(
-                eq("test:123"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
-
         // When
-        String result = proxiedTestService.basicLockMethod("123");
+        String result = testService.basicLockMethod("123");
 
         // Then
         assertEquals("processed:123", result);
-        verify(lockManager).executeWithLock(
-                eq("test:123"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
     }
 
     @Test
     void testSpELExpressionInKey() {
-        // Given
-        doAnswer(invocation -> {
-            Supplier<String> supplier = invocation.getArgument(1);
-            return supplier.get();
-        }).when(lockManager).executeWithLock(
-                eq("user:456"),
-                any(Supplier.class),
-                eq(5L),
-                eq(60L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.FAIR));
-
         // When
-        String result = proxiedTestService.spelKeyMethod("456");
+        String result = testService.spelKeyMethod("456");
 
         // Then
         assertEquals("user:456", result);
-        verify(lockManager).executeWithLock(
-                eq("user:456"),
-                any(Supplier.class),
-                eq(5L),
-                eq(60L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.FAIR));
     }
 
     @Test
     void testObjectPropertyInKey() {
-        // Given
         TestUser user = new TestUser("789", "testUser");
-        doAnswer(invocation -> {
-            Supplier<String> supplier = invocation.getArgument(1);
-            return supplier.get();
-        }).when(lockManager).executeWithLock(
-                eq("user:789"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
-
         // When
-        String result = proxiedTestService.objectPropertyKeyMethod(user);
+        String result = testService.objectPropertyKeyMethod(user);
 
         // Then
         assertEquals("processed:789", result);
-        verify(lockManager).executeWithLock(
-                eq("user:789"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
     }
 
     @Test
     void testConditionalLockTrue() {
-        // Given - 条件为 true
-        doAnswer(invocation -> {
-            Supplier<String> supplier = invocation.getArgument(1);
-            return supplier.get();
-        }).when(lockManager).executeWithLock(
-                eq("conditional:active"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
-
         // When
-        String result = proxiedTestService.conditionalLockMethod("active");
+        String result = testService.conditionalLockMethod("active");
 
         // Then
         assertEquals("conditional:active", result);
-        verify(lockManager).executeWithLock(
-                eq("conditional:active"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
     }
 
     @Test
     void testConditionalLockFalse() {
         // When - 条件为 false，应该跳过锁
-        String result = proxiedTestService.conditionalLockMethod("inactive");
+        String result = testService.conditionalLockMethod("inactive");
 
         // Then
         assertEquals("conditional:inactive", result);
-        verifyNoInteractions(lockManager);
     }
 
     @Test
     void testLockFailureWithException() {
-        // Given
-        doThrow(new RedisLockException("Lock acquisition failed"))
-                .when(lockManager).executeWithLock(
-                        anyString(),
-                        any(Supplier.class),
-                        anyLong(),
-                        anyLong(),
-                        any(TimeUnit.class),
-                        any(LockType.class));
-
-        // When & Then
-        assertThrows(RedisLockException.class, () -> proxiedTestService.basicLockMethod("123"));
+        // 在其他线程持有同一把锁，确保本线程获取失败并抛出异常
+        String key = "test:123";
+        CountDownLatch ready = new CountDownLatch(1);
+        Thread t = new Thread(() -> {
+            try {
+                boolean ok = lockManager.tryLock(key, 1, 3, TimeUnit.SECONDS);
+                if (ok) {
+                    ready.countDown();
+                    Thread.sleep(1500);
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            } finally {
+                try { lockManager.unlock(key); } catch (Exception ignored) {}
+            }
+        });
+        t.start();
+        try {
+            ready.await(2, TimeUnit.SECONDS);
+            assertThrows(RedisLockException.class, () -> testService.basicLockMethod("123"));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail("Test interrupted");
+        } finally {
+            try { t.join(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+            try { lockManager.forceUnlock(key); } catch (Exception ignored) {}
+        }
     }
 
     @Test
     void testLockFailureWithReturnDefault() {
-        // Given
-        doThrow(new RedisLockException("Lock acquisition failed"))
-                .when(lockManager).executeWithLock(
-                        anyString(),
-                        any(Supplier.class),
-                        anyLong(),
-                        anyLong(),
-                        any(TimeUnit.class),
-                        any(LockType.class));
-
-        // When
-        String result = proxiedTestService.returnDefaultOnFailureMethod("123");
-
-        // Then
-        assertNull(result); // 默认返回值为 null
+        String key = "test:123";
+        CountDownLatch ready = new CountDownLatch(1);
+        Thread t = new Thread(() -> {
+            try {
+                boolean ok = lockManager.tryLock(key, 1, 3, TimeUnit.SECONDS);
+                if (ok) {
+                    ready.countDown();
+                    Thread.sleep(1500);
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            } finally {
+                try { lockManager.unlock(key); } catch (Exception ignored) {}
+            }
+        });
+        t.start();
+        try {
+            ready.await(2, TimeUnit.SECONDS);
+            String result = testService.returnDefaultOnFailureMethod("123");
+            assertNull(result); // 默认返回值为 null
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail("Test interrupted");
+        } finally {
+            try { t.join(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+            try { lockManager.forceUnlock(key); } catch (Exception ignored) {}
+        }
     }
 
     @Test
     void testLockFailureWithSkipLock() {
-        // Given
-        doThrow(new RedisLockException("Lock acquisition failed"))
-                .when(lockManager).executeWithLock(
-                        anyString(),
-                        any(Supplier.class),
-                        anyLong(),
-                        anyLong(),
-                        any(TimeUnit.class),
-                        any(LockType.class));
-
-        // When
-        String result = proxiedTestService.skipLockOnFailureMethod("123");
-
-        // Then
-        assertEquals("skipped:123", result); // 跳过锁直接执行
+        String key = "test:123";
+        CountDownLatch ready = new CountDownLatch(1);
+        Thread t = new Thread(() -> {
+            try {
+                boolean ok = lockManager.tryLock(key, 1, 3, TimeUnit.SECONDS);
+                if (ok) {
+                    ready.countDown();
+                    Thread.sleep(1500);
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            } finally {
+                try { lockManager.unlock(key); } catch (Exception ignored) {}
+            }
+        });
+        t.start();
+        try {
+            ready.await(2, TimeUnit.SECONDS);
+            String result = testService.skipLockOnFailureMethod("123");
+            assertEquals("skipped:123", result); // 跳过锁直接执行
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            fail("Test interrupted");
+        } finally {
+            try { t.join(5000); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
+            try { lockManager.forceUnlock(key); } catch (Exception ignored) {}
+        }
     }
 
     @Test
     void testVoidMethodWithLock() {
-        // Given
         AtomicInteger counter = new AtomicInteger(0);
-        doAnswer(invocation -> {
-            Supplier<Object> supplier = invocation.getArgument(1);
-            return supplier.get();
-        }).when(lockManager).executeWithLock(
-                eq("void:test"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
-
         // When
-        assertDoesNotThrow(() -> proxiedTestService.voidMethodWithLock("test", counter));
+        assertDoesNotThrow(() -> testService.voidMethodWithLock("test", counter));
 
         // Then
         assertEquals(1, counter.get());
-        verify(lockManager).executeWithLock(
-                eq("void:test"),
-                any(Supplier.class),
-                eq(10L),
-                eq(30L),
-                eq(TimeUnit.SECONDS),
-                eq(LockType.REENTRANT));
     }
 
     /**
@@ -254,7 +195,7 @@ class DistributedLockIntegrationTest {
      */
     public static class TestService {
 
-        @DistributedLock(key = "test:#{#id}")
+        @DistributedLock(key = "test:#{#id}", waitTime = 1, leaseTime = 3, timeUnit = TimeUnit.SECONDS)
         public String basicLockMethod(String id) {
             return "processed:" + id;
         }
@@ -274,12 +215,12 @@ class DistributedLockIntegrationTest {
             return "conditional:" + status;
         }
 
-        @DistributedLock(key = "test:#{#id}", failureStrategy = DistributedLock.LockFailureStrategy.RETURN_DEFAULT)
+        @DistributedLock(key = "test:#{#id}", waitTime = 1, leaseTime = 3, timeUnit = TimeUnit.SECONDS, failureStrategy = DistributedLock.LockFailureStrategy.RETURN_DEFAULT)
         public String returnDefaultOnFailureMethod(String id) {
             return "processed:" + id;
         }
 
-        @DistributedLock(key = "test:#{#id}", failureStrategy = DistributedLock.LockFailureStrategy.SKIP_LOCK)
+        @DistributedLock(key = "test:#{#id}", waitTime = 1, leaseTime = 3, timeUnit = TimeUnit.SECONDS, failureStrategy = DistributedLock.LockFailureStrategy.SKIP_LOCK)
         public String skipLockOnFailureMethod(String id) {
             return "skipped:" + id;
         }

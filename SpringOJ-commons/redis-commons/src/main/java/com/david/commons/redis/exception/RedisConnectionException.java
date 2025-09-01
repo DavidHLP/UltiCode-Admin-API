@@ -27,7 +27,8 @@ public class RedisConnectionException extends RedisCommonsException {
         super(errorCode, message, args);
     }
 
-    public RedisConnectionException(String errorCode, String message, Throwable cause, Object... args) {
+    public RedisConnectionException(
+            String errorCode, String message, Throwable cause, Object... args) {
         super(errorCode, message, cause, args);
     }
 }
