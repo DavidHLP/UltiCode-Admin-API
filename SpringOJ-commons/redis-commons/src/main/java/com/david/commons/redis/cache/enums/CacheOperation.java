@@ -1,10 +1,13 @@
-package com.david.commons.redis.cache;
+package com.david.commons.redis.cache.enums;
+
+import lombok.Getter;
 
 /**
  * 缓存操作类型枚举
  *
  * @author David
  */
+@Getter
 public enum CacheOperation {
 
     /**
@@ -31,11 +34,7 @@ public enum CacheOperation {
         this.operation = operation;
     }
 
-    public String getOperation() {
-        return operation;
-    }
-
-    @Override
+	@Override
     public String toString() {
         return operation;
     }

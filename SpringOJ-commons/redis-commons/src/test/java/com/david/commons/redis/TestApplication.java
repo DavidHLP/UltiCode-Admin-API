@@ -36,7 +36,7 @@ import java.time.Duration;
 @Import(TestApplication.RedisTestConfiguration.class)
 @TestPropertySource(properties = {
         "spring.redis.commons.enabled=true",
-        "spring.redis.commons.key-prefix=test:",
+        "spring.redis.commons.key-prefix=''",
         "spring.redis.commons.serialization.default-type=JSON",
         "spring.redis.commons.serialization.enable-performance-monitoring=true",
         "spring.redis.commons.cache.default-ttl=3600",

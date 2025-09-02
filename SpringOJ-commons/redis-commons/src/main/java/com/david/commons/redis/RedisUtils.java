@@ -1,7 +1,7 @@
 package com.david.commons.redis;
 
-import com.david.commons.redis.operations.*;
 import com.david.commons.redis.lock.DistributedLockManager;
+import com.david.commons.redis.operations.*;
 import com.david.commons.redis.serialization.SerializationType;
 
 /**
@@ -14,106 +14,18 @@ public interface RedisUtils {
     /**
      * 获取字符串操作接口
      *
-     * @param <T> 值类型
      * @return 字符串操作接口
      */
-    <T> RedisStringOperations<T> string();
+    RedisStringOperations string();
 
     /**
      * 获取字符串操作接口（指定序列化类型）
      *
      * @param serializationType 序列化类型
-     * @param <T>               值类型
      * @return 字符串操作接口
      */
-    <T> RedisStringOperations<T> string(SerializationType serializationType);
+    RedisStringOperations string(SerializationType serializationType);
 
-    /**
-     * 获取字符串操作接口（指定值类型，使用默认序列化）
-     *
-     * @param valueType 值类型
-     * @param <T>       值类型
-     * @return 字符串操作接口
-     */
-    <T> RedisStringOperations<T> string(Class<T> valueType);
-
-    /**
-     * 获取字符串操作接口（指定序列化类型与值类型）
-     *
-     * @param serializationType 序列化类型
-     * @param valueType         值类型
-     * @param <T>               值类型
-     * @return 字符串操作接口
-     */
-    <T> RedisStringOperations<T> string(SerializationType serializationType, Class<T> valueType);
-
-    /**
-     * 获取哈希操作接口
-     *
-     * @param <T> 值类型
-     * @return 哈希操作接口
-     */
-    <T> RedisHashOperations<T> hash();
-
-    /**
-     * 获取哈希操作接口（指定序列化类型）
-     *
-     * @param serializationType 序列化类型
-     * @param <T>               值类型
-     * @return 哈希操作接口
-     */
-    <T> RedisHashOperations<T> hash(SerializationType serializationType);
-
-    /**
-     * 获取列表操作接口
-     *
-     * @param <T> 元素类型
-     * @return 列表操作接口
-     */
-    <T> RedisListOperations<T> list();
-
-    /**
-     * 获取列表操作接口（指定序列化类型）
-     *
-     * @param serializationType 序列化类型
-     * @param <T>               元素类型
-     * @return 列表操作接口
-     */
-    <T> RedisListOperations<T> list(SerializationType serializationType);
-
-    /**
-     * 获取集合操作接口
-     *
-     * @param <T> 元素类型
-     * @return 集合操作接口
-     */
-    <T> RedisSetOperations<T> set();
-
-    /**
-     * 获取集合操作接口（指定序列化类型）
-     *
-     * @param serializationType 序列化类型
-     * @param <T>               元素类型
-     * @return 集合操作接口
-     */
-    <T> RedisSetOperations<T> set(SerializationType serializationType);
-
-    /**
-     * 获取有序集合操作接口
-     *
-     * @param <T> 元素类型
-     * @return 有序集合操作接口
-     */
-    <T> RedisZSetOperations<T> zset();
-
-    /**
-     * 获取有序集合操作接口（指定序列化类型）
-     *
-     * @param serializationType 序列化类型
-     * @param <T>               元素类型
-     * @return 有序集合操作接口
-     */
-    <T> RedisZSetOperations<T> zset(SerializationType serializationType);
 
     /**
      * 获取通用操作接口
@@ -130,18 +42,18 @@ public interface RedisUtils {
     DistributedLockManager lock();
 
     /**
-     * 设置全局键前缀
-     *
-     * @param prefix 键前缀
-     */
-    void setKeyPrefix(String prefix);
-
-    /**
      * 获取全局键前缀
      *
      * @return 键前缀
      */
     String getKeyPrefix();
+
+    /**
+     * 设置全局键前缀
+     *
+     * @param prefix 键前缀
+     */
+    void setKeyPrefix(String prefix);
 
     /**
      * 构建完整的键名（添加前缀）
@@ -152,16 +64,16 @@ public interface RedisUtils {
     String buildKey(String key);
 
     /**
-     * 设置默认序列化类型
-     *
-     * @param serializationType 序列化类型
-     */
-    void setDefaultSerializationType(SerializationType serializationType);
-
-    /**
      * 获取默认序列化类型
      *
      * @return 序列化类型
      */
     SerializationType getDefaultSerializationType();
+
+    /**
+     * 设置默认序列化类型
+     *
+     * @param serializationType 序列化类型
+     */
+    void setDefaultSerializationType(SerializationType serializationType);
 }

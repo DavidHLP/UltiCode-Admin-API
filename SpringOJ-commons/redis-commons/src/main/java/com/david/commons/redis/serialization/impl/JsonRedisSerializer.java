@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -46,17 +45,23 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
     }
 
     /**
-     * 复制 RedisCommonsAutoConfiguration 的 ObjectMapper 配置：
-     * - 注册 JavaTimeModule
-     * - 关闭时间戳，忽略未知字段
-     * - 启用受限的多态类型信息（NON_FINAL, As.PROPERTY）
+     * 为 Redis 序列化定制 ObjectMapper 配置：
+     * - 注册 JavaTimeModule 支持 Java 8 时间类型
+     * - 关闭时间戳序列化，使用 ISO-8601 格式
+     * - 忽略未知字段，提高兼容性
+     * - 启用受限的多态类型信息（NON_FINAL, As.PROPERTY），确保反序列化类型正确
+     * - 支持 MyBatis Plus 相关类型
      */
     private ObjectMapper configureForRedis(ObjectMapper base) {
         ObjectMapper om = base;
+        
         // Java 8 时间支持
         om.registerModule(new JavaTimeModule());
-        // 序列化/反序列化特性
+        
+        // 序列化特性配置
         om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        
+        // 反序列化特性配置
         om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
 
@@ -65,8 +70,46 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
                 .allowIfSubType("com.david")
                 .allowIfSubType("java.time")
                 .allowIfSubType("java.util")
+                .allowIfSubType("com.baomidou.mybatisplus")
                 .build();
+        
+        // 启用默认多态类型信息，写入类型元数据确保反序列化得到目标类型
         om.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        
+        return om;
+    }
+
+    /**
+     * 静态方法：为 Redis 序列化定制 ObjectMapper
+     * 供外部类使用，避免代码重复
+     *
+     * @param base 基础 ObjectMapper
+     * @return 定制后的 ObjectMapper
+     */
+    public static ObjectMapper configureObjectMapperForRedis(ObjectMapper base) {
+        ObjectMapper om = base.copy();
+        
+        // Java 8 时间支持
+        om.registerModule(new JavaTimeModule());
+        
+        // 序列化特性配置
+        om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        
+        // 反序列化特性配置
+        om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+
+        // 受信任包的多态类型校验器
+        var ptv = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType("com.david")
+                .allowIfSubType("java.time")
+                .allowIfSubType("java.util")
+                .allowIfSubType("com.baomidou.mybatisplus")
+                .build();
+        
+        // 启用默认多态类型信息
+        om.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        
         return om;
     }
 
@@ -87,7 +130,6 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <R> R deserialize(byte[] bytes, Class<R> type) throws RedisSerializationException {
         if (bytes == null || bytes.length == 0) {
             return null;
@@ -100,12 +142,12 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
             if (type == String.class) {
                 // 如果目标类型是 String，且 JSON 是带引号的字符串，则去掉引号
                 if (json.startsWith("\"") && json.endsWith("\"")) {
-                    return (R) json.substring(1, json.length() - 1);
+                    return type.cast(json.substring(1, json.length() - 1));
                 }
-                return (R) json;
+                return type.cast(json);
             }
 
-            return (R) objectMapper.readValue(json, TypeFactory.defaultInstance().constructType(type));
+            return objectMapper.readValue(json, type);
         } catch (IOException e) {
             log.error("JSON deserialization failed for type: {}, data: {}",
                     type.getName(), new String(bytes, StandardCharsets.UTF_8), e);

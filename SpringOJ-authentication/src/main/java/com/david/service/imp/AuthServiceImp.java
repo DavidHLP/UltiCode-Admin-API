@@ -99,7 +99,7 @@ public class AuthServiceImp implements AuthService {
     public void register(String username, String password, String email, String code) {
         log.debug("register: {} {} {} {}", username, password, email, code);
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
-        String storedCode = redisUtils.string().get(codeKey).toString();
+        String storedCode = redisUtils.string().get(codeKey, String.class);
         if (storedCode == null || !storedCode.equals(code)) {
             throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "验证码错误或已过期");
         }

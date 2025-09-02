@@ -1,7 +1,9 @@
 package com.david.commons.redis.cache.expression;
 
-import com.david.commons.redis.cache.aspect.CacheContext;
+import com.david.commons.redis.cache.CacheContext;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -44,15 +46,22 @@ public class CacheExpressionEvaluator {
             throw new IllegalArgumentException("Cache key expression cannot be null or empty");
         }
 
+        // 检查是否为SpEL表达式，如果不是则直接返回字面量字符串
+        if (!isSpelExpression(keyExpression)) {
+            log.debug("处理字面量缓存键: {}", keyExpression);
+            return keyExpression;
+        }
+
         try {
+            log.debug("处理SpEL缓存键表达式: {}", keyExpression);
             Expression expression = getExpression(keyExpression);
             EvaluationContext evalContext = createEvaluationContext(context, result);
 
             Object value = expression.getValue(evalContext);
             return value != null ? value.toString() : "";
         } catch (Exception e) {
-            log.error("Error evaluating cache key expression: {}", keyExpression, e);
-            throw new CacheExpressionException("Failed to evaluate cache key expression: " + keyExpression, e);
+            log.error("SpEL表达式解析失败: {}", keyExpression, e);
+            throw new CacheExpressionException("缓存键表达式解析失败: " + keyExpression, e);
         }
     }
 
@@ -104,6 +113,46 @@ public class CacheExpressionEvaluator {
             log.error("Error evaluating value expression: {}", valueExpression, e);
             throw new CacheExpressionException("Failed to evaluate cache value expression: " + valueExpression, e);
         }
+    }
+
+    /**
+     * 判断是否为SpEL表达式
+     * SpEL表达式的特征：
+     * 1. 包含#开头的变量引用 (#p0, #a0, #result, #methodName等)
+     * 2. 包含{}模板表达式
+     * 3. 包含方法调用()
+     * 4. 包含属性访问(.)
+     * 5. 包含数组/集合访问[]
+     * 6. 包含运算符(+, -, *, /, %, &&, ||, !, ==, !=, >, <, >=, <=等)
+     */
+    private boolean isSpelExpression(String expression) {
+        if (expression == null || expression.trim().isEmpty()) {
+            return false;
+        }
+
+        // 检查SpEL特征标记
+        return expression.contains("#") || // 变量引用
+                expression.contains("{") || // 模板表达式
+                expression.contains("}") ||
+                expression.contains("(") || // 方法调用
+                expression.contains(")") ||
+                expression.contains("[") || // 数组/集合访问
+                expression.contains("]") ||
+                expression.matches(".*[.][a-zA-Z_$][a-zA-Z0-9_$]*.*") || // 属性访问
+                expression.contains(" + ") || // 运算符（用空格分隔避免误判URL等）
+                expression.contains(" - ") ||
+                expression.contains(" * ") ||
+                expression.contains(" / ") ||
+                expression.contains(" % ") ||
+                expression.contains(" && ") ||
+                expression.contains(" || ") ||
+                expression.contains(" == ") ||
+                expression.contains(" != ") ||
+                expression.contains(" >= ") ||
+                expression.contains(" <= ") ||
+                expression.contains(" > ") ||
+                expression.contains(" < ") ||
+                expression.contains("!");
     }
 
     /**

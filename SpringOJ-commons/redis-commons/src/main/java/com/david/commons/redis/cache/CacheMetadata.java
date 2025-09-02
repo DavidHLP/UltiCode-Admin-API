@@ -1,197 +1,47 @@
 package com.david.commons.redis.cache;
 
+import com.david.commons.redis.cache.enums.CacheOperation;
 import com.david.commons.redis.serialization.SerializationType;
 
 import java.lang.reflect.Method;
 
 /**
- * 缓存元数据
- * <p>
- * 封装缓存注解的元数据信息，用于缓存操作的统一处理。
- * </p>
+ * 缓存元数据 (Record 版本)
+ *
+ * <p>封装缓存注解的元数据信息，用于缓存操作的统一处理。 此版本使用 Java 14+ 的 record 类型，以减少样板代码并确保数据的不可变性。
  *
  * @author David
  */
-public class CacheMetadata {
+public record CacheMetadata(
+        CacheOperation operation,
+        Method method,
+        String key,
+        String keyPrefix,
+        String condition,
+        String unless,
+        long ttl,
+        SerializationType serialization,
+        boolean sync,
+        boolean cacheNull,
+        long nullTtl,
+        boolean allEntries,
+        boolean beforeInvocation,
+        int batchSize,
+        String value,
+        Class<?> returnType) {
 
-    /**
-     * 缓存操作类型
-     */
-    private final CacheOperation operation;
-
-    /**
-     * 目标方法
-     */
-    private final Method method;
-
-    /**
-     * 缓存键表达式
-     */
-    private final String key;
-
-    /**
-     * 缓存键前缀
-     */
-    private final String keyPrefix;
-
-    /**
-     * 缓存条件表达式
-     */
-    private final String condition;
-
-    /**
-     * 缓存排除条件表达式
-     */
-    private final String unless;
-
-    /**
-     * 缓存过期时间（秒）
-     */
-    private final long ttl;
-
-    /**
-     * 序列化类型
-     */
-    private final SerializationType serialization;
-
-    /**
-     * 是否同步执行
-     */
-    private final boolean sync;
-
-    /**
-     * 是否缓存空值
-     */
-    private final boolean cacheNull;
-
-    /**
-     * 空值缓存时间（秒）
-     */
-    private final long nullTtl;
-
-    /**
-     * 是否清除所有匹配项（仅 EVICT 操作）
-     */
-    private final boolean allEntries;
-
-    /**
-     * 是否在方法执行前操作（仅 EVICT 操作）
-     */
-    private final boolean beforeInvocation;
-
-    /**
-     * 批量操作大小（仅 EVICT 操作）
-     */
-    private final int batchSize;
-
-    /**
-     * 缓存值表达式（仅 PUT 操作）
-     */
-    private final String value;
-
-    /**
-     * 缓存值类型
-     * <p>
-     * 解析自注解的 type 属性；当注解为 Void.class 时，默认取方法返回类型。
-     * </p>
-     */
-    private final Class<?> returnType;
-
-    private CacheMetadata(Builder builder) {
-        this.operation = builder.operation;
-        this.method = builder.method;
-        this.key = builder.key;
-        this.keyPrefix = builder.keyPrefix;
-        this.condition = builder.condition;
-        this.unless = builder.unless;
-        this.ttl = builder.ttl;
-        this.serialization = builder.serialization;
-        this.sync = builder.sync;
-        this.cacheNull = builder.cacheNull;
-        this.nullTtl = builder.nullTtl;
-        this.allEntries = builder.allEntries;
-        this.beforeInvocation = builder.beforeInvocation;
-        this.batchSize = builder.batchSize;
-        this.value = builder.value;
-        this.returnType = builder.returnType;
-    }
-
-    // Getters
-    public CacheOperation getOperation() {
-        return operation;
-    }
-
-    public Method getMethod() {
-        return method;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public String getKeyPrefix() {
-        return keyPrefix;
-    }
-
-    public String getCondition() {
-        return condition;
-    }
-
-    public String getUnless() {
-        return unless;
-    }
-
-    public long getTtl() {
-        return ttl;
-    }
-
-    public SerializationType getSerialization() {
-        return serialization;
-    }
-
-    public boolean isSync() {
-        return sync;
-    }
-
-    public boolean isCacheNull() {
-        return cacheNull;
-    }
-
-    public long getNullTtl() {
-        return nullTtl;
-    }
-
-    public boolean isAllEntries() {
-        return allEntries;
-    }
-
-    public boolean isBeforeInvocation() {
-        return beforeInvocation;
-    }
-
-    public int getBatchSize() {
-        return batchSize;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public Class<?> getReturnType() {
-        return returnType;
-    }
-
-    /**
-     * 创建构建器
-     */
+    /** 创建构建器 */
     public static Builder builder() {
         return new Builder();
     }
 
     /**
      * 构建器类
+     *
+     * <p>提供链式调用的方式来构造 CacheMetadata 实例，并支持默认值。
      */
     public static class Builder {
+        // 成员变量，并在此处进行默认初始化
         private CacheOperation operation;
         private Method method;
         private String key;
@@ -209,6 +59,7 @@ public class CacheMetadata {
         private String value = "";
         private Class<?> returnType;
 
+        // Setter 方法，使用链式调用
         public Builder operation(CacheOperation operation) {
             this.operation = operation;
             return this;
@@ -289,7 +140,9 @@ public class CacheMetadata {
             return this;
         }
 
+        /** 构建 CacheMetadata 实例 */
         public CacheMetadata build() {
+            // 参数验证
             if (operation == null) {
                 throw new IllegalArgumentException("Cache operation cannot be null");
             }
@@ -299,19 +152,25 @@ public class CacheMetadata {
             if (key == null || key.trim().isEmpty()) {
                 throw new IllegalArgumentException("Cache key cannot be null or empty");
             }
-            return new CacheMetadata(this);
-        }
-    }
 
-    @Override
-    public String toString() {
-        return "CacheMetadata{" +
-                "operation=" + operation +
-                ", method=" + method.getName() +
-                ", key='" + key + '\'' +
-                ", keyPrefix='" + keyPrefix + '\'' +
-                ", ttl=" + ttl +
-                ", serialization=" + serialization +
-                '}';
+            // 调用 record 的规范构造器，使用构建器中的值进行初始化
+            return new CacheMetadata(
+                    operation,
+                    method,
+                    key,
+                    keyPrefix,
+                    condition,
+                    unless,
+                    ttl,
+                    serialization,
+                    sync,
+                    cacheNull,
+                    nullTtl,
+                    allEntries,
+                    beforeInvocation,
+                    batchSize,
+                    value,
+                    returnType);
+        }
     }
 }

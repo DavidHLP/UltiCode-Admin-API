@@ -4,23 +4,25 @@ import com.david.commons.redis.RedisUtils;
 import com.david.commons.redis.exception.RedisCommonsException;
 import com.david.commons.redis.exception.RedisErrorCodes;
 import com.david.commons.redis.operations.RedisCommonOperations;
+
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.ScanOptions;
+
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.serializer.RedisSerializer;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.function.Consumer;
-import java.io.IOException;
+import java.util.stream.Collectors;
 
 /**
  * Redis 通用操作实现类
@@ -28,6 +30,7 @@ import java.io.IOException;
  * @author David
  */
 @Slf4j
+@Component
 public class RedisCommonOperationsImpl implements RedisCommonOperations {
 
     private final RedisTemplate<String, Object> redisTemplate;
