@@ -4,6 +4,8 @@ import com.david.commons.redis.exception.RedisCommonsException;
 import com.david.commons.redis.operations.RedisStringOperations;
 import com.david.commons.redis.serialization.RedisSerializer;
 import com.david.commons.redis.serialization.SerializationStrategySelector;
+import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.impl.JsonRedisSerializer;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -11,7 +13,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Redis 字符串操作实现类 提供强类型支持和链式调用能力
@@ -22,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
 
+    private final RedisTemplate<String, Object> redisTemplate;
     private final ValueOperations<String, Object> valueOperations;
     private final SerializationStrategySelector strategySelector;
     private final Class<T> valueType;
@@ -30,6 +35,7 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
             RedisTemplate<String, Object> redisTemplate,
             SerializationStrategySelector strategySelector,
             Class<T> valueType) {
+        this.redisTemplate = redisTemplate;
         this.valueOperations = redisTemplate.opsForValue();
         this.strategySelector = strategySelector;
         this.valueType = valueType;
@@ -215,6 +221,11 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
         }
     }
 
+    @Override
+    public Long delete(String... keys) {
+        return redisTemplate.delete(Arrays.stream(keys).toList());
+    }
+
     /**
      * 类型转换辅助方法
      *
@@ -240,7 +251,7 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
 
         // 数值类型转换
         if (value instanceof Number number) {
-	        if (targetType == Integer.class || targetType == int.class) {
+            if (targetType == Integer.class || targetType == int.class) {
                 return (T) Integer.valueOf(number.intValue());
             } else if (targetType == Long.class || targetType == long.class) {
                 return (T) Long.valueOf(number.longValue());
@@ -270,6 +281,19 @@ public class RedisStringOperationsImpl<T> implements RedisStringOperations<T> {
                         "Failed to convert string '{}' to {}",
                         stringValue,
                         targetType.getSimpleName());
+            }
+        }
+
+        // Map/Collection -> POJO 回退转换（兼容旧缓存无类型信息的 JSON 反序列化为 LinkedHashMap 的场景）
+        if (value instanceof java.util.Map || value instanceof java.util.Collection) {
+            try {
+                RedisSerializer<T> jsonSer =
+                        strategySelector.getSerializerWithFallback(SerializationType.JSON, targetType);
+                if (jsonSer instanceof JsonRedisSerializer jr) {
+                    return jr.getObjectMapper().convertValue(value, targetType);
+                }
+            } catch (Exception e) {
+                log.debug("Failed to convert Map/Collection to {} via ObjectMapper", targetType.getSimpleName(), e);
             }
         }
 

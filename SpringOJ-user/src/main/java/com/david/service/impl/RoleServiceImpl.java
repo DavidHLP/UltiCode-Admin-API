@@ -2,10 +2,10 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.commons.redis.cache.annotation.RedisCacheable;
+import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.role.Role;
 import com.david.mapper.RoleMapper;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.IRoleService;
 
 import lombok.RequiredArgsConstructor;
@@ -55,19 +55,19 @@ public class RoleServiceImpl extends ServiceImpl<RoleMapper, Role> implements IR
     }
 
     @Override
-    @RedisEvict(keyPrefix = "springoj:cache:role:" ,allEntries = true)
+    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "role:")
     public boolean save(Role entity) {
         return roleMapper.insert(entity) > 0;
     }
 
     @Override
-    @RedisEvict(keyPrefix = "springoj:cache:role:" ,allEntries = true)
+    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "role:")
     public boolean updateById(Role entity) {
         return roleMapper.updateById(entity) > 0;
     }
 
     @Override
-    @RedisEvict(keyPrefix = "springoj:cache:role:" ,allEntries = true)
+    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "role:")
     public boolean removeById(Serializable id) {
         return roleMapper.deleteById(id) > 0;
     }

@@ -29,6 +29,25 @@ public interface RedisUtils {
     <T> RedisStringOperations<T> string(SerializationType serializationType);
 
     /**
+     * 获取字符串操作接口（指定值类型，使用默认序列化）
+     *
+     * @param valueType 值类型
+     * @param <T>       值类型
+     * @return 字符串操作接口
+     */
+    <T> RedisStringOperations<T> string(Class<T> valueType);
+
+    /**
+     * 获取字符串操作接口（指定序列化类型与值类型）
+     *
+     * @param serializationType 序列化类型
+     * @param valueType         值类型
+     * @param <T>               值类型
+     * @return 字符串操作接口
+     */
+    <T> RedisStringOperations<T> string(SerializationType serializationType, Class<T> valueType);
+
+    /**
      * 获取哈希操作接口
      *
      * @param <T> 值类型

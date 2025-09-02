@@ -60,7 +60,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     "/api/auth/send-code",
                     "/actuator/health",
                     "/favicon.ico");
-    private final LogUtils logUtils;
     @Lazy @Resource private AuthFeignClient authFeignClient;
 
     private static Map<String, Object> getUserContext(
@@ -94,12 +93,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         requestContext.put("headers", request.getHeaders());
 
         // 记录网关请求
-        logUtils.business()
-                .audit(
-                        "GATEWAY_REQUEST",
-                        "INBOUND",
-                        String.format("Incoming request: %s %s", method, path),
-                        requestContext);
+        LogUtils.business()
+                .auto()
+                .message(String.format("接收到新的请求，方法：%s，路径：%s", method, path))
+                .info();
 
         if (log.isInfoEnabled()) {
             log.info("处理请求: {} {}", request.getMethod(), path);
@@ -107,12 +104,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         if (PUBLIC_PATHS.stream().anyMatch(path::startsWith)) {
             // 记录公共路径访问
-            logUtils.business()
-                    .audit(
-                            "GATEWAY_PUBLIC_ACCESS",
-                            "ALLOWED",
-                            String.format("Public path accessed: %s %s", method, path),
-                            requestContext);
+            LogUtils.business()
+                    .auto()
+                    .message(String.format("已访问公共路径，方法：%s，路径：%s", method, path))
+                    .info();
             log.debug("公开路径，直接放行: {}", path);
             return chain.filter(exchange);
         }
@@ -122,12 +117,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 || authHeader.trim().isEmpty()
                 || !authHeader.startsWith(BEARER_PREFIX)) {
             String errorMsg = "请求缺少有效的 Authorization 头";
-            logUtils.security()
-                    .threat(
-                            "UNAUTHORIZED_ACCESS",
-                            "HIGH",
-                            String.format("Failed to authenticate request: %s", errorMsg),
-                            clientIp);
+            // TODO 添加日志记录错误信息
             log.warn("请求缺少有效的 Authorization 头");
             return handleUnauthorized(exchange.getResponse(), errorMsg);
         }
@@ -140,23 +130,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                                 long startTime = System.currentTimeMillis();
                                 var result = authFeignClient.loadUserByUsername(token).getData();
                                 long duration = System.currentTimeMillis() - startTime;
-
-                                // 记录认证服务调用性能
-                                logUtils.performance()
-                                        .timing(
-                                                "AUTH_SERVICE_CALL",
-                                                duration,
-                                                Map.of("path", path, "method", method));
-
                                 return result;
                             } catch (Exception e) {
                                 String errorMsg = "认证服务调用异常: " + e.getMessage();
-                                logUtils.security()
-                                        .error(
-                                                "AUTH_SERVICE_ERROR",
-                                                e,
-                                                String.format("path=%s, method=%s", path, method));
-                                log.error("认证服务调用异常: {}", e.getMessage(), e);
+                                LogUtils.error("认证服务调用异常: {}", e.getMessage(), e);
                                 throw new RuntimeException(errorMsg, e);
                             }
                         })
@@ -165,13 +142,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                         authUser -> {
                             if (authUser == null) {
                                 String errorMsg = "认证服务返回空结果";
-                                logUtils.security()
-                                        .threat(
-                                                "AUTHENTICATION_FAILURE",
-                                                "HIGH",
-                                                String.format(
-                                                        "Authentication failed: %s", errorMsg),
-                                                clientIp);
+                                // TODO 添加日志记录错误信息
                                 log.warn("认证服务返回空结果");
                                 return handleUnauthorized(exchange.getResponse(), errorMsg);
                             }
@@ -180,22 +151,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                             Map<String, Object> userContext =
                                     getUserContext(authUser, requestContext);
 
-                            logUtils.business()
-                                    .audit(
-                                            userContext.get("userId").toString(),
-                                            "ALLOWED",
-                                            String.format(
-                                                    "Authentication successful: %s %s",
-                                                    method, path),
-                                            userContext);
-
-                            logUtils.security()
-                                    .login(
-                                            authUser.getUsername(),
-                                            "JWT",
-                                            true,
-                                            clientIp,
-                                            request.getHeaders().getFirst("User-Agent"));
+                            LogUtils.business()
+                                    .auto()
+                                    .message(String.format("身份验证成功：方法 %s，路径 %s", method, path))
+                                    .info();
 
                             if (log.isInfoEnabled()) {
                                 log.info("用户认证成功: {}", authUser);
@@ -239,15 +198,6 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
         String responseJson =
                 String.valueOf(ResponseResult.fail(ResponseCode.RC401.getCode(), message));
-
-        // 记录未授权访问
-        logUtils.security()
-                .threat(
-                        "UNAUTHORIZED_ACCESS",
-                        "HIGH",
-                        String.format("Authentication failed: %s", message),
-                        Optional.ofNullable(response.getHeaders().getFirst("X-Forwarded-For"))
-                                .orElse("unknown"));
 
         return response.writeWith(
                 Mono.just(

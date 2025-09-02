@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Redis 通用操作接口
@@ -130,6 +131,18 @@ public interface RedisCommonOperations {
      * @return 匹配的键集合
      */
     Set<String> keys(String pattern);
+
+    /**
+     * 使用 SCAN 按增量方式遍历匹配的键，并通过回调逐个返回。
+     * 该方法避免 {@code KEYS} 的阻塞问题，适用于大规模键空间的遍历与批处理删除。
+     * 注意：实现会在内部处理全局前缀的添加与移除，回调收到的是去前缀后的原始业务键。
+     * 回调中若进行 Redis 操作，请确保控制好批量大小以避免长时间阻塞。
+     *
+     * @param pattern     匹配模式（不需要包含全局前缀）
+     * @param count       每次扫描的建议数量（COUNT，<=0 时采用实现默认值）
+     * @param keyConsumer 匹配键的处理回调
+     */
+    void scan(String pattern, int count, Consumer<String> keyConsumer);
 
     /**
      * 随机获取一个键

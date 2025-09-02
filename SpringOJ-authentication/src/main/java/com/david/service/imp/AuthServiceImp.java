@@ -1,14 +1,14 @@
 package com.david.service.imp;
 
+import com.david.commons.redis.RedisUtils;
+import com.david.commons.redis.cache.annotation.RedisCacheable;
+import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.token.Token;
 import com.david.entity.token.TokenType;
 import com.david.entity.user.AuthUser;
 import com.david.exception.BizException;
 import com.david.mapper.TokenMapper;
 import com.david.mapper.UserMapper;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
-import com.david.redis.commons.core.RedisUtils;
 import com.david.service.AuthService;
 import com.david.service.EmailService;
 import com.david.utils.JwtService;
@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -67,14 +68,13 @@ public class AuthServiceImp implements AuthService {
                         .build();
         // 使用分布式锁防止并发重复写入
         redisUtils
-                .locks()
+                .lock()
                 .executeWithLock(
                         LOCK_KEY_LOGIN_PREFIX + username,
-                        Duration.ofSeconds(5),
-                        Duration.ofSeconds(30),
-                        () -> {
-                            tokenMapper.insert(token);
-                        });
+                        () -> tokenMapper.insert(token),
+                        5,
+                        30,
+                        TimeUnit.SECONDS);
         return token;
     }
 
@@ -84,12 +84,13 @@ public class AuthServiceImp implements AuthService {
         // 使用 Redis 缓存服务，设置 5 分钟过期
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
         redisUtils
-                .locks()
+                .lock()
                 .executeWithLock(
                         LOCK_KEY_DISTRIBUTED_LOCK_PREFIX + email,
-                        Duration.ofSeconds(5),
-                        Duration.ofSeconds(30),
-                        () -> redisUtils.strings().set(codeKey, code, Duration.ofMinutes(5)));
+                        () -> redisUtils.string().set(codeKey, code, Duration.ofMinutes(5)),
+                        5,
+                        30,
+                        TimeUnit.SECONDS);
         emailService.sendVerificationCode(email, code);
     }
 
@@ -98,7 +99,7 @@ public class AuthServiceImp implements AuthService {
     public void register(String username, String password, String email, String code) {
         log.debug("register: {} {} {} {}", username, password, email, code);
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
-        String storedCode = redisUtils.strings().getString(codeKey);
+        String storedCode = redisUtils.string().get(codeKey).toString();
         if (storedCode == null || !storedCode.equals(code)) {
             throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "验证码错误或已过期");
         }
@@ -116,16 +117,17 @@ public class AuthServiceImp implements AuthService {
                         .build();
         // 使用分布式锁防止并发重复注册
         redisUtils
-                .locks()
+                .lock()
                 .executeWithLock(
                         LOCK_KEY_REGISTER_PREFIX + username,
-                        Duration.ofSeconds(5),
-                        Duration.ofSeconds(30),
                         () -> {
                             userMapper.insert(user);
-                        });
+                        },
+                        5,
+                        30,
+                        TimeUnit.SECONDS);
         // 注册完成后删除验证码
-        redisUtils.strings().delete(codeKey);
+        redisUtils.string().delete(codeKey);
     }
 
     @Override

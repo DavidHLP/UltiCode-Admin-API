@@ -2,12 +2,12 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.commons.redis.cache.annotation.RedisCacheable;
+import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.user.AuthUser;
 import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionCommentMapper;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.ISolutionCommentService;
 import com.david.solution.SolutionComments;
 import com.david.solution.vo.SolutionCommentVo;
@@ -204,7 +204,7 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
     @Override
     @Transactional
     @RedisEvict(
-            keys = "'solutionComment:getSolutionCommentVos:' + #entity.getSolutionId",
+            keys = "'solutionComment:getSolutionCommentVos:' + #entity.getSolutionId()",
             keyPrefix = "springoj:cache:")
     public boolean updateById(SolutionComments entity) {
         return solutionCommentMapper.updateById(entity) > 0;
@@ -213,7 +213,7 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
     @Override
     @Transactional
     @RedisEvict(
-            keys = "'solutionComment:getSolutionCommentVos:' + #entity.getSolutionId",
+            keys = "'solutionComment:getSolutionCommentVos:' + #entity.getSolutionId()",
             keyPrefix = "springoj:cache:")
     public boolean removeById(SolutionComments entity) {
         return solutionCommentMapper.deleteById(entity) > 0;

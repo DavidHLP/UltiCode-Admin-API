@@ -126,6 +126,23 @@ public class RedisCommonsProperties {
          */
         @Min(1)
         private int maxKeyLength = 250;
+
+        /**
+         * 是否启用本地缓存降级
+         */
+        private boolean enableLocalCacheFallback = true;
+
+        /**
+         * 本地缓存 TTL（秒）
+         */
+        @Min(1)
+        private long localCacheTtl = 300; // 5分钟
+
+        /**
+         * 本地缓存最大大小
+         */
+        @Min(1)
+        private int localCacheMaxSize = 1000;
     }
 
     /**
@@ -201,6 +218,18 @@ public class RedisCommonsProperties {
          */
         @Min(1000)
         private long circuitBreakerRecoveryTimeout = 60000; // 1分钟
+
+        /**
+         * 熔断器阈值
+         */
+        @Min(1)
+        private long circuitBreakerThreshold = 10;
+
+        /**
+         * 熔断器超时时间（毫秒）
+         */
+        @Min(1000)
+        private long circuitBreakerTimeout = 30000; // 30秒
 
         /**
          * 是否启用限流

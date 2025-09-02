@@ -2,13 +2,13 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.commons.redis.cache.annotation.RedisCacheable;
+import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.user.AuthUser;
 import com.david.entity.user.UserRole;
 import com.david.mapper.RoleMapper;
 import com.david.mapper.UserMapper;
 import com.david.mapper.UserRoleMapper;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.IUserService;
 
 import lombok.RequiredArgsConstructor;
@@ -67,7 +67,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @RedisEvict(keyPrefix = "springoj:cache:user:pageUsers:", allEntries = true)
+    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "user:pageUsers:")
     public boolean save(AuthUser user) {
         // 设置默认值
         if (user.getStatus() == null) {
@@ -104,7 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @RedisEvict(keyPrefix = "springoj:cache:user:pageUsers:", allEntries = true)
+    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "user:pageUsers:")
     public boolean updateById(AuthUser user) {
         // 如果密码有更新，则进行加密
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {

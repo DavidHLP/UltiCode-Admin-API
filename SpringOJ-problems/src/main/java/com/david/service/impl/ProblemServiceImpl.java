@@ -2,6 +2,8 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.david.commons.redis.cache.annotation.RedisCacheable;
+import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.enums.CategoryType;
 import com.david.enums.LanguageType;
 import com.david.exception.BizException;
@@ -12,8 +14,6 @@ import com.david.problem.Problem;
 import com.david.problem.enums.ProblemDifficulty;
 import com.david.problem.vo.ProblemCardVo;
 import com.david.problem.vo.ProblemDetailVo;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.IProblemService;
 import com.david.submission.dto.CompareDescription;
 import com.david.testcase.dto.TestCaseInputDto;

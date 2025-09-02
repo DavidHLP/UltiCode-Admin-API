@@ -3,12 +3,12 @@ package com.david.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.calendar.enums.TargetType;
+import com.david.commons.redis.cache.annotation.RedisCacheable;
+import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.user.AuthUser;
 import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
 import com.david.mapper.SolutionMapper;
-import com.david.redis.commons.annotation.RedisCacheable;
-import com.david.redis.commons.annotation.RedisEvict;
 import com.david.service.ILikeDislikeRecordService;
 import com.david.service.ISolutionCommentService;
 import com.david.service.ISolutionService;
@@ -61,7 +61,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
             key = "'solution:getSolutionDetailVoBy:' + #solutionId + ':' + #userId",
             keyPrefix = "springoj:cache:",
             ttl = 1800,
-            type = Page.class)
+            type = SolutionDetailVo.class)
     public SolutionDetailVo getSolutionDetailVoBy(Long solutionId, Long userId) {
         // 基础参数校验
         validateRequiredId("题解ID", solutionId);
@@ -121,7 +121,7 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
 
     @Override
     @RedisCacheable(
-            key = "'solution:pageSolutionCardVosByUserId:' + #userId)",
+            key = "'solution:pageSolutionCardVosByUserId:' + #userId",
             keyPrefix = "springoj:cache:",
             ttl = 1800,
             type = Page.class)

@@ -119,4 +119,12 @@ public interface RedisStringOperations<T> {
      * @return 字符串长度
      */
     Long size(String key);
+
+    /**
+     * 删除类型
+     *
+     * @param keys 键
+     * @return 删除个数
+     */
+    Long delete(String... keys);
 }

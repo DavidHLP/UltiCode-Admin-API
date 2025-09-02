@@ -9,6 +9,7 @@ import com.david.commons.redis.operations.impl.*;
 import com.david.commons.redis.serialization.SerializationStrategySelector;
 import com.david.commons.redis.serialization.SerializationType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -17,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.time.Duration;
-import java.time.Instant;
 
 /**
  * Redis 工具类门面实现
@@ -54,7 +54,7 @@ public class RedisUtilsImpl implements RedisUtils {
      */
     private volatile SerializationType defaultSerializationType;
 
-    public RedisUtilsImpl(RedisTemplate<String, Object> redisTemplate,
+    public RedisUtilsImpl(@Qualifier("redisCommonsTemplate") RedisTemplate<String, Object> redisTemplate,
             RedisCommonsProperties properties,
             SerializationStrategySelector strategySelector,
             DistributedLockManager lockManager) {
@@ -72,7 +72,6 @@ public class RedisUtilsImpl implements RedisUtils {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> RedisStringOperations<T> string() {
         return string(defaultSerializationType);
     }
@@ -86,7 +85,20 @@ public class RedisUtilsImpl implements RedisUtils {
     }
 
     @Override
+    public <T> RedisStringOperations<T> string(Class<T> valueType) {
+        return string(defaultSerializationType, valueType);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
+    public <T> RedisStringOperations<T> string(SerializationType serializationType, Class<T> valueType) {
+        Class<T> effectiveType = valueType != null ? valueType : (Class<T>) Object.class;
+        String cacheKey = "string:" + serializationType.name() + ":" + effectiveType.getName();
+        return (RedisStringOperations<T>) operationCache.computeIfAbsent(cacheKey,
+                k -> createStringOperations(serializationType, effectiveType));
+    }
+
+    @Override
     public <T> RedisHashOperations<T> hash() {
         return hash(defaultSerializationType);
     }
@@ -100,7 +112,6 @@ public class RedisUtilsImpl implements RedisUtils {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> RedisListOperations<T> list() {
         return list(defaultSerializationType);
     }
@@ -114,7 +125,6 @@ public class RedisUtilsImpl implements RedisUtils {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> RedisSetOperations<T> set() {
         return set(defaultSerializationType);
     }
@@ -128,7 +138,6 @@ public class RedisUtilsImpl implements RedisUtils {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> RedisZSetOperations<T> zset() {
         return zset(defaultSerializationType);
     }
@@ -225,6 +234,29 @@ public class RedisUtilsImpl implements RedisUtils {
             log.error("Failed to create string operations with serialization type: {}", serializationType, e);
             throw new RedisCommonsException(RedisErrorCodes.AUTO_CONFIGURATION_FAILED,
                     "Failed to create string operations", e);
+        }
+    }
+
+    /**
+     * 创建指定值类型的字符串操作实例
+     */
+    private <T> RedisStringOperations<T> createStringOperations(SerializationType serializationType, Class<T> valueType) {
+        try {
+            RedisStringOperations<T> operations = new RedisStringOperationsImpl<>(redisTemplate, strategySelector,
+                    valueType);
+
+            if (properties.getSerialization().isEnablePerformanceMonitoring()) {
+                SerializationAwareOperationsWrapper wrapper = new SerializationAwareOperationsWrapper(this,
+                        serializationType);
+                return wrapper.wrapStringOperations(operations);
+            }
+
+            return operations;
+        } catch (Exception e) {
+            log.error("Failed to create typed string operations with serialization type: {}, valueType: {}",
+                    serializationType, valueType, e);
+            throw new RedisCommonsException(RedisErrorCodes.AUTO_CONFIGURATION_FAILED,
+                    "Failed to create typed string operations", e);
         }
     }
 

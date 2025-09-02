@@ -3,8 +3,12 @@ package com.david.commons.redis.serialization.impl;
 import com.david.commons.redis.serialization.RedisSerializationException;
 import com.david.commons.redis.serialization.RedisSerializer;
 import com.david.commons.redis.serialization.SerializationType;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
@@ -30,24 +34,40 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
     }
 
     public JsonRedisSerializer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper != null ? objectMapper : createObjectMapper();
+        // 避免污染全局 ObjectMapper，这里进行复制后再按 Redis 需求定制
+        this.objectMapper = objectMapper != null ? configureForRedis(objectMapper.copy()) : createObjectMapper();
     }
 
     /**
      * 创建配置好的 ObjectMapper
      */
     private ObjectMapper createObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
+        return configureForRedis(new ObjectMapper());
+    }
 
-        // 注册 Java 8 时间模块
-        mapper.registerModule(new JavaTimeModule());
+    /**
+     * 复制 RedisCommonsAutoConfiguration 的 ObjectMapper 配置：
+     * - 注册 JavaTimeModule
+     * - 关闭时间戳，忽略未知字段
+     * - 启用受限的多态类型信息（NON_FINAL, As.PROPERTY）
+     */
+    private ObjectMapper configureForRedis(ObjectMapper base) {
+        ObjectMapper om = base;
+        // Java 8 时间支持
+        om.registerModule(new JavaTimeModule());
+        // 序列化/反序列化特性
+        om.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        om.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
 
-        // 配置序列化选项
-        mapper.configure(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-
-        return mapper;
+        // 受信任包的多态类型校验器
+        var ptv = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType("com.david")
+                .allowIfSubType("java.time")
+                .allowIfSubType("java.util")
+                .build();
+        om.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
+        return om;
     }
 
     @Override
@@ -101,13 +121,19 @@ public class JsonRedisSerializer implements RedisSerializer<Object> {
 
     @Override
     public boolean supports(Class<?> type) {
-        // JSON 序列化支持大部分 Java 对象
-        // 排除一些特殊类型
-        return type != null &&
-                !type.isArray() ||
-                type == byte[].class ||
-                type.getComponentType().isPrimitive() ||
-                String.class.isAssignableFrom(type.getComponentType());
+        // JSON 基本支持几乎所有非数组类型
+        if (type == null) {
+            return false;
+        }
+        if (!type.isArray()) {
+            return true;
+        }
+        // 数组特殊处理：仅支持 byte[]、原始类型数组和 String[]
+        Class<?> component = type.getComponentType();
+        if (component == null) {
+            return false;
+        }
+        return type == byte[].class || component.isPrimitive() || String.class.isAssignableFrom(component);
     }
 
     /**
