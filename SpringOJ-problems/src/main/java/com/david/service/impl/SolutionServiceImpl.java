@@ -12,21 +12,16 @@ import com.david.mapper.SolutionMapper;
 import com.david.service.ILikeDislikeRecordService;
 import com.david.service.ISolutionCommentService;
 import com.david.service.ISolutionService;
-import com.david.service.IUserContentViewService;
 import com.david.solution.Solution;
 import com.david.solution.UpDownCounts;
-import com.david.solution.enums.ContentType;
 import com.david.solution.enums.SolutionStatus;
 import com.david.solution.vo.SolutionCardVo;
 import com.david.solution.vo.SolutionDetailVo;
 import com.david.solution.vo.SolutionManagementCardVo;
-import com.david.usercontent.UserContentView;
 import com.david.utils.MarkdownUtils;
 import com.david.utils.ResponseResult;
 import com.david.utils.enums.ResponseCode;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -53,7 +48,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     private final SolutionMapper solutionMapper;
     private final ISolutionCommentService solutionCommentService;
     private final UserServiceFeignClient userServiceFeignClient;
-    private final IUserContentViewService userContentViewService;
     private final ILikeDislikeRecordService likeDislikeRecordService;
 
     @Override
@@ -69,20 +63,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
         Solution solution = solutionMapper.selectApprovedById(solutionId);
         if (solution == null) {
             throw BizException.of(ResponseCode.RC404.getCode(), "题解不存在，ID：" + solutionId);
-        }
-        if (userId != null && userId >= 1) {
-            if (!userContentViewService.userHasViewedContent(userId, solutionId)) {
-                userContentViewService.save(
-                        UserContentView.builder()
-                                .userId(userId)
-                                .contentId(solutionId)
-                                .contentType(ContentType.SOLUTION)
-                                .build());
-                solutionMapper.updateViews(solutionId);
-            }
-        } else {
-            // 匿名或无效用户ID：不记录用户浏览记录，仅增加浏览量
-            solutionMapper.updateViews(solutionId);
         }
         AuthUser user = userServiceFeignClient.getUserById(solution.getUserId()).getData();
         return SolutionDetailVo.builder()
@@ -186,11 +166,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     @Transactional
     @RedisEvict(
             keys = {
-                "'solution:getSolutionDetailVoBy:*'",
-                "'solution:pageSolutionCardVos:*'",
-                "'solution:pageSolutionCardVosByUserId:*'",
-                "'solution:pageSolutionManagementCardVo:*'",
-                "'solution:getById:' + #entity.getId()"
+                "'solution:getSolutionDetailVoBy:'",
+                "'solution:pageSolutionCardVos:'",
+                "'solution:pageSolutionCardVosByUserId:'",
+                "'solution:pageSolutionManagementCardVo:'",
+                "'solution:getById:' + #entity.id"
             },
             keyPrefix = "springoj:cache:")
     public boolean updateById(Solution entity) {
@@ -201,10 +181,10 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     @Transactional
     @RedisEvict(
             keys = {
-                "'solution:getSolutionDetailVoBy:*'",
-                "'solution:pageSolutionCardVos:*'",
-                "'solution:pageSolutionCardVosByUserId:*'",
-                "'solution:pageSolutionManagementCardVo:*'",
+                "'solution:getSolutionDetailVoBy:'",
+                "'solution:pageSolutionCardVos:'",
+                "'solution:pageSolutionCardVosByUserId:'",
+                "'solution:pageSolutionManagementCardVo:'",
             },
             keyPrefix = "springoj:cache:")
     public boolean save(Solution entity) {
@@ -215,11 +195,11 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     @Transactional
     @RedisEvict(
             keys = {
-                    "'solution:getSolutionDetailVoBy:*'",
-                    "'solution:pageSolutionCardVos:*'",
-                    "'solution:pageSolutionCardVosByUserId:*'",
-                    "'solution:pageSolutionManagementCardVo:*'",
-                    "'solution:getById:' + #entity.getId()"
+                "'solution:getSolutionDetailVoBy:'",
+                "'solution:pageSolutionCardVos:'",
+                "'solution:pageSolutionCardVosByUserId:'",
+                "'solution:pageSolutionManagementCardVo:'",
+                "'solution:getById:' + #entity.id"
             },
             keyPrefix = "springoj:cache:")
     public boolean removeById(Solution entity) {

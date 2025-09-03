@@ -1,5 +1,8 @@
 package com.david.commons.redis.serialization;
 
+import com.david.commons.redis.serialization.enums.SerializationType;
+import com.david.commons.redis.serialization.exceptions.RedisSerializationException;
+
 /**
  * Redis 序列化接口
  *

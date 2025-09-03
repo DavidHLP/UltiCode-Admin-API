@@ -1,4 +1,4 @@
-package com.david.commons.redis.serialization;
+package com.david.commons.redis.serialization.enums;
 
 import lombok.Getter;
 

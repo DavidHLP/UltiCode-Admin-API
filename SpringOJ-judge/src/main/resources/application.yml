@@ -2,43 +2,5 @@ server:
   port: 9095
 
 spring:
-  kafka:
-    bootstrap-servers: 192.168.1.102:9092
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-  application:
-    name: judge-service # 应用名称
-  jackson:
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+8
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 192.168.1.102:8848 #配置Nacos地址
-        username: nacos
-        password: "#Alone117"
-    sentinel:
-      transport:
-        dashboard: 192.168.1.102:9090
-        port: 8719
-      web-context-unify: false # 关闭上下文整合，启用链路模式
-  datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://192.168.1.102:3306/spring_oj?useSSL=false&characterEncoding=UTF-8
-    username: root
-    password: Alone117
-
-  # 判题机配置
-
-  sandbox:
-    service-url: http://localhost:9096 # 沙箱服务地址
-
-# 日志配置
-logging:
-  level:
-    com.david: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.cloud: DEBUG
-    org.mybatis: DEBUG
+  profiles:
+    active: cloud,utils,log,actuator,kafka,datasource

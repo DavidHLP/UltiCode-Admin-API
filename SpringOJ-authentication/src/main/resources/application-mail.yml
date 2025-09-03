@@ -1,0 +1,11 @@
+spring:
+  mail:
+    host: smtp.163.com # 你邮箱的smtp地址
+    username: davidblog117@163.com # 申请了smtp的邮箱
+    password: VIBXJWEUSYVJMJXK # SMTP服务的秘钥
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true

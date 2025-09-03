@@ -4,6 +4,7 @@ import com.david.commons.redis.cache.CacheContext;
 import com.david.commons.redis.cache.CacheMetadata;
 import com.david.commons.redis.cache.aspect.chain.AspectContext;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheReadHandler;
+import com.david.commons.redis.cache.aspect.chain.cacheable.CacheSyncLockHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheWriteHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.ConditionHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.MethodInvokeHandler;
@@ -42,6 +43,7 @@ public class RedisCacheableAspect {
     private final RedisCommonsProperties properties;
     private final ConditionHandler conditionHandler;
     private final CacheReadHandler cacheReadHandler;
+    private final CacheSyncLockHandler cacheSyncLockHandler;
     private final MethodInvokeHandler methodInvokeHandler;
     private final CacheWriteHandler cacheWriteHandler;
 
@@ -92,8 +94,8 @@ public class RedisCacheableAspect {
 
                 handleCacheableOperation(aspectContext);
 
-                // 检查处理结果
-                if (aspectContext.getCacheHit() || aspectContext.getMethodInvoked()) {
+                // 检查处理结果或短路
+                if (aspectContext.getCacheHit() || aspectContext.getMethodInvoked() || aspectContext.isEnd()) {
                     Object result = aspectContext.getFinalResult();
                     log.debug(
                             "责任链处理完成，返回结果类型：{}",
@@ -117,7 +119,8 @@ public class RedisCacheableAspect {
 
         // 启动责任链处理
         conditionHandler.setNextHandler(cacheReadHandler);
-        cacheReadHandler.setNextHandler(methodInvokeHandler);
+        cacheReadHandler.setNextHandler(cacheSyncLockHandler);
+        cacheSyncLockHandler.setNextHandler(methodInvokeHandler);
         methodInvokeHandler.setNextHandler(cacheWriteHandler);
         conditionHandler.handleRequest(aspectContext);
     }

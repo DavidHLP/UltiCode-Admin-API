@@ -1,5 +1,6 @@
 package com.david.commons.redis.lock;
 
+import com.david.commons.redis.lock.enums.LockType;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
 

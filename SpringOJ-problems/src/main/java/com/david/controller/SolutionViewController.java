@@ -2,7 +2,9 @@ package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.service.ISolutionService;
+import com.david.service.IUserContentViewService;
 import com.david.solution.Solution;
+import com.david.solution.enums.ContentType;
 import com.david.solution.vo.SolutionCardVo;
 import com.david.solution.vo.SolutionDetailVo;
 import com.david.utils.BaseController;
@@ -23,9 +25,11 @@ import org.springframework.validation.annotation.Validated;
 public class SolutionViewController extends BaseController {
 
     private final ISolutionService solutionService;
+    private final IUserContentViewService userContentViewService;
 
     @PostMapping
-    public ResponseResult<Void> createSolution(@RequestBody @Validated(Solution.Create.class) Solution solution) {
+    public ResponseResult<Void> createSolution(
+            @RequestBody @Validated(Solution.Create.class) Solution solution) {
         solution.setUserId(getCurrentUserId());
         if (solutionService.save(solution)) {
             return ResponseResult.success("题解创建成功");
@@ -34,7 +38,8 @@ public class SolutionViewController extends BaseController {
     }
 
     @PutMapping
-    public ResponseResult<Void> updateSolution(@RequestBody @Validated(Solution.Update.class) Solution solution) {
+    public ResponseResult<Void> updateSolution(
+            @RequestBody @Validated(Solution.Update.class) Solution solution) {
         if (solutionService.updateById(solution)) {
             return ResponseResult.success("题解更新成功");
         }
@@ -42,7 +47,8 @@ public class SolutionViewController extends BaseController {
     }
 
     @DeleteMapping
-    public ResponseResult<Void> deleteSolution(@RequestBody @Validated(Solution.Delete.class) Solution solution) {
+    public ResponseResult<Void> deleteSolution(
+            @RequestBody @Validated(Solution.Delete.class) Solution solution) {
         if (solutionService.removeById(solution)) {
             return ResponseResult.success("题解删除成功");
         }
@@ -50,12 +56,17 @@ public class SolutionViewController extends BaseController {
     }
 
     @GetMapping
-    public ResponseResult<SolutionDetailVo> getSolution(@RequestParam @NotNull @Min(1) Long solutionId) {
+    public ResponseResult<SolutionDetailVo> getSolution(
+            @RequestParam @NotNull @Min(1) Long solutionId) {
         SolutionDetailVo solutionDetailVo =
                 solutionService.getSolutionDetailVoBy(solutionId, getCurrentUserId());
         if (solutionDetailVo == null) {
             throw BizException.of(404, "题解不存在");
         }
+        Long views =
+                userContentViewService.saveOrPassAndGetViewsNumber(
+                        getCurrentUserId(), solutionId, ContentType.SOLUTION);
+        solutionDetailVo.setViews(Math.toIntExact(views));
         return ResponseResult.success("获取题解成功", solutionDetailVo);
     }
 

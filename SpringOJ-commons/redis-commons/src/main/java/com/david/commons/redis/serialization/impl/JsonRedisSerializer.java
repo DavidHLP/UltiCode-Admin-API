@@ -1,8 +1,8 @@
 package com.david.commons.redis.serialization.impl;
 
-import com.david.commons.redis.serialization.RedisSerializationException;
+import com.david.commons.redis.serialization.exceptions.RedisSerializationException;
 import com.david.commons.redis.serialization.RedisSerializer;
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package com.david.commons.redis.lock;
+package com.david.commons.redis.lock.enums;
 
 import lombok.Getter;
 

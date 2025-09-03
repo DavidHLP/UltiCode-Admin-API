@@ -4,7 +4,7 @@ import com.david.commons.redis.exception.RedisCommonsException;
 import com.david.commons.redis.operations.RedisStringOperations;
 import com.david.commons.redis.serialization.RedisSerializer;
 import com.david.commons.redis.serialization.SerializationStrategySelector;
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 import com.david.commons.redis.serialization.impl.JsonRedisSerializer;
 
 import lombok.extern.slf4j.Slf4j;

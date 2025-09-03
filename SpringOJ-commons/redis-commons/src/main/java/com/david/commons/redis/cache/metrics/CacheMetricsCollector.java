@@ -107,7 +107,7 @@ public class CacheMetricsCollector {
         }
 
         log.debug(
-                "Cache operation completed successfully. Method: {}, Operation: {}, Duration: {}ns, CacheHit: {}",
+                "缓存操作成功完成。方法: {}, 操作: {}, 耗时: {}纳秒, 缓存命中: {}",
                 timer.methodName(),
                 timer.metadata().operation(),
                 duration,
@@ -140,7 +140,7 @@ public class CacheMetricsCollector {
         }
 
         log.warn(
-                "Cache operation failed. Method: {}, Operation: {}, Duration: {}ns, Error: {}",
+                "缓存操作失败。方法: {}, 操作: {}, 耗时: {}纳秒, 错误: {}",
                 timer.methodName(),
                 timer.metadata().operation(),
                 duration,
@@ -246,7 +246,7 @@ public class CacheMetricsCollector {
         methodMetrics.clear();
         errorCounts.clear();
 
-        log.info("Cache metrics have been reset");
+        log.info("缓存指标已重置");
     }
 
     /** 操作类型指标 */

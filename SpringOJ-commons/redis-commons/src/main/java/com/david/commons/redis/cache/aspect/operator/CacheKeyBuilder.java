@@ -45,7 +45,7 @@ public class CacheKeyBuilder {
         // 2) 基础校验
         if (!StringUtils.hasText(evaluatedKey)) {
             throw new IllegalArgumentException(
-                    "Evaluated cache key is empty for expression: " + metadata.key());
+                    "计算后的缓存键为空，表达式: " + metadata.key());
         }
 
         // 3) 规范化：去除由 SpEL 拼接导致的 null 片段与空片段，防止出现 :null 或尾随 null
@@ -53,7 +53,7 @@ public class CacheKeyBuilder {
 
         if (!StringUtils.hasText(sanitizedKey)) {
             throw new IllegalArgumentException(
-                    "Sanitized cache key is empty for expression: " + metadata.key());
+                    "规范化后的缓存键为空，表达式: " + metadata.key());
         }
 
         // 4) 应用前缀：优先使用注解上的 keyPrefix，其次交给 redisUtils 全局前缀

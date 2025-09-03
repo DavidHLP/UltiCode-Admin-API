@@ -44,18 +44,18 @@ public class DistributedLockAspect {
             throws Throwable {
         // 检查条件表达式
         if (!evaluateCondition(joinPoint, distributedLock)) {
-            log.debug("Lock condition not met, executing method without lock");
+            log.debug("锁条件不满足，不加锁直接执行方法");
             return joinPoint.proceed();
         }
 
         // 解析锁键
         String lockKey = parseLockKey(joinPoint, distributedLock);
         if (!StringUtils.hasText(lockKey)) {
-            throw new RedisLockException("Lock key cannot be empty");
+            throw new RedisLockException("锁键不能为空");
         }
 
         log.debug(
-                "Attempting to acquire {} lock with key: {}", distributedLock.lockType(), lockKey);
+                "尝试获取 {} 类型的锁，键为: {}", distributedLock.lockType(), lockKey);
 
         // 尝试获取锁并执行方法
         try {
@@ -65,7 +65,7 @@ public class DistributedLockAspect {
                         try {
                             return joinPoint.proceed();
                         } catch (Throwable throwable) {
-                            throw new RuntimeException("Method execution failed", throwable);
+                            throw new RuntimeException("方法执行失败", throwable);
                         }
                     },
                     distributedLock.waitTime(),
@@ -97,7 +97,7 @@ public class DistributedLockAspect {
             Boolean result = expression.getValue(context, Boolean.class);
             return result != null && result;
         } catch (Exception e) {
-            log.warn("Failed to evaluate lock condition: {}", condition, e);
+            log.warn("锁条件表达式评估失败: {}", condition, e);
             return true; // 条件评估失败时默认应用锁
         }
     }
@@ -124,8 +124,8 @@ public class DistributedLockAspect {
                 return value != null ? value.toString() : keyExpression;
             }
         } catch (Exception e) {
-            log.error("Failed to parse lock key expression: {}", keyExpression, e);
-            throw new RedisLockException("Failed to parse lock key: " + keyExpression, e);
+            log.error("锁键表达式解析失败: {}", keyExpression, e);
+            throw new RedisLockException("锁键解析失败: " + keyExpression, e);
         }
     }
 
@@ -164,12 +164,12 @@ public class DistributedLockAspect {
         DistributedLock.LockFailureStrategy strategy = distributedLock.failureStrategy();
         String lockKey = parseLockKey(joinPoint, distributedLock);
 
-        log.warn("Failed to acquire lock with key: {}, strategy: {}", lockKey, strategy);
+        log.warn("获取锁失败，键为: {}, 处理策略: {}", lockKey, strategy);
 
         return switch (strategy) {
             case RETURN_DEFAULT -> getDefaultReturnValue(joinPoint);
             case SKIP_LOCK -> {
-                log.info("Skipping lock and executing method directly for key: {}", lockKey);
+                log.info("跳过加锁，直接执行方法，键为: {}", lockKey);
                 yield joinPoint.proceed();
             }
             default -> throw lockException;

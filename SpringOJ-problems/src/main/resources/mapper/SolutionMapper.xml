@@ -28,9 +28,9 @@
             </if>
             <if test="keyword != null and keyword != ''">
                 AND (
-                    content LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
-                    OR title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
-                    OR language LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                content LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                OR title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                OR language LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
                 )
             </if>
             AND status = 'APPROVED'
@@ -67,9 +67,9 @@
             </if>
             <if test="keyword != null and keyword != ''">
                 AND (
-                    content LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
-                    OR title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
-                    OR language LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                content LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                OR title LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
+                OR language LIKE CONCAT('%', #{keyword}, '%') ESCAPE '\\'
                 )
             </if>
         </where>
@@ -80,5 +80,10 @@
         FROM solutions
         WHERE id = #{id}
           AND status = 'APPROVED'
+    </select>
+    <select id="getViews" resultType="java.lang.Long">
+        SELECT views
+        FROM solutions
+        WHERE id = #{id}
     </select>
 </mapper>

@@ -43,28 +43,28 @@ public class LockRecoveryHandler {
         LockInfo lockInfo =
                 new LockInfo(lock, System.currentTimeMillis(), unit.toMillis(leaseTime));
         activeLocks.put(key, lockInfo);
-        log.debug("Registered active lock: {}", key);
+        log.debug("注册活跃锁: {}", key);
     }
 
     /** 注销锁 */
     public void unregisterLock(String key) {
         LockInfo removed = activeLocks.remove(key);
         if (removed != null) {
-            log.debug("Unregistered lock: {}", key);
+            log.debug("注销锁: {}", key);
         }
     }
 
     /** 尝试恢复锁释放异常 */
     public boolean tryRecoverLock(String key, RLock lock, Exception originalException) {
         log.warn(
-                "Attempting to recover lock: {} due to exception: {}",
+                "尝试恢复锁: {}，由于异常: {}",
                 key,
                 originalException.getMessage());
 
         try {
             // 检查锁是否为null
             if (lock == null) {
-                log.warn("Cannot recover null lock for key: {}", key);
+                log.warn("无法恢复空锁，键: {}", key);
                 return false;
             }
 
@@ -73,21 +73,21 @@ public class LockRecoveryHandler {
                 // 尝试强制释放
                 boolean forceUnlocked = lock.forceUnlock();
                 if (forceUnlocked) {
-                    log.info("Successfully force unlocked: {}", key);
+                    log.info("成功强制解锁: {}", key);
                     unregisterLock(key);
                     return true;
                 } else {
-                    log.warn("Failed to force unlock: {}", key);
+                    log.warn("强制解锁失败: {}", key);
                 }
             } else {
                 log.info(
-                        "Lock {} is no longer held by current thread, considering it recovered",
+                        "锁 {} 不再由当前线程持有，认为已恢复",
                         key);
                 unregisterLock(key);
                 return true;
             }
         } catch (Exception e) {
-            log.error("Failed to recover lock: {}", key, e);
+            log.error("恢复锁失败: {}", key, e);
         }
 
         return false;
@@ -102,7 +102,7 @@ public class LockRecoveryHandler {
                     recoveryCheckInterval,
                     TimeUnit.MILLISECONDS);
             started = true;
-            log.info("Lock recovery task started with interval: {}ms", recoveryCheckInterval);
+            log.info("锁恢复任务已启动，间隔: {}ms", recoveryCheckInterval);
         }
     }
 
@@ -125,13 +125,13 @@ public class LockRecoveryHandler {
                                 if (currentTime - lockInfo.getAcquiredTime()
                                         > lockInfo.getLeaseTime() + 5000) { // 5秒容错
                                     log.warn(
-                                            "Detected potentially expired lock: {}, attempting cleanup",
+                                            "检测到可能过期的锁: {}，尝试清理",
                                             key);
 
                                     RLock lock = lockInfo.getLock();
                                     if (!lock.isLocked()) {
                                         log.info(
-                                                "Lock {} is no longer active, removing from tracking",
+                                                "锁 {} 不再活跃，从跟踪中移除",
                                                 key);
                                         return true; // 从map中移除
                                     }
@@ -139,7 +139,7 @@ public class LockRecoveryHandler {
                                     // 如果锁仍然活跃但可能有问题，记录警告
                                     if (!lock.isHeldByCurrentThread()) {
                                         log.warn(
-                                                "Lock {} is active but not held by any tracked thread",
+                                                "锁 {} 活跃但未被任何跟踪的线程持有",
                                                 key);
                                     }
                                 }
@@ -147,7 +147,7 @@ public class LockRecoveryHandler {
                                 return false; // 保留在map中
 
                             } catch (Exception e) {
-                                log.error("Error during recovery check for lock: {}", key, e);
+                                log.error("锁恢复检查期间出错: {}", key, e);
                                 return false; // 保留在map中，下次再检查
                             }
                         });
@@ -156,7 +156,7 @@ public class LockRecoveryHandler {
     /** 关闭恢复处理器 */
     public synchronized void shutdown() {
         if (started) {
-            log.info("Shutting down lock recovery handler");
+            log.info("关闭锁恢复处理器");
             recoveryExecutor.shutdown();
             try {
                 if (!recoveryExecutor.awaitTermination(5, TimeUnit.SECONDS)) {

@@ -40,19 +40,19 @@ public class CacheTtlManager {
             long nullTtl = metadata.nullTtl() > 0
                     ? metadata.nullTtl()
                     : properties.getCache().getNullCacheTtl();
-            log.debug("Using null TTL: {} for null value", nullTtl);
+            log.debug("使用空值 TTL: {} 用于空值", nullTtl);
             return nullTtl;
         }
 
         // 使用配置的 TTL
         if (metadata.ttl() >= 0) {
-            log.debug("Using configured TTL: {} from metadata", metadata.ttl());
+            log.debug("使用元数据中配置的 TTL: {}", metadata.ttl());
             return metadata.ttl();
         }
 
         // 使用默认 TTL
         long defaultTtl = properties.getCache().getDefaultTtl();
-        log.debug("Using default TTL: {}", defaultTtl);
+        log.debug("使用默认 TTL: {}", defaultTtl);
         return defaultTtl;
     }
 

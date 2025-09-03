@@ -6,7 +6,7 @@ import com.david.commons.redis.exception.RedisLockException;
 import com.david.commons.redis.lock.DistributedLockManager;
 import com.david.commons.redis.lock.LockRecoveryHandler;
 import com.david.commons.redis.lock.LockRetryStrategy;
-import com.david.commons.redis.lock.LockType;
+import com.david.commons.redis.lock.enums.LockType;
 
 import jakarta.annotation.PreDestroy;
 
@@ -48,7 +48,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
     @Override
     public RLock getLock(String key) {
         String lockKey = buildLockKey(key);
-        return lockCache.computeIfAbsent(lockKey, k -> redissonClient.getLock(k));
+        return lockCache.computeIfAbsent(lockKey, redissonClient::getLock);
     }
 
     @Override
@@ -74,7 +74,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
         return tryLockWithRetry(key, waitTime, leaseTime, unit, lockType, 3);
     }
 
-	/** 带重试机制的锁获取 */
+    /** 带重试机制的锁获取 */
     public boolean tryLockWithRetry(
             String key,
             long waitTime,
@@ -90,7 +90,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             try {
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 if (elapsedTime >= maxWaitTimeMs) {
-                    log.warn("Lock acquisition timeout for key: {} after {}ms", key, elapsedTime);
+                    log.warn("获取锁超时，键为: {}，耗时: {}ms", key, elapsedTime);
                     return false;
                 }
 
@@ -104,11 +104,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
                 boolean acquired =
                         lock.tryLock(attemptWaitTime, leaseTimeMs, TimeUnit.MILLISECONDS);
                 if (acquired) {
-                    log.debug(
-                            "Successfully acquired {} lock for key: {} on attempt {}",
-                            lockType,
-                            key,
-                            attempt);
+                    log.debug("成功获取 {} 类型锁，键为: {}，尝试次数: {}", lockType, key, attempt);
                     // 注册到恢复处理器
                     recoveryHandler.registerLock(key, lock, leaseTime, unit);
                     return true;
@@ -117,7 +113,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
                 // 检查总等待时间是否已超时
                 elapsedTime = System.currentTimeMillis() - startTime;
                 if (elapsedTime >= maxWaitTimeMs) {
-                    log.warn("Lock acquisition timeout for key: {} after {}ms", key, elapsedTime);
+                    log.warn("获取锁超时，键为: {}，耗时: {}ms", key, elapsedTime);
                     return false;
                 }
 
@@ -136,15 +132,12 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
 
                     // 确保重试延迟不会导致总超时
                     if (elapsedTime + retryDelay >= maxWaitTimeMs) {
-                        log.warn(
-                                "Lock acquisition timeout for key: {} after {}ms",
-                                key,
-                                elapsedTime);
+                        log.warn("获取锁超时，键为: {}，耗时: {}ms", key, elapsedTime);
                         return false;
                     }
 
                     log.debug(
-                            "Lock acquisition failed for key: {}, retrying in {}ms (attempt {}/{})",
+                            "获取锁失败，键为: {}，{}ms 后重试 (尝试次数 {}/{})",
                             key,
                             retryDelay,
                             attempt,
@@ -156,33 +149,19 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RedisLockException(
-                        RedisErrorCodes.LOCK_INTERRUPTED,
-                        "Lock acquisition interrupted for key: " + key,
-                        e);
+                        RedisErrorCodes.LOCK_INTERRUPTED, "获取锁被中断，键为: " + key, e);
             } catch (Exception e) {
-                log.warn(
-                        "Exception during lock acquisition attempt {} for key: {}",
-                        attempt,
-                        key,
-                        e);
+                log.warn("获取锁过程中发生异常，尝试次数: {}，键为: {}", attempt, key, e);
                 if (attempt == maxAttempts) {
                     throw new RedisLockException(
                             RedisErrorCodes.LOCK_ACQUISITION_FAILED,
-                            "Failed to acquire lock for key: "
-                                    + key
-                                    + " after "
-                                    + maxAttempts
-                                    + " attempts",
+                            "获取锁失败，键为: " + key + "，尝试次数: " + maxAttempts,
                             e);
                 }
             }
         }
 
-        log.warn(
-                "Failed to acquire {} lock for key: {} after {} attempts",
-                lockType,
-                key,
-                maxAttempts);
+        log.warn("获取 {} 类型锁失败，键为: {}，尝试次数: {}", lockType, key, maxAttempts);
         return false;
     }
 
@@ -198,23 +177,18 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
                 recoveryHandler.unregisterLock(key);
-                log.debug("Successfully released {} lock for key: {}", lockType, key);
+                log.debug("成功释放 {} 类型锁，键为: {}", lockType, key);
             } else {
-                log.warn(
-                        "Attempted to unlock {} lock not held by current thread for key: {}",
-                        lockType,
-                        key);
+                log.warn("尝试释放非当前线程持有的 {} 类型锁，键为: {}", lockType, key);
             }
         } catch (Exception e) {
-            log.error("Failed to release {} lock for key: {}", lockType, key, e);
+            log.error("释放 {} 类型锁失败，键为: {}", lockType, key, e);
 
             // 尝试恢复
             boolean recovered = recoveryHandler.tryRecoverLock(key, lock, e);
             if (!recovered) {
                 throw new RedisLockException(
-                        RedisErrorCodes.LOCK_RELEASE_FAILED,
-                        "Failed to release lock for key: " + key,
-                        e);
+                        RedisErrorCodes.LOCK_RELEASE_FAILED, "释放锁失败，键为: " + key, e);
             }
         }
     }
@@ -241,30 +215,27 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             acquired = lock.tryLock(waitTime, leaseTime, unit);
             if (!acquired) {
                 throw new RedisLockException(
-                        RedisErrorCodes.LOCK_TIMEOUT,
-                        "Failed to acquire lock within timeout for key: " + key);
+                        RedisErrorCodes.LOCK_TIMEOUT, "在超时时间内未能获取锁，键为: " + key);
             }
 
             // 注册到恢复处理器
             recoveryHandler.registerLock(key, lock, leaseTime, unit);
-            log.debug("Executing operation with {} lock for key: {}", lockType, key);
+            log.debug("使用 {} 类型锁执行操作，键为: {}", lockType, key);
             return supplier.get();
 
         } catch (RedisLockException e) {
             throw e;
         } catch (Exception e) {
             throw new RedisLockException(
-                    RedisErrorCodes.LOCK_OPERATION_FAILED,
-                    "Operation failed while holding lock for key: " + key,
-                    e);
+                    RedisErrorCodes.LOCK_OPERATION_FAILED, "持有锁期间操作失败，键为: " + key, e);
         } finally {
             if (acquired && lock.isHeldByCurrentThread()) {
                 try {
                     lock.unlock();
                     recoveryHandler.unregisterLock(key);
-                    log.debug("Released {} lock after operation for key: {}", lockType, key);
+                    log.debug("操作完成后释放 {} 类型锁，键为: {}", lockType, key);
                 } catch (Exception e) {
-                    log.error("Failed to release lock after operation for key: {}", key, e);
+                    log.error("操作完成后释放锁失败，键为: {}", key, e);
                 }
             }
         }
@@ -320,15 +291,13 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
         try {
             boolean result = lock.forceUnlock();
             if (result) {
-                log.warn("Force unlocked key: {}", key);
+                log.warn("强制解锁成功，键为: {}", key);
             }
             return result;
         } catch (Exception e) {
-            log.error("Failed to force unlock key: {}", key, e);
+            log.error("强制解锁失败，键为: {}", key, e);
             throw new RedisLockException(
-                    RedisErrorCodes.LOCK_FORCE_UNLOCK_FAILED,
-                    "Failed to force unlock key: " + key,
-                    e);
+                    RedisErrorCodes.LOCK_FORCE_UNLOCK_FAILED, "强制解锁失败，键为: " + key, e);
         }
     }
 
@@ -341,8 +310,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
             case WRITE -> getReadWriteLock(key).writeLock();
             default ->
                     throw new RedisLockException(
-                            RedisErrorCodes.UNSUPPORTED_LOCK_TYPE,
-                            "Unsupported lock type: " + lockType);
+                            RedisErrorCodes.UNSUPPORTED_LOCK_TYPE, "不支持的锁类型: " + lockType);
         };
     }
 
@@ -354,7 +322,7 @@ public class RedissonDistributedLockManager implements DistributedLockManager {
     /** 关闭锁管理器 */
     @PreDestroy
     public void shutdown() {
-        log.info("Shutting down distributed lock manager");
+        log.info("正在关闭分布式锁管理器");
         if (recoveryHandler != null) {
             recoveryHandler.shutdown();
         }

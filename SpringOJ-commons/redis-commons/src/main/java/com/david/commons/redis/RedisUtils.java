@@ -2,7 +2,7 @@ package com.david.commons.redis;
 
 import com.david.commons.redis.lock.DistributedLockManager;
 import com.david.commons.redis.operations.*;
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 
 /**
  * Redis 工具类门面接口
@@ -25,6 +25,21 @@ public interface RedisUtils {
      * @return 字符串操作接口
      */
     RedisStringOperations string(SerializationType serializationType);
+
+    /**
+     * 获取 Hash 操作接口
+     *
+     * @return Hash 操作接口
+     */
+    RedisHashOperations hash();
+
+    /**
+     * 获取 Hash 操作接口（指定序列化类型）
+     *
+     * @param serializationType 序列化类型
+     * @return Hash 操作接口
+     */
+    RedisHashOperations hash(SerializationType serializationType);
 
 
     /**

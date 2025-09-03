@@ -1,5 +1,6 @@
 package com.david.commons.redis.serialization;
 
+import com.david.commons.redis.serialization.enums.SerializationType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

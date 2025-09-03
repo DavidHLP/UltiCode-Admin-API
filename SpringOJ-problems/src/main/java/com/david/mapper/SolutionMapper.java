@@ -34,4 +34,5 @@ public interface SolutionMapper extends BaseMapper<Solution> {
             @Param("keyword") String keyword,
             @Param("userId") Long userId,
             @Param("status") SolutionStatus status);
+    Long getViews(@Param("id") Long id);
 }

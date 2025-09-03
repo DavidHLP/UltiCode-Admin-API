@@ -51,8 +51,10 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     @Override
     @RedisCacheable(
             key =
-                    "'problem:pageProblems:' + #page.current + ':' + #page.size + ':' + (#keyword != null ? #keyword : '') + ':' + (#difficulty != null ? #difficulty : '') + ':' + (#category != null ? #category : '') + ':' + (#isVisible != null ? #isVisible : '') + ':' + (#sort != null ? #sort : '')",
+                    "'problem:pageProblems:' + #page.current + ':' + #page.size  + ':' + (#difficulty != null ? #difficulty : '') + ':' + (#sort != null ? #sort : '')",
             keyPrefix = "springoj:cache:",
+            unless =
+                    "#hasText(#keyword) || #page.current > 3 || #category != null || #isVisible != null",
             ttl = 1800, // 30分钟缓存
             type = Page.class)
     public Page<Problem> pageProblems(
@@ -76,8 +78,9 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     @Override
     @RedisCacheable(
             key =
-                    "'problem:pageProblemVos:' + #page.current + ':' + #page.size + ':' + (#keyword != null ? #keyword : '') + ':' + (#difficulty != null ? #difficulty : '') + ':' + (#category != null ? #category : '') + ':' + (#sort != null ? #sort : '')",
+                    "'problem:pageProblemVos:' + #page.current + ':' + #page.size  + ':' + (#difficulty != null ? #difficulty : '') + ':' + (#sort != null ? #sort : '')",
             keyPrefix = "springoj:cache:",
+            condition = "!#hasText(#keyword) && #page.current <= 3 && #category == null",
             ttl = 1800, // 30分钟缓存
             type = Page.class)
     public Page<ProblemCardVo> pageProblemVos(
@@ -187,13 +190,11 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     @Transactional
     @RedisEvict(
             keys = {
-                "'problem:pageProblems:*'",
-                "'problem:pageProblemVos:*'",
-                "'problem:getProblemDetailVoById:' + #entity.getId()",
-                "'problem:getProblemDetailVoById:*'",
-                "'problem:getCodeTemplate:' + #entity.getId() + ':*'",
-                "'problem:getCompareDescription:' + #entity.getId()",
-                "'problem:getById:' + #entity.getId()"
+                "'problem:pageProblems:'",
+                "'problem:pageProblemVos:'",
+                "'problem:getCodeTemplate:' + #entity.id + ':'",
+                "'problem:getCompareDescription:' + #entity.id",
+                "'problem:getById:' + #entity.id"
             },
             keyPrefix = "springoj:cache:")
     public boolean save(Problem entity) {
@@ -204,13 +205,12 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     @Transactional
     @RedisEvict(
             keys = {
-                "'problem:pageProblems:*'",
-                "'problem:pageProblemVos:*'",
-                "'problem:getProblemDetailVoById:' + #entity.getId()",
-                "'problem:getProblemDetailVoById:*'",
-                "'problem:getCodeTemplate:' + #entity.getId() + ':*'",
-                "'problem:getCompareDescription:' + #entity.getId()",
-                "'problem:getById:' + #entity.getId()"
+                "'problem:pageProblems:'",
+                "'problem:pageProblemVos:'",
+                "'problem:getProblemDetailVoById:' + #entity.id",
+                "'problem:getCodeTemplate:' + #entity.id + ':'",
+                "'problem:getCompareDescription:' + #entity.id",
+                "'problem:getById:' + #entity.id"
             },
             keyPrefix = "springoj:cache:")
     public boolean updateById(Problem entity) {
@@ -221,13 +221,13 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     @Transactional
     @RedisEvict(
             keys = {
-                "'problem:pageProblems:*'",
-                "'problem:pageProblemVos:*'",
-                "'problem:getProblemDetailVoById:' + #entity.getId()",
-                "'problem:getProblemDetailVoById:*'",
-                "'problem:getCodeTemplate:' + #entity.getId() + ':*'",
-                "'problem:getCompareDescription:' + #entity.getId()",
-                "'problem:getById:' + #entity.getId()"
+                "'problem:pageProblems:'",
+                "'problem:pageProblemVos:'",
+                "'problem:getProblemDetailVoById:' + #entity.id",
+                "'problem:getProblemDetailVoById:'",
+                "'problem:getCodeTemplate:' + #entity.id + ':'",
+                "'problem:getCompareDescription:' + #entity.id",
+                "'problem:getById:' + #entity.id"
             },
             keyPrefix = "springoj:cache:")
     public boolean removeById(Serializable id) {
@@ -235,7 +235,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    @Transactional
     @RedisCacheable(
             key = "'problem:getById:' + #id",
             keyPrefix = "springoj:cache:",

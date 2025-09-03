@@ -5,6 +5,7 @@ import com.david.commons.redis.cache.aspect.RedisEvictAspect;
 import com.david.commons.redis.cache.aspect.RedisPutAspect;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheReadHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheWriteHandler;
+import com.david.commons.redis.cache.aspect.chain.cacheable.CacheSyncLockHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.ConditionHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.MethodInvokeHandler;
 import com.david.commons.redis.cache.aspect.chain.evict.AfterEvictHandler;
@@ -90,6 +91,13 @@ public class RedisCommonsAutoConfiguration {
                         Objects.requireNonNullElseGet(mapper, ObjectMapper::new));
 
         // 内联 createRedisTemplate 方法的逻辑
+        var template = getStringObjectRedisTemplate(connectionFactory, resolvedMapper);
+        log.debug("Redis Template 配置完成");
+        return template;
+    }
+
+    private RedisTemplate<String, Object> getStringObjectRedisTemplate(
+            RedisConnectionFactory connectionFactory, ObjectMapper resolvedMapper) {
         var template = new RedisTemplate<String, Object>();
         template.setConnectionFactory(connectionFactory);
         var stringSerializer = new StringRedisSerializer();
@@ -101,7 +109,6 @@ public class RedisCommonsAutoConfiguration {
         template.setDefaultSerializer(jsonSerializer);
         template.setEnableDefaultSerializer(true);
         template.afterPropertiesSet();
-        log.debug("Redis Template 配置完成");
         return template;
     }
 
@@ -177,6 +184,7 @@ public class RedisCommonsAutoConfiguration {
             RedisCommonsProperties properties,
             ConditionHandler conditionHandler,
             CacheReadHandler cacheReadHandler,
+            CacheSyncLockHandler cacheSyncLockHandler,
             MethodInvokeHandler methodInvokeHandler,
             CacheWriteHandler cacheWriteHandler) {
         return new RedisCacheableAspect(
@@ -184,6 +192,7 @@ public class RedisCommonsAutoConfiguration {
                 properties,
                 conditionHandler,
                 cacheReadHandler,
+                cacheSyncLockHandler,
                 methodInvokeHandler,
                 cacheWriteHandler);
     }

@@ -48,10 +48,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.hasKey(fullKey);
-            log.debug("Has key - key: {}, result: {}", fullKey, result);
+            log.debug("检查键是否存在 - 键: {}, 结果: {}", fullKey, result);
             return result;
         } catch (Exception e) {
-            log.error("Failed to check key existence - key: {}", key, e);
+            log.error("检查键是否存在失败 - 键: {}", key, e);
             throw handleException("hasKey", key, e);
         }
     }
@@ -74,10 +74,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             Long count =
                     redisTemplate.execute(
                             (RedisConnection connection) -> connection.exists(rawKeys));
-            log.debug("Count existing keys - request: {}, exist: {}", keys.size(), count);
+            log.debug("统计存在的键数量 - 请求: {}, 存在: {}", keys.size(), count);
             return count != null ? count : 0L;
         } catch (Exception e) {
-            log.error("Failed to count existing keys", e);
+            log.error("统计存在的键数量失败", e);
             throw handleException("countExistingKeys", "", e);
         }
     }
@@ -88,10 +88,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.delete(fullKey);
-            log.debug("Delete key - key: {}, result: {}", fullKey, result);
+            log.debug("删除键 - 键: {}, 结果: {}", fullKey, result);
             return result;
         } catch (Exception e) {
-            log.error("Failed to delete key - key: {}", key, e);
+            log.error("删除键失败 - 键: {}", key, e);
             throw handleException("delete", key, e);
         }
     }
@@ -105,10 +105,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             Set<String> fullKeys =
                     keys.stream().map(redisUtils::buildKey).collect(Collectors.toSet());
             Long deleted = redisTemplate.delete(fullKeys);
-            log.debug("Delete keys - request: {}, deleted: {}", fullKeys.size(), deleted);
+            log.debug("批量删除键 - 请求: {}, 已删除: {}", fullKeys.size(), deleted);
             return deleted;
         } catch (Exception e) {
-            log.error("Failed to delete keys - size: {}", keys.size(), e);
+            log.error("批量删除键失败 - 数量: {}", keys.size(), e);
             throw handleException("deleteMany", "", e);
         }
     }
@@ -120,19 +120,14 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateTimeout(timeout);
             if (unit == null) {
                 throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "TimeUnit cannot be null");
+                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "时间单位不能为空");
             }
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.expire(fullKey, timeout, unit);
-            log.debug(
-                    "Expire key - key: {}, timeout: {} {}, result: {}",
-                    fullKey,
-                    timeout,
-                    unit,
-                    result);
+            log.debug("设置键过期时间 - 键: {}, 超时: {} {}, 结果: {}", fullKey, timeout, unit, result);
             return result;
         } catch (Exception e) {
-            log.error("Failed to expire key - key: {}", key, e);
+            log.error("设置键过期时间失败 - 键: {}", key, e);
             throw handleException("expire", key, e);
         }
     }
@@ -142,15 +137,14 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
         try {
             validateKey(key);
             if (duration == null || duration.isZero() || duration.isNegative()) {
-                throw new RedisCommonsException(
-                        RedisErrorCodes.CACHE_TTL_INVALID, "Duration must be positive");
+                throw new RedisCommonsException(RedisErrorCodes.CACHE_TTL_INVALID, "持续时间必须为正数");
             }
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.expire(fullKey, duration);
-            log.debug("Expire key - key: {}, duration: {}, result: {}", fullKey, duration, result);
+            log.debug("设置键过期时间 - 键: {}, 持续时间: {}, 结果: {}", fullKey, duration, result);
             return result != null ? result : false;
         } catch (Exception e) {
-            log.error("Failed to expire key (Duration) - key: {}", key, e);
+            log.error("设置键过期时间(D)失败 - 键: {}", key, e);
             throw handleException("expireDuration", key, e);
         }
     }
@@ -161,14 +155,14 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             if (date == null) {
                 throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "Expire date cannot be null");
+                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "过期日期不能为空");
             }
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.expireAt(fullKey, date);
-            log.debug("ExpireAt key - key: {}, date: {}, result: {}", fullKey, date, result);
+            log.debug("设置键在指定时间过期 - 键: {}, 日期: {}, 结果: {}", fullKey, date, result);
             return result;
         } catch (Exception e) {
-            log.error("Failed to expireAt key - key: {}", key, e);
+            log.error("设置键在指定时间过期失败 - 键: {}", key, e);
             throw handleException("expireAt", key, e);
         }
     }
@@ -179,10 +173,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.persist(fullKey);
-            log.debug("Persist key - key: {}, result: {}", fullKey, result);
+            log.debug("移除键的过期时间 - 键: {}, 结果: {}", fullKey, result);
             return result;
         } catch (Exception e) {
-            log.error("Failed to persist key - key: {}", key, e);
+            log.error("移除键的过期时间失败 - 键: {}", key, e);
             throw handleException("persist", key, e);
         }
     }
@@ -193,14 +187,14 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             if (unit == null) {
                 throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "TimeUnit cannot be null");
+                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "时间单位不能为空");
             }
             String fullKey = redisUtils.buildKey(key);
             Long ttl = redisTemplate.getExpire(fullKey, unit);
-            log.debug("Get expire - key: {}, ttl: {} {}", fullKey, ttl, unit);
+            log.debug("获取键的剩余过期时间 - 键: {}, TTL: {} {}", fullKey, ttl, unit);
             return ttl;
         } catch (Exception e) {
-            log.error("Failed to get expire - key: {}", key, e);
+            log.error("获取键的剩余过期时间失败 - 键: {}", key, e);
             throw handleException("getExpireUnit", key, e);
         }
     }
@@ -211,10 +205,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             String fullKey = redisUtils.buildKey(key);
             Long ttl = redisTemplate.getExpire(fullKey);
-            log.debug("Get expire - key: {}, ttl: {} seconds", fullKey, ttl);
+            log.debug("获取键的剩余过期时间 - 键: {}, TTL: {} 秒", fullKey, ttl);
             return ttl;
         } catch (Exception e) {
-            log.error("Failed to get expire (seconds) - key: {}", key, e);
+            log.error("获取键的剩余过期时间(秒)失败 - 键: {}", key, e);
             throw handleException("getExpire", key, e);
         }
     }
@@ -227,9 +221,9 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             String fullOld = redisUtils.buildKey(oldKey);
             String fullNew = redisUtils.buildKey(newKey);
             redisTemplate.rename(fullOld, fullNew);
-            log.debug("Rename key - old: {}, new: {}", fullOld, fullNew);
+            log.debug("重命名键 - 旧键: {}, 新键: {}", fullOld, fullNew);
         } catch (Exception e) {
-            log.error("Failed to rename key - old: {}, new: {}", oldKey, newKey, e);
+            log.error("重命名键失败 - 旧键: {}, 新键: {}", oldKey, newKey, e);
             throw handleException("rename", oldKey, e);
         }
     }
@@ -242,10 +236,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             String fullOld = redisUtils.buildKey(oldKey);
             String fullNew = redisUtils.buildKey(newKey);
             Boolean result = redisTemplate.renameIfAbsent(fullOld, fullNew);
-            log.debug("RenameIfAbsent - old: {}, new: {}, result: {}", fullOld, fullNew, result);
+            log.debug("仅当新键不存在时重命名 - 旧键: {}, 新键: {}, 结果: {}", fullOld, fullNew, result);
             return result;
         } catch (Exception e) {
-            log.error("Failed to renameIfAbsent - old: {}, new: {}", oldKey, newKey, e);
+            log.error("仅当新键不存在时重命名失败 - 旧键: {}, 新键: {}", oldKey, newKey, e);
             throw handleException("renameIfAbsent", oldKey, e);
         }
     }
@@ -258,10 +252,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             org.springframework.data.redis.connection.DataType springType =
                     redisTemplate.type(fullKey);
             DataType type = convertDataType(springType);
-            log.debug("Type - key: {}, type: {}", fullKey, type);
+            log.debug("获取键的数据类型 - 键: {}, 类型: {}", fullKey, type);
             return type;
         } catch (Exception e) {
-            log.error("Failed to get type - key: {}", key, e);
+            log.error("获取键的数据类型失败 - 键: {}", key, e);
             throw handleException("type", key, e);
         }
     }
@@ -284,7 +278,7 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
                         return full;
                     });
         } catch (Exception e) {
-            log.error("Failed to get random key", e);
+            log.error("获取随机键失败", e);
             throw handleException("randomKey", "", e);
         }
     }
@@ -293,9 +287,7 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
     public Set<String> keys(String pattern) {
         try {
             if (!StringUtils.hasText(pattern)) {
-                throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID,
-                        "Pattern cannot be null or empty");
+                throw new RedisCommonsException(RedisErrorCodes.CONFIG_PARAMETER_INVALID, "模式不能为空");
             }
 
             // 如果模式不包含前缀，则添加前缀
@@ -319,13 +311,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
                                 .collect(Collectors.toSet());
             }
 
-            log.debug(
-                    "Find keys by pattern - pattern: {}, found: {}",
-                    pattern,
-                    keys.size());
+            log.debug("根据模式查找键 - 模式: {}, 找到: {}", pattern, keys.size());
             return keys;
         } catch (Exception e) {
-            log.error("Failed to find keys by pattern - pattern: {}", pattern, e);
+            log.error("根据模式查找键失败 - 模式: {}", pattern, e);
             throw handleException("keys", pattern, e);
         }
     }
@@ -334,13 +323,11 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
     public void scan(String pattern, int count, Consumer<String> keyConsumer) {
         try {
             if (!StringUtils.hasText(pattern)) {
-                throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID,
-                        "Pattern cannot be null or empty");
+                throw new RedisCommonsException(RedisErrorCodes.CONFIG_PARAMETER_INVALID, "模式不能为空");
             }
             if (keyConsumer == null) {
                 throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "Key consumer cannot be null");
+                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "键处理回调不能为空");
             }
 
             final String keyPrefix = redisUtils.getKeyPrefix();
@@ -376,16 +363,12 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
                                 keyConsumer.accept(businessKey);
                                 matched++;
                             }
-                            log.debug(
-                                    "SCAN matched {} keys for pattern: {} (count={})",
-                                    matched,
-                                    pattern,
-                                    scanCount);
+                            log.debug("SCAN 匹配 {} 个键，模式: {} (数量={})", matched, pattern, scanCount);
                         }
                         return null;
                     });
         } catch (Exception e) {
-            log.error("Failed to scan keys by pattern - pattern: {}", pattern, e);
+            log.error("扫描键失败 - 模式: {}", pattern, e);
             throw handleException("scan", pattern, e);
         }
     }
@@ -396,19 +379,14 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
             validateKey(key);
             if (dbIndex < 0) {
                 throw new RedisCommonsException(
-                        RedisErrorCodes.CONFIG_PARAMETER_INVALID,
-                        "Database index cannot be negative");
+                        RedisErrorCodes.CONFIG_PARAMETER_INVALID, "数据库索引不能为负数");
             }
             String fullKey = redisUtils.buildKey(key);
             Boolean result = redisTemplate.move(fullKey, dbIndex);
-            log.debug(
-                    "Move key to database - key: {}, dbIndex: {}, result: {}",
-                    fullKey,
-                    dbIndex,
-                    result);
+            log.debug("将键移动到数据库 - 键: {}, 数据库索引: {}, 结果: {}", fullKey, dbIndex, result);
             return result != null ? result : false;
         } catch (Exception e) {
-            log.error("Failed to move key - key: {}, dbIndex: {}", key, dbIndex, e);
+            log.error("将键移动到数据库失败 - 键: {}, 数据库索引: {}", key, dbIndex, e);
             throw handleException("move", key, e);
         }
     }
@@ -417,9 +395,9 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
     public void flushDb() {
         try {
             redisTemplate.getConnectionFactory().getConnection().flushDb();
-            log.warn("Database flushed");
+            log.warn("清空当前数据库");
         } catch (Exception e) {
-            log.error("Failed to flush database", e);
+            log.error("清空当前数据库失败", e);
             throw handleException("flushDb", "", e);
         }
     }
@@ -428,9 +406,9 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
     public void flushAll() {
         try {
             redisTemplate.getConnectionFactory().getConnection().flushAll();
-            log.warn("All databases flushed");
+            log.warn("清空所有数据库");
         } catch (Exception e) {
-            log.error("Failed to flush all databases", e);
+            log.error("清空所有数据库失败", e);
             throw handleException("flushAll", "", e);
         }
     }
@@ -439,10 +417,10 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
     public Long dbSize() {
         try {
             Long size = redisTemplate.getConnectionFactory().getConnection().dbSize();
-            log.debug("Database size: {}", size);
+            log.debug("数据库大小: {}", size);
             return size;
         } catch (Exception e) {
-            log.error("Failed to get database size", e);
+            log.error("获取数据库大小失败", e);
             throw handleException("dbSize", "", e);
         }
     }
@@ -450,16 +428,14 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
     /** 验证键名 */
     private void validateKey(String key) {
         if (!StringUtils.hasText(key)) {
-            throw new RedisCommonsException(
-                    RedisErrorCodes.CACHE_KEY_EMPTY, "Key cannot be null or empty");
+            throw new RedisCommonsException(RedisErrorCodes.CACHE_KEY_EMPTY, "键不能为空");
         }
     }
 
     /** 验证超时时间 */
     private void validateTimeout(long timeout) {
         if (timeout <= 0) {
-            throw new RedisCommonsException(
-                    RedisErrorCodes.CACHE_TTL_INVALID, "Timeout must be positive");
+            throw new RedisCommonsException(RedisErrorCodes.CACHE_TTL_INVALID, "超时时间必须为正数");
         }
     }
 
@@ -496,19 +472,13 @@ public class RedisCommonOperationsImpl implements RedisCommonOperations {
 
         if (e instanceof org.springframework.data.redis.RedisConnectionFailureException) {
             return new RedisCommonsException(
-                    RedisErrorCodes.CONNECTION_FAILED,
-                    "Redis connection failed during " + operation,
-                    e);
+                    RedisErrorCodes.CONNECTION_FAILED, "Redis 连接失败，操作: " + operation, e);
         } else if (e instanceof org.springframework.dao.QueryTimeoutException) {
             return new RedisCommonsException(
-                    RedisErrorCodes.OPERATION_TIMEOUT,
-                    "Redis operation timeout during " + operation,
-                    e);
+                    RedisErrorCodes.OPERATION_TIMEOUT, "Redis 操作超时，操作: " + operation, e);
         } else {
             return new RedisCommonsException(
-                    RedisErrorCodes.CACHE_OPERATION_FAILED,
-                    "Redis operation failed: " + operation,
-                    e);
+                    RedisErrorCodes.CACHE_OPERATION_FAILED, "Redis 操作失败: " + operation, e);
         }
     }
 }

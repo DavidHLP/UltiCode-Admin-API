@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * 缓存条件检查处理器
  * 
- * <p>负责检查缓存操作的条件表达式，决定是否应该继续执行缓存操作
+ * <p>
+ * 负责检查缓存操作的条件表达式，决定是否应该继续执行缓存操作
  * 
  * @author David
  */
@@ -36,20 +37,23 @@ public class ConditionHandler extends Handler {
         if (!condition.isEmpty()) {
             try {
                 boolean conditionResult = expressionEvaluator.evaluateCondition(
-                    condition, 
-                    aspectContext.getContext(), 
-                    null
-                );
-                
+                        condition,
+                        aspectContext.getContext(),
+                        null);
+
                 if (!conditionResult) {
-                    log.debug("缓存条件不满足，跳过缓存操作：{}", condition);
+                    // 条件不满足：不进行任何缓存相关动作，但必须执行原方法并返回其结果
+                    log.debug("缓存条件不满足，直接执行原方法并跳过缓存：{}", condition);
+                    actionMethodInvoked(aspectContext);
                     aspectContext.setIsEnd(true);
                     return;
                 }
-                
+
                 log.debug("缓存条件检查通过：{}", condition);
             } catch (Exception e) {
-                log.warn("评估缓存条件时出错，跳过缓存操作：{}", condition, e);
+                // 表达式评估异常：稳妥起见也当作不满足条件处理，执行原方法以保证业务可用
+                log.warn("评估缓存条件时出错，按不满足处理：{}，将直接执行原方法", condition, e);
+                actionMethodInvoked(aspectContext);
                 aspectContext.setIsEnd(true);
                 return;
             }

@@ -77,7 +77,7 @@ public class UserController {
     }
 
 	@GetMapping("/ids")
-	public ResponseResult<List<AuthUser>> getUserByIds(@RequestParam List<Long> ids) {
+	public ResponseResult<List<AuthUser>> getUserByIds(@RequestParam("ids") List<Long> ids) {
 		List<AuthUser> users = userService.listByIds(ids);
 		if (users.isEmpty()) {
 			return ResponseResult.fail(404, "用户不存在");
@@ -86,7 +86,7 @@ public class UserController {
 	}
 
 	@GetMapping("/id")
-	public ResponseResult<AuthUser> getUserById(@RequestParam Long id) {
+	public ResponseResult<AuthUser> getUserById(@RequestParam("id") Long id) {
         AuthUser user = userService.getById(id);
 		if (user == null){
 			return ResponseResult.fail(404, "用户不存在");

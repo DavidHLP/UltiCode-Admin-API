@@ -1,6 +1,6 @@
 package com.david.commons.redis.config;
 
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;

@@ -1,7 +1,7 @@
 package com.david.commons.redis.cache;
 
 import com.david.commons.redis.cache.enums.CacheOperation;
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 
 import java.lang.reflect.Method;
 

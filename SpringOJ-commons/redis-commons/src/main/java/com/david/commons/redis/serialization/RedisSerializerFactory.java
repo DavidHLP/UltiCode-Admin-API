@@ -1,5 +1,7 @@
 package com.david.commons.redis.serialization;
 
+import com.david.commons.redis.serialization.enums.SerializationType;
+import com.david.commons.redis.serialization.exceptions.RedisSerializationException;
 import com.david.commons.redis.serialization.impl.JsonRedisSerializer;
 
 import lombok.RequiredArgsConstructor;
@@ -24,14 +26,13 @@ public class RedisSerializerFactory {
      * 获取指定类型的序列化器 - 仅支持 JSON 类型
      *
      * @param type 序列化类型
-     * @param <T>  序列化对象类型
      * @return 序列化器实例
      * @throws RedisSerializationException 如果不支持指定的序列化类型
      */
     public RedisSerializer<Object> getSerializer(SerializationType type) {
         if (type != SerializationType.JSON) {
             throw new RedisSerializationException("SERIALIZER_NOT_FOUND",
-                    "Only JSON serialization is supported, but requested: " + type);
+                    "仅支持 JSON 序列化，但请求了: " + type);
         }
         return jsonSerializer;
     }
@@ -39,7 +40,6 @@ public class RedisSerializerFactory {
     /**
      * 获取默认序列化器（JSON）
      *
-     * @param <T> 序列化对象类型
      * @return 默认序列化器
      */
     public RedisSerializer<Object> getDefaultSerializer() {

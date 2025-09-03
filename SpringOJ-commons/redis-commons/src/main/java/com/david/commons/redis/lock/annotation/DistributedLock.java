@@ -1,6 +1,6 @@
 package com.david.commons.redis.lock.annotation;
 
-import com.david.commons.redis.lock.LockType;
+import com.david.commons.redis.lock.enums.LockType;
 
 import java.lang.annotation.*;
 import java.util.concurrent.TimeUnit;

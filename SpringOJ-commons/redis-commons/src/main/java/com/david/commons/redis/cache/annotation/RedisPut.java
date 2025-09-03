@@ -1,6 +1,6 @@
 package com.david.commons.redis.cache.annotation;
 
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

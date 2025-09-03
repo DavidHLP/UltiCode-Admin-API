@@ -1,6 +1,6 @@
 package com.david.commons.redis.operations;
 
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

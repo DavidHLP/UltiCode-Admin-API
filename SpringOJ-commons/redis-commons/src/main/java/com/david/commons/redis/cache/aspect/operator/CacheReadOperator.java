@@ -35,7 +35,7 @@ public class CacheReadOperator {
     public Object readCache(CacheMetadata metadata, CacheContext context) {
         try {
             String cacheKey = keyBuilder.buildCacheKey(metadata, context, null);
-            log.debug("Reading cache for key: {}", cacheKey);
+            log.debug("正在读取缓存，键为: {}", cacheKey);
 
             Class<?> valueType = metadata.returnType() != null ? metadata.returnType() : Object.class;
             
@@ -44,14 +44,14 @@ public class CacheReadOperator {
             Object cachedValue = stringOps.get(cacheKey, valueType.asSubclass(Object.class));
 
             if (cachedValue != null) {
-                log.debug("Cache hit for key: {}", cacheKey);
+                log.debug("缓存命中，键为: {}", cacheKey);
                 return cachedValue;
             } else {
-                log.debug("Cache miss for key: {}", cacheKey);
+                log.debug("缓存未命中，键为: {}", cacheKey);
                 return null;
             }
         } catch (Exception e) {
-            log.error("Error reading cache for key pattern: {}", metadata.key(), e);
+            log.error("读取缓存时发生错误，键表达式: {}", metadata.key(), e);
             return null; // 缓存读取失败时返回 null，让方法正常执行
         }
     }
@@ -66,9 +66,11 @@ public class CacheReadOperator {
     public boolean exists(CacheMetadata metadata, CacheContext context) {
         try {
             String cacheKey = keyBuilder.buildCacheKey(metadata, context, null);
-            return redisUtils.common().hasKey(cacheKey);
+            boolean exists = redisUtils.common().hasKey(cacheKey);
+            log.debug("检查缓存是否存在，键为: {}, 结果: {}", cacheKey, exists);
+            return exists;
         } catch (Exception e) {
-            log.error("Error checking cache existence for key pattern: {}", metadata.key(), e);
+            log.error("检查缓存存在性时发生错误，键表达式: {}", metadata.key(), e);
             return false;
         }
     }

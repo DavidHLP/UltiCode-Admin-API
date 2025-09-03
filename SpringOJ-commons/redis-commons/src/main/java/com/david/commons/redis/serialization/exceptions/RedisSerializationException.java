@@ -1,4 +1,4 @@
-package com.david.commons.redis.serialization;
+package com.david.commons.redis.serialization.exceptions;
 
 import com.david.commons.redis.exception.RedisCommonsException;
 

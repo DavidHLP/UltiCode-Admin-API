@@ -3,11 +3,13 @@ package com.david.commons.redis;
 import com.david.commons.redis.config.RedisCommonsProperties;
 import com.david.commons.redis.lock.DistributedLockManager;
 import com.david.commons.redis.operations.RedisCommonOperations;
+import com.david.commons.redis.operations.RedisHashOperations;
 import com.david.commons.redis.operations.RedisStringOperations;
 import com.david.commons.redis.operations.impl.RedisCommonOperationsImpl;
+import com.david.commons.redis.operations.impl.RedisHashOperationsImpl;
 import com.david.commons.redis.operations.impl.RedisStringOperationsImpl;
 import com.david.commons.redis.serialization.SerializationStrategySelector;
-import com.david.commons.redis.serialization.SerializationType;
+import com.david.commons.redis.serialization.enums.SerializationType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +41,10 @@ public class RedisUtilsImpl implements RedisUtils {
     private final ConcurrentMap<SerializationType, RedisStringOperations> stringOpsCache =
             new ConcurrentHashMap<>();
 
+    /** Hash 操作缓存，按序列化类型缓存实例 */
+    private final ConcurrentMap<SerializationType, RedisHashOperations> hashOpsCache =
+            new ConcurrentHashMap<>();
+
     /** 通用操作实例 */
     private volatile RedisCommonOperations commonOperations;
 
@@ -51,6 +57,9 @@ public class RedisUtilsImpl implements RedisUtils {
     /** 默认字符串操作实例（使用默认序列化类型） */
     private volatile RedisStringOperations defaultStringOps;
 
+    /** 默认 Hash 操作实例（使用默认序列化类型） */
+    private volatile RedisHashOperations defaultHashOps;
+
     @Override
     public RedisStringOperations string() {
         if (defaultStringOps == null) {
@@ -58,7 +67,7 @@ public class RedisUtilsImpl implements RedisUtils {
                 if (defaultStringOps == null) {
                     defaultStringOps =
                             new RedisStringOperationsImpl(redisTemplate, strategySelector);
-                    log.debug("Created default RedisStringOperations instance");
+                    log.debug("创建默认的 RedisStringOperations 实例");
                 }
             }
         }
@@ -73,12 +82,32 @@ public class RedisUtilsImpl implements RedisUtils {
     }
 
     @Override
+    public RedisHashOperations hash() {
+        if (defaultHashOps == null) {
+            synchronized (this) {
+                if (defaultHashOps == null) {
+                    defaultHashOps = new RedisHashOperationsImpl(redisTemplate, strategySelector);
+                    log.debug("创建默认的 RedisHashOperations 实例");
+                }
+            }
+        }
+        return defaultHashOps;
+    }
+
+    @Override
+    public RedisHashOperations hash(SerializationType serializationType) {
+        SerializationType target =
+                (serializationType != null) ? serializationType : getDefaultSerializationType();
+        return hashOpsCache.computeIfAbsent(target, t -> hash().using(t));
+    }
+
+    @Override
     public RedisCommonOperations common() {
         if (commonOperations == null) {
             synchronized (this) {
                 if (commonOperations == null) {
                     commonOperations = new RedisCommonOperationsImpl(redisTemplate, this);
-                    log.debug("Created RedisCommonOperations instance");
+                    log.debug("创建 RedisCommonOperations 实例");
                 }
             }
         }
@@ -105,13 +134,13 @@ public class RedisUtilsImpl implements RedisUtils {
     @Override
     public void setKeyPrefix(String prefix) {
         this.keyPrefix = prefix;
-        log.info("Updated Redis key prefix to: {}", prefix);
+        log.info("更新 Redis 键前缀为: {}", prefix);
     }
 
     @Override
     public String buildKey(String key) {
         if (!StringUtils.hasText(key)) {
-            throw new IllegalArgumentException("Key cannot be null or empty");
+            throw new IllegalArgumentException("键不能为空");
         }
 
         String prefix = getKeyPrefix();
@@ -136,19 +165,21 @@ public class RedisUtilsImpl implements RedisUtils {
     @Override
     public void setDefaultSerializationType(SerializationType serializationType) {
         this.defaultSerializationType = serializationType;
-        log.info("Updated default serialization type to: {}", serializationType);
+        log.info("更新默认序列化类型为: {}", serializationType);
     }
 
     /** 清理操作实例缓存 */
     public void clearOperationsCache() {
         stringOpsCache.clear();
+        hashOpsCache.clear();
         defaultStringOps = null;
+        defaultHashOps = null;
         commonOperations = null;
-        log.info("Cleared Redis operations cache");
+        log.info("清除 Redis 操作缓存");
     }
 
     /** 获取缓存统计信息 */
     public int getOperationsCacheSize() {
-        return stringOpsCache.size();
+        return stringOpsCache.size() + hashOpsCache.size();
     }
 }
