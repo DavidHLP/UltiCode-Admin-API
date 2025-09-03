@@ -1,7 +1,10 @@
 spring:
   application:
-    name: user-service # 应用名称
+    name: sandbox-service # 应用名称
   cloud:
+    loadbalancer:
+      cache:
+        enabled: false
     nacos:
       discovery:
         server-addr: 192.168.1.102:8848 #配置Nacos地址
