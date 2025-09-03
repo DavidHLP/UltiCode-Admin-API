@@ -1,6 +1,7 @@
 package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.exception.BizException;
 import com.david.service.ISolutionService;
 import com.david.service.IUserContentViewService;
 import com.david.solution.Solution;
@@ -9,14 +10,14 @@ import com.david.solution.vo.SolutionCardVo;
 import com.david.solution.vo.SolutionDetailVo;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
-import com.david.exception.BizException;
-
-import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.web.bind.annotation.*;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -78,6 +79,15 @@ public class SolutionViewController extends BaseController {
             @RequestParam(required = false) String keyword) {
         Page<SolutionCardVo> p = new Page<>(page, size);
         Page<SolutionCardVo> result = solutionService.pageSolutionCardVos(p, problemId, keyword);
+        result.getRecords()
+                .forEach(
+                        solutionCardVo ->
+                                solutionCardVo.setViews(
+                                        Math.toIntExact(
+                                                userContentViewService.getViewsNumber(
+                                                        getCurrentUserId(),
+                                                        solutionCardVo.getId(),
+                                                        ContentType.SOLUTION))));
         return ResponseResult.success("获取题解成功", result);
     }
 }
