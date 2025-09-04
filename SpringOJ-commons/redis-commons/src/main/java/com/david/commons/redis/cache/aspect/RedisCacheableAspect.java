@@ -4,10 +4,8 @@ import com.david.commons.redis.cache.CacheContext;
 import com.david.commons.redis.cache.CacheMetadata;
 import com.david.commons.redis.cache.aspect.chain.AspectContext;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheReadHandler;
-import com.david.commons.redis.cache.aspect.chain.cacheable.CacheSyncLockHandler;
-import com.david.commons.redis.cache.aspect.chain.cacheable.CacheWriteHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.ConditionHandler;
-import com.david.commons.redis.cache.aspect.chain.cacheable.MethodInvokeHandler;
+import com.david.commons.redis.cache.aspect.chain.cacheable.CacheProtectionHandler;
 import com.david.commons.redis.cache.enums.CacheOperation;
 import com.david.commons.redis.cache.parser.CacheAnnotationParser;
 import com.david.commons.redis.config.RedisCommonsProperties;
@@ -43,9 +41,7 @@ public class RedisCacheableAspect {
     private final RedisCommonsProperties properties;
     private final ConditionHandler conditionHandler;
     private final CacheReadHandler cacheReadHandler;
-    private final CacheSyncLockHandler cacheSyncLockHandler;
-    private final MethodInvokeHandler methodInvokeHandler;
-    private final CacheWriteHandler cacheWriteHandler;
+    private final CacheProtectionHandler cacheProtectionHandler;
 
     /** 拦截带有 @RedisCacheable 注解的方法 */
     @Around("@annotation(com.david.commons.redis.cache.annotation.RedisCacheable)")
@@ -117,11 +113,9 @@ public class RedisCacheableAspect {
     private void handleCacheableOperation(AspectContext aspectContext) {
         log.debug("开始执行责任链处理，键模式：{}", aspectContext.getMetadata().key());
 
-        // 启动责任链处理
+        // 启动责任链处理（统一由 CacheProtectionHandler 执行穿透/击穿/雪崩防护与结果写入）
         conditionHandler.setNextHandler(cacheReadHandler);
-        cacheReadHandler.setNextHandler(cacheSyncLockHandler);
-        cacheSyncLockHandler.setNextHandler(methodInvokeHandler);
-        methodInvokeHandler.setNextHandler(cacheWriteHandler);
+        cacheReadHandler.setNextHandler(cacheProtectionHandler);
         conditionHandler.handleRequest(aspectContext);
     }
 }
