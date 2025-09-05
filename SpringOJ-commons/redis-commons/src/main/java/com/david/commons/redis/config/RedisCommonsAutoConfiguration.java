@@ -5,6 +5,7 @@ import com.david.commons.redis.cache.aspect.RedisEvictAspect;
 import com.david.commons.redis.cache.aspect.RedisPutAspect;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheReadHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.ConditionHandler;
+import com.david.commons.redis.cache.aspect.chain.cacheable.CacheSyncLockHandler;
 import com.david.commons.redis.cache.aspect.chain.cacheable.CacheProtectionHandler;
 import com.david.commons.redis.cache.aspect.chain.evict.AfterEvictHandler;
 import com.david.commons.redis.cache.aspect.chain.evict.BeforeEvictHandler;
@@ -170,12 +171,14 @@ public class RedisCommonsAutoConfiguration {
                         RedisCommonsProperties properties,
                         ConditionHandler conditionHandler,
                         CacheReadHandler cacheReadHandler,
+                        CacheSyncLockHandler cacheSyncLockHandler,
                         CacheProtectionHandler cacheProtectionHandler) {
                 return new RedisCacheableAspect(
                                 annotationParser,
                                 properties,
                                 conditionHandler,
                                 cacheReadHandler,
+                                cacheSyncLockHandler,
                                 cacheProtectionHandler);
         }
 

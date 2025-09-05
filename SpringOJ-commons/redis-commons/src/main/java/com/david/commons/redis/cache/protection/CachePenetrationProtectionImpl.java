@@ -89,28 +89,26 @@ public class CachePenetrationProtectionImpl implements CachePenetrationProtectio
             Runnable nullValueHandler) {
         PenetrationProtectionStatsImpl stats = getOrCreateStats(filterName);
 
-        // 检查布隆过滤器
-        if (!mightExist(filterName, key)) {
-            // 布隆过滤器认为不存在，直接返回null
-            stats.incrementNullQueries();
-            if (nullValueHandler != null) {
-                nullValueHandler.run();
-            }
-            return null;
-        }
-
-        // 布隆过滤器认为可能存在，执行数据加载
+        // 执行数据加载（布隆过滤器用于优化，不应阻止首次访问）
         try {
             stats.incrementDatabaseQueries();
             T result = dataLoader.get();
 
             if (result != null) {
-                // 数据存在，添加到布隆过滤器（如果还没有的话）
+                // 数据存在，添加到布隆过滤器（确保后续访问能被正确识别）
                 addKey(filterName, key);
                 stats.incrementCacheHits();
                 log.debug("数据加载成功: {}, 键: {}", filterName, key);
             } else {
-                // 数据不存在，记录空值查询
+                // 数据不存在，检查布隆过滤器判断是否正确
+                if (!mightExist(filterName, key)) {
+                    // 布隆过滤器判断正确：数据确实不存在
+                    log.debug("布隆过滤器正确预测数据不存在: {}, 键: {}", filterName, key);
+                } else {
+                    // 布隆过滤器误报：认为存在但实际不存在（这是正常的误报率）
+                    log.debug("布隆过滤器误报（数据实际不存在）: {}, 键: {}", filterName, key);
+                }
+
                 stats.incrementNullQueries();
                 if (nullValueHandler != null) {
                     nullValueHandler.run();
