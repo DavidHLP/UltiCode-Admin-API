@@ -122,7 +122,7 @@ public class RedisCircuitBreaker implements CircuitBreaker {
     @Override
     public <T> T execute(String key, Supplier<T> operation) {
         return execute(key, operation, () -> {
-            throw new RuntimeException("Circuit breaker is open for key: " + key);
+            throw new RuntimeException("熔断器已打开，键：" + key);
         });
     }
 
@@ -134,7 +134,7 @@ public class RedisCircuitBreaker implements CircuitBreaker {
         // 检查熔断器状态
         if (!isRequestAllowed(key)) {
             stats.incrementCircuitOpenRequests();
-            log.debug("Circuit breaker is open for key: {}, executing fallback", key);
+            log.debug("熔断器已打开，键：{}，执行降级逻辑", key);
             return fallback.get();
         }
 
@@ -146,7 +146,7 @@ public class RedisCircuitBreaker implements CircuitBreaker {
         } catch (Exception e) {
             recordFailure(key);
             stats.incrementFailedRequests();
-            log.debug("Operation failed for key: {}, error: {}", key, e.getMessage());
+            log.debug("操作失败，键：{}，错误：{}", key, e.getMessage());
             throw e;
         }
     }
@@ -162,14 +162,14 @@ public class RedisCircuitBreaker implements CircuitBreaker {
             redisTemplate.execute(
                     circuitBreakerScript,
                     Arrays.asList(redisKey),
-                    failureThreshold,
-                    recoveryTimeout,
-                    windowSize,
+                    String.valueOf(failureThreshold),
+                    String.valueOf(recoveryTimeout),
+                    String.valueOf(windowSize),
                     "success");
 
-            log.debug("Recorded success for circuit breaker: {}", key);
+            log.debug("记录熔断器成功事件：{}", key);
         } catch (Exception e) {
-            log.error("Error recording success for circuit breaker: {}", key, e);
+            log.error("记录熔断器成功事件时出错：{}", key, e);
         }
     }
 
@@ -184,14 +184,14 @@ public class RedisCircuitBreaker implements CircuitBreaker {
             redisTemplate.execute(
                     circuitBreakerScript,
                     Arrays.asList(redisKey),
-                    failureThreshold,
-                    recoveryTimeout,
-                    windowSize,
+                    String.valueOf(failureThreshold),
+                    String.valueOf(recoveryTimeout),
+                    String.valueOf(windowSize),
                     "failure");
 
-            log.debug("Recorded failure for circuit breaker: {}", key);
+            log.debug("记录熔断器失败事件：{}", key);
         } catch (Exception e) {
-            log.error("Error recording failure for circuit breaker: {}", key, e);
+            log.error("记录熔断器失败事件时出错：{}", key, e);
         }
     }
 
@@ -203,7 +203,7 @@ public class RedisCircuitBreaker implements CircuitBreaker {
             String state = (String) result.get(1);
             return CircuitBreakerState.valueOf(state);
         } catch (Exception e) {
-            log.error("Error getting circuit breaker state for key: {}", key, e);
+            log.error("获取熔断器状态时出错，键：{}", key, e);
             return CircuitBreakerState.CLOSED;
         }
     }
@@ -218,9 +218,9 @@ public class RedisCircuitBreaker implements CircuitBreaker {
                             "state", "OPEN",
                             "last_change", String.valueOf(now),
                             "failure_count", "999"));
-            log.info("Forced circuit breaker open for key: {}", key);
+            log.info("强制打开熔断器，键：{}", key);
         } catch (Exception e) {
-            log.error("Error forcing circuit breaker open for key: {}", key, e);
+            log.error("强制打开熔断器时出错，键：{}", key, e);
         }
     }
 
@@ -234,9 +234,9 @@ public class RedisCircuitBreaker implements CircuitBreaker {
                             "state", "CLOSED",
                             "last_change", String.valueOf(now),
                             "failure_count", "0"));
-            log.info("Forced circuit breaker closed for key: {}", key);
+            log.info("强制关闭熔断器，键：{}", key);
         } catch (Exception e) {
-            log.error("Error forcing circuit breaker closed for key: {}", key, e);
+            log.error("强制关闭熔断器时出错，键：{}", key, e);
         }
     }
 
@@ -254,7 +254,7 @@ public class RedisCircuitBreaker implements CircuitBreaker {
             java.util.List<Object> result = (java.util.List<Object>) checkState(key);
             return ((Number) result.get(0)).intValue() == 1;
         } catch (Exception e) {
-            log.error("Error checking if request is allowed for key: {}", key, e);
+            log.error("检查请求是否允许时出错，键：{}", key, e);
             // 发生异常时，为了安全起见，允许请求通过
             return true;
         }
@@ -272,9 +272,9 @@ public class RedisCircuitBreaker implements CircuitBreaker {
         return redisTemplate.execute(
                 circuitBreakerScript,
                 Arrays.asList(redisKey),
-                failureThreshold,
-                recoveryTimeout,
-                windowSize,
+                String.valueOf(failureThreshold),
+                String.valueOf(recoveryTimeout),
+                String.valueOf(windowSize),
                 "check");
     }
 

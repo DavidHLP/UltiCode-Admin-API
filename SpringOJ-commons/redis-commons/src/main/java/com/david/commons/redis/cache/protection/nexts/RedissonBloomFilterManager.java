@@ -62,15 +62,15 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
             boolean deleted = rBloomFilter.delete();
 
             if (deleted) {
-                log.info("Successfully deleted bloom filter: {}", filterName);
+                log.info("成功删除布隆过滤器: {}", filterName);
             } else {
-                log.warn("Bloom filter not found for deletion: {}", filterName);
+                log.warn("未找到要删除的布隆过滤器: {}", filterName);
             }
 
             return deleted;
         } catch (Exception e) {
-            log.error("Failed to delete bloom filter: {}", filterName, e);
-            throw new RedisCommonsException("Failed to delete bloom filter: " + filterName, e);
+            log.error("删除布隆过滤器失败: {}", filterName, e);
+            throw new RedisCommonsException("删除布隆过滤器失败: " + filterName, e);
         }
     }
 
@@ -80,7 +80,7 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
             RBloomFilter<Object> rBloomFilter = redissonClient.getBloomFilter(getRedisKey(filterName));
             return rBloomFilter.isExists();
         } catch (Exception e) {
-            log.error("Failed to check bloom filter existence: {}", filterName, e);
+            log.error("检查布隆过滤器是否存在失败: {}", filterName, e);
             return false;
         }
     }
@@ -102,9 +102,9 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
             if (!rBloomFilter.isExists()) {
                 boolean initialized = rBloomFilter.tryInit(expectedInsertions, fpp);
                 if (!initialized) {
-                    throw new RedisCommonsException("Failed to initialize bloom filter: " + filterName);
+                    throw new RedisCommonsException("初始化布隆过滤器失败: " + filterName);
                 }
-                log.info("Initialized bloom filter: {} with expectedInsertions={}, fpp={}",
+                log.info("初始化布隆过滤器: {}，预期插入数量={}，误判率={}",
                         filterName, expectedInsertions, fpp);
             }
 
@@ -116,8 +116,8 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
 
             return new RedissonBloomFilter<>(filterName, rBloomFilter, stats);
         } catch (Exception e) {
-            log.error("Failed to create bloom filter: {}", filterName, e);
-            throw new RedisCommonsException("Failed to create bloom filter: " + filterName, e);
+            log.error("创建布隆过滤器失败: {}", filterName, e);
+            throw new RedisCommonsException("创建布隆过滤器失败: " + filterName, e);
         }
     }
 
@@ -152,8 +152,8 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
                 }
                 return added;
             } catch (Exception e) {
-                log.error("Failed to add element to bloom filter: {}", name, e);
-                throw new RedisCommonsException("Failed to add element to bloom filter: " + name, e);
+                log.error("向布隆过滤器添加元素失败: {}", name, e);
+                throw new RedisCommonsException("向布隆过滤器添加元素失败: " + name, e);
             }
         }
 
@@ -167,8 +167,8 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
                 }
                 return contains;
             } catch (Exception e) {
-                log.error("Failed to check element in bloom filter: {}", name, e);
-                throw new RedisCommonsException("Failed to check element in bloom filter: " + name, e);
+                log.error("检查布隆过滤器中元素是否存在失败: {}", name, e);
+                throw new RedisCommonsException("检查布隆过滤器中元素是否存在失败: " + name, e);
             }
         }
 
@@ -197,10 +197,10 @@ public class RedissonBloomFilterManager implements BloomFilterManager {
             try {
                 rBloomFilter.delete();
                 stats.reset();
-                log.info("Cleared bloom filter: {}", name);
+                log.info("清空布隆过滤器: {}", name);
             } catch (Exception e) {
-                log.error("Failed to clear bloom filter: {}", name, e);
-                throw new RedisCommonsException("Failed to clear bloom filter: " + name, e);
+                log.error("清空布隆过滤器失败: {}", name, e);
+                throw new RedisCommonsException("清空布隆过滤器失败: " + name, e);
             }
         }
     }
