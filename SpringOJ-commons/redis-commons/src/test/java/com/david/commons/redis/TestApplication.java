@@ -47,7 +47,7 @@ import java.time.Duration;
 public class TestApplication {
 
     // Redis连接配置常量
-    protected static final String REDIS_HOST = "192.168.1.102";
+    protected static final String REDIS_HOST = "127.0.0.1";
     protected static final int REDIS_PORT = 6379;
     protected static final int REDIS_DATABASE = 0;
     protected static final long REDIS_TIMEOUT = 1800000; // 30分钟，毫秒格式
@@ -85,7 +85,7 @@ public class TestApplication {
      * 生成随机测试键名
      */
     public static String randomTestKey() {
-        return testKey("key-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 1000));
+        return testKey("key-" + System.currentTimeMillis() + "-" + (int) (Math.random() * 1000));
     }
 
     /**
