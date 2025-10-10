@@ -1,6 +1,6 @@
 package com.david.utils;
 
-import com.david.mapper.TokenMapper;
+import com.david.entity.user.AuthUser;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -23,10 +23,10 @@ import java.util.function.Function;
 @RequiredArgsConstructor
 public class JwtService {
 
-    private final TokenMapper tokenMapper;
-    private final String secretKey = "L25xa3JpanBoc3Zkc3J4b2N4a2tnaG9wZ2wzaG9iNXN0bXN0Y21kbXN0Y21k";
-    private final long jwtExpiration = 1000 * 60 * 24;
-    private final long refreshExpiration = 1000 * 60 * 60 * 24 * 7;
+    private static final long JWT_EXPIRATION = 1000 * 60 * 60 * 24;
+    private static final long REFRESH_EXPIRATION = 1000 * 60 * 60 * 24 * 7;
+    private static final String SECRET_KEY =
+            "L25xa3JpanBoc3Zkc3J4b2N4a2tnaG9wZ2wzaG9iNXN0bXN0Y21kbXN0Y21k";
 
     /**
      * 从令牌中提取用户名。
@@ -34,7 +34,7 @@ public class JwtService {
      * @param token JWT 令牌。
      * @return 用户名。
      */
-    public String extractUsername(String token) {
+    public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
@@ -52,19 +52,11 @@ public class JwtService {
     /**
      * 生成 JWT 令牌。
      *
-     * @param username 用户详细信息。
+     * @param email 邮箱。
      * @return JWT 令牌。
      */
-    public String generateToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(username)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24小时
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
-                .compact();
+    public String generateToken(String email) {
+        return buildToken(new HashMap<>(), email, JWT_EXPIRATION);
     }
 
     /**
@@ -75,7 +67,7 @@ public class JwtService {
      * @return JWT 令牌。
      */
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
-        return buildToken(extraClaims, userDetails, jwtExpiration);
+        return buildToken(extraClaims, userDetails.getUsername(), JWT_EXPIRATION);
     }
 
     /**
@@ -85,7 +77,7 @@ public class JwtService {
      * @return 刷新令牌。
      */
     public String generateRefreshToken(UserDetails userDetails) {
-        return buildToken(new HashMap<>(), userDetails, refreshExpiration);
+        return buildToken(new HashMap<>(), userDetails.getUsername(), REFRESH_EXPIRATION);
     }
 
     /**
@@ -96,11 +88,17 @@ public class JwtService {
      * @return 是否有效。
      */
     public boolean isTokenValid(String jwt, UserDetails userDetails) {
-        final String username = extractUsername(jwt);
-        boolean isValid = (username.equals(userDetails.getUsername())) && !isTokenExpired(jwt);
+        final String email = extractEmail(jwt);
+        AuthUser authUser;
+        if (userDetails instanceof AuthUser) {
+            authUser = (AuthUser) userDetails;
+        } else {
+            throw new IllegalArgumentException("用户详细信息不是AuthUser类型");
+        }
+        boolean isValid = (email.equals(authUser.getEmail())) && !isTokenExpired(jwt);
 
         if (!isValid) {
-            log.warn("Token验证失败：用户名不匹配或Token已过期，用户名: {}", username);
+            log.warn("Token验证失败：用户名不匹配或Token已过期，用户名: {}", email);
         }
 
         return isValid;
@@ -137,15 +135,14 @@ public class JwtService {
      * 构建 JWT 令牌。
      *
      * @param extraClaims 额外声明。
-     * @param userDetails 用户详细信息。
+     * @param subject Token主体（通常为用户名或邮箱）。
      * @param expiration 有效期（毫秒）。
      * @return JWT 令牌。
      */
-    private String buildToken(
-            Map<String, Object> extraClaims, UserDetails userDetails, long expiration) {
+    private String buildToken(Map<String, Object> extraClaims, String subject, long expiration) {
         return Jwts.builder()
-                .setClaims(extraClaims)
-                .setSubject(userDetails.getUsername())
+                .setClaims(new HashMap<>(extraClaims))
+                .setSubject(subject)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
@@ -180,6 +177,6 @@ public class JwtService {
      * @return 签名秘钥。
      */
     private Key getSignInKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretKey));
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET_KEY));
     }
 }

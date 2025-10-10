@@ -8,14 +8,14 @@ import com.david.entity.user.AuthUser;
 import com.david.service.AuthService;
 import com.david.utils.BaseController;
 import com.david.utils.ResponseResult;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 认证控制器
- * 处理用户认证、权限和角色管理相关的请求
+ * 认证控制器 处理用户认证、权限和角色管理相关的请求
  *
  * @author david
  */
@@ -29,18 +29,23 @@ public class AuthController extends BaseController {
 
     @PostMapping("/login")
     public ResponseResult<Token> login(@RequestBody LoginRequest loginRequest) {
-        return ResponseResult.success("登录成功",authService.login(loginRequest.getUsername(), loginRequest.getPassword()));
+        return ResponseResult.success(
+                "登录成功", authService.login(loginRequest.getEmail(), loginRequest.getPassword()));
     }
 
     @PostMapping("/logout")
     public ResponseResult<Void> logout(@RequestBody LogoutRequest logoutRequest) {
-        authService.logout(getCurrentUsername(),logoutRequest.getToken());
+        authService.logout(getCurrentUsername(), logoutRequest.getToken());
         return ResponseResult.success("登出成功");
     }
 
     @PostMapping("/register")
     public ResponseResult<Void> register(@RequestBody RegisterRequest registerRequest) {
-        authService.register(registerRequest.getUsername(), registerRequest.getPassword(), registerRequest.getEmail(), registerRequest.getCode());
+        authService.register(
+                registerRequest.getUsername(),
+                registerRequest.getPassword(),
+                registerRequest.getEmail(),
+                registerRequest.getCode());
         return ResponseResult.success("注册成功");
     }
 
@@ -53,13 +58,13 @@ public class AuthController extends BaseController {
     @GetMapping("/validate/{token}")
     public ResponseResult<AuthUser> validateToken(@PathVariable("token") String token) {
         AuthUser authUser = authService.validateToken(token);
-        return ResponseResult.success("验证Token成功",authUser);
+        return ResponseResult.success("验证Token成功", authUser);
     }
 
     @GetMapping("/me")
     public ResponseResult<AuthUser> getUserInfo() {
-        String username = getCurrentUsername();
-        AuthUser authUser = authService.getUserInfo(username);
+        String email = getCurrentUserEmail();
+        AuthUser authUser = authService.getUserInfo(email);
         return ResponseResult.success("获取用户信息成功", authUser);
     }
 }

@@ -6,5 +6,5 @@ import org.apache.ibatis.annotations.*;
 
 @Mapper
 public interface UserMapper extends BaseMapper<AuthUser> {
-    AuthUser loadUserByUsername(String username);
+    AuthUser loadUserByEmail(String email);
 }
