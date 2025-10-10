@@ -53,11 +53,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             List.of(
                     "/favicon.ico",
                     "/error",
-                    "/api/auth/login",
-                    "/api/auth/register",
-                    "/api/auth/refresh",
-                    "/api/auth/validate",
-                    "/api/auth/send-code",
+                    "/auth/api/login",
+                    "/auth/api/register",
+                    "/auth/api/refresh",
+                    "/auth/api/validate",
+                    "/auth/api/send-code",
                     "/actuator/health",
                     "/favicon.ico");
     @Lazy @Resource private AuthFeignClient authFeignClient;

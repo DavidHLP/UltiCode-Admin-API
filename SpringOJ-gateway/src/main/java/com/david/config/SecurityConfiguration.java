@@ -22,11 +22,11 @@ public class SecurityConfiguration {
             "/actuator/**",
             "/favicon.ico",
             "/error",
-            "/api/auth/login/**",
-            "/api/auth/register/**",
-            "/api/auth/refresh/**",
-            "/api/auth/validate/**",
-            "/api/auth/send-code/**"
+            "/auth/api/login/**",
+            "/auth/api/register/**",
+            "/auth/api/refresh/**",
+            "/auth/api/validate/**",
+            "/auth/api/send-code/**"
     };
 
     /**

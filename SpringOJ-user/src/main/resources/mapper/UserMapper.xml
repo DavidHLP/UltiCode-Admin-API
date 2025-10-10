@@ -3,25 +3,28 @@
 <mapper namespace="com.david.mapper.UserMapper">
     <select id="selectUserPage" resultType="com.david.entity.user.AuthUser">
         SELECT
-            u.user_id,
-            u.username,
-            u.avatar,
-            u.introduction,
-            u.email,
-            u.status,
-            u.address,
-            u.last_login_ip,
-            u.last_login,
-            u.create_time
+        u.user_id,
+        u.username,
+        u.avatar,
+        u.introduction,
+        u.email,
+        u.status,
+        u.address,
+        u.last_login_ip,
+        u.last_login,
+        u.create_time
         FROM `user` u
         <where>
             <if test="keyword != null and keyword != ''">
                 (u.username LIKE CONCAT('%', #{keyword}, '%') OR u.email LIKE CONCAT('%', #{keyword}, '%'))
             </if>
+            <if test="status != null">
+                AND u.status = #{status}
+            </if>
             <if test="roleId != null">
                 AND EXISTS (
-                    SELECT 1 FROM `user_role` ur
-                    WHERE ur.user_id = u.user_id AND ur.role_id = #{roleId}
+                SELECT 1 FROM `user_role` ur
+                WHERE ur.user_id = u.user_id AND ur.role_id = #{roleId}
                 )
             </if>
         </where>
