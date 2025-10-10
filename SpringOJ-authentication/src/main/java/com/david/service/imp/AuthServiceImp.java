@@ -49,8 +49,8 @@ public class AuthServiceImp implements AuthService {
 
     @Override
     @Transactional
-    public Token login(String username, String password) {
-        AuthUser user = userMapper.loadUserByUsername(username);
+    public Token login(String email, String password) {
+        AuthUser user = userMapper.loadUserByEmail(email);
         if (user == null) {
             log.error("用户不存在");
             throw BizException.of(ResponseCode.USERNAME_OR_PASSWORD_ERROR);
@@ -59,7 +59,7 @@ public class AuthServiceImp implements AuthService {
             log.error("密码错误");
             throw BizException.of(ResponseCode.USERNAME_OR_PASSWORD_ERROR);
         }
-        String accessToken = jwtService.generateToken(username);
+        String accessToken = jwtService.generateToken(email);
         Token token =
                 Token.builder()
                         .userId(user.getUserId())
@@ -70,7 +70,7 @@ public class AuthServiceImp implements AuthService {
         redisUtils
                 .lock()
                 .executeWithLock(
-                        LOCK_KEY_LOGIN_PREFIX + username,
+                        LOCK_KEY_LOGIN_PREFIX + email,
                         () -> tokenMapper.insert(token),
                         5,
                         30,
@@ -97,20 +97,20 @@ public class AuthServiceImp implements AuthService {
     @Override
     @Transactional
     public void register(String username, String password, String email, String code) {
-        log.debug("register: {} {} {} {}", username, password, email, code);
+        log.debug("register: {} {} {} {}", email, password, email, code);
         String codeKey = CACHE_KEY_VERIFICATION_PREFIX + email;
         String storedCode = redisUtils.string().get(codeKey, String.class);
         if (storedCode == null || !storedCode.equals(code)) {
             throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "验证码错误或已过期");
         }
 
-        if (userMapper.loadUserByUsername(username) != null) {
+        if (userMapper.loadUserByEmail(email) != null) {
             throw BizException.of(ResponseCode.BUSINESS_ERROR.getCode(), "用户名已存在");
         }
 
         AuthUser user =
                 AuthUser.builder()
-                        .username(username)
+                        .email(email)
                         .password(passwordEncoder.encode(password))
                         .email(email)
                         .status(1)
@@ -119,7 +119,7 @@ public class AuthServiceImp implements AuthService {
         redisUtils
                 .lock()
                 .executeWithLock(
-                        LOCK_KEY_REGISTER_PREFIX + username,
+                        LOCK_KEY_REGISTER_PREFIX + email,
                         () -> {
                             userMapper.insert(user);
                         },
@@ -139,26 +139,26 @@ public class AuthServiceImp implements AuthService {
             keyPrefix = "springoj:cache:")
     public AuthUser validateToken(String token) {
         try {
-            final String username = jwtService.extractUsername(token);
-            if (username == null || username.isEmpty()) {
+            final String email = jwtService.extractEmail(token);
+            if (email == null || email.isEmpty()) {
                 log.error("JWT token无效或缺少用户名");
                 throw BizException.of(ResponseCode.INVALID_TOKEN);
             }
 
-            AuthUser userDetails = userMapper.loadUserByUsername(username);
+            AuthUser userDetails = userMapper.loadUserByEmail(email);
             if (userDetails == null) {
-                log.error("用户不存在: {}", username);
+                log.error("用户不存在: {}", email);
                 throw BizException.of(ResponseCode.RC401.getCode(), "未找到用户");
             }
 
             if (!jwtService.isTokenValid(token, userDetails)) {
-                log.error("Token验证失败: {}", username);
+                log.error("Token验证失败: {}", email);
                 throw BizException.of(ResponseCode.INVALID_TOKEN);
             }
 
             Token res = tokenMapper.findValidToken(userDetails.getUserId(), token);
             if (res == null) {
-                log.error("用户token无效或已被撤销: {}", username);
+                log.error("用户token无效或已被撤销: {}", email);
                 throw BizException.of(ResponseCode.INVALID_TOKEN);
             }
 
@@ -174,19 +174,19 @@ public class AuthServiceImp implements AuthService {
 
     @Override
     @RedisEvict(
-            keys = {"'user:info:' + #username", "'user:token:' + #token"},
+            keys = {"'user:info:' + #email", "'user:token:' + #token"},
             keyPrefix = "springoj:cache:")
-    public void logout(String username, String token) {
+    public void logout(String email, String token) {
         tokenMapper.deleteByToken(token);
     }
 
     @Override
     @RedisCacheable(
-            key = "'user:info:' + #username",
+            key = "'user:info:' + #email",
             ttl = 1800, // 30分钟缓存
             type = AuthUser.class,
             keyPrefix = "springoj:cache:")
-    public AuthUser getUserInfo(String username) {
-        return userMapper.loadUserByUsername(username);
+    public AuthUser getUserInfo(String email) {
+        return userMapper.loadUserByEmail(email);
     }
 }

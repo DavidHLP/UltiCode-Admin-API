@@ -20,7 +20,6 @@
         <module>webflux-commons</module>
         <module>mybatis-commons</module>
         <module>log-commons</module>
-        <module>spring-cache-redis-commons</module>
     </modules>
 
     <artifactId>SpringOJ-commons</artifactId>
