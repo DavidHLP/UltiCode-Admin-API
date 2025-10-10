@@ -2,17 +2,15 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.commons.redis.cache.annotation.RedisCacheable;
-import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.user.AuthUser;
 import com.david.entity.user.UserRole;
 import com.david.mapper.RoleMapper;
 import com.david.mapper.UserMapper;
 import com.david.mapper.UserRoleMapper;
 import com.david.service.IUserService;
-
+import io.github.davidhlp.spring.cache.redis.annotation.RedisCacheEvict;
+import io.github.davidhlp.spring.cache.redis.annotation.RedisCacheable;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,20 +34,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
     /**
      * 分页查询用户（按关键字匹配用户名或邮箱，可选按角色筛选）
      *
-     * @param page 第几页（从1开始）
-     * @param size 每页大小
+     * @param page    第几页（从1开始）
+     * @param size    每页大小
      * @param keyword 可选关键字（用户名/邮箱 模糊匹配）
-     * @param roleId 可选角色ID（根据角色筛选）
+     * @param roleId  可选角色ID（根据角色筛选）
      * @return 分页数据
      */
     @Override
     @Transactional(readOnly = true)
-    @RedisCacheable(
-            key =
-                    "'user:pageUsers:' + #page + ':' + #size + ':' + (#keyword != null ? #keyword : '') + ':' + (#roleId != null ? #roleId : '')",
-            ttl = 1800, // 30分钟缓存
-            type = Page.class,
-            keyPrefix = "springoj:cache:")
+    @RedisCacheable(key = "'user:pageUsers:' + #page + ':' + #size + ':' + #keyword + ':' + #roleId", ttl = 1800, type = Page.class, cacheNames = "user")
     public Page<AuthUser> pageUsers(int page, int size, String keyword, Long roleId) {
         keyword = keyword == null ? "" : keyword;
         Page<AuthUser> userPage = new Page<>(page, size);
@@ -67,7 +60,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "user:pageUsers:")
+    @RedisCacheEvict(cacheNames = "user", allEntries = true)
     public boolean save(AuthUser user) {
         // 设置默认值
         if (user.getStatus() == null) {
@@ -89,8 +82,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
 
         // 保存用户角色关联信息
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {
-            user.getRoles()
-                    .forEach(r -> userRoleMapper.insert(new UserRole(user.getUserId(), r.getId())));
+            user.getRoles().forEach(r -> userRoleMapper.insert(new UserRole(user.getUserId(), r.getId())));
         }
         return true;
     }
@@ -104,7 +96,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @RedisEvict(keyPrefix = "springoj:cache:", allEntries = true, keys = "user:pageUsers:")
+    @RedisCacheEvict(cacheNames = "user", allEntries = true)
     public boolean updateById(AuthUser user) {
         // 如果密码有更新，则进行加密
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
@@ -119,8 +111,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
         // 更新用户角色关联信息：先删除原有角色关联，再插入新角色关联
         userRoleMapper.deleteByUserId(user.getUserId());
         if (user.getRoles() != null && !user.getRoles().isEmpty()) {
-            user.getRoles()
-                    .forEach(r -> userRoleMapper.insert(new UserRole(user.getUserId(), r.getId())));
+            user.getRoles().forEach(r -> userRoleMapper.insert(new UserRole(user.getUserId(), r.getId())));
         }
         return true;
     }
