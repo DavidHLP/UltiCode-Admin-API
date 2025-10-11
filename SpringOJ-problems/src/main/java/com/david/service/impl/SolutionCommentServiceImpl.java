@@ -1,9 +1,6 @@
 package com.david.service.impl;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.commons.redis.cache.annotation.RedisCacheable;
-import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.user.AuthUser;
 import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
@@ -32,11 +29,6 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
     private final UserServiceFeignClient userServiceFeignClient;
 
     @Override
-    @RedisCacheable(
-            key = "'solutionComment:getSolutionCommentVos:' + #solutionId",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = Page.class)
     public List<SolutionCommentVo> getSolutionCommentVos(Long solutionId) {
         if (solutionId == null) {
             throw new BizException(ResponseCode.RC400.getCode(), "题解ID不能为空");
@@ -160,10 +152,6 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
                         ResponseCode.RC400.getCode(),
                         "点踩数不能为负数，当前值：" + c.getDownvotes() + "，评论ID：" + c.getId());
             }
-            //            if (!c.isHierarchyValid()) {
-            //                throw new BizException(ResponseCode.RC400.getCode(),
-            //                        "评论层级关系不合法（根评论rootId应为空；子评论必须提供rootId），评论ID：" + c.getId());
-            //            }
         }
         // 检查ID是否唯一，避免构建映射时冲突
         long distinctIdCount = allComments.stream().map(SolutionComments::getId).distinct().count();
@@ -203,18 +191,12 @@ public class SolutionCommentServiceImpl extends ServiceImpl<SolutionCommentMappe
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = "'solutionComment:getSolutionCommentVos:' + #entity.getSolutionId()",
-            keyPrefix = "springoj:cache:")
     public boolean updateById(SolutionComments entity) {
         return solutionCommentMapper.updateById(entity) > 0;
     }
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = "'solutionComment:getSolutionCommentVos:' + #entity.getSolutionId()",
-            keyPrefix = "springoj:cache:")
     public boolean removeById(SolutionComments entity) {
         return solutionCommentMapper.deleteById(entity) > 0;
     }

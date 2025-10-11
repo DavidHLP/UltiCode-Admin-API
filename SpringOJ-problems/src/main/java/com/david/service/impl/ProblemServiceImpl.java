@@ -2,8 +2,6 @@ package com.david.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.david.commons.redis.cache.annotation.RedisCacheable;
-import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.enums.CategoryType;
 import com.david.enums.LanguageType;
 import com.david.exception.BizException;
@@ -49,14 +47,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     private final CodeUtils codeUtils;
 
     @Override
-    @RedisCacheable(
-            key =
-                    "'problem:pageProblems:' + #page.current + ':' + #page.size  + ':' + (#difficulty != null ? #difficulty : '') + ':' + (#sort != null ? #sort : '')",
-            keyPrefix = "springoj:cache:",
-            unless =
-                    "#hasText(#keyword) || #page.current > 3 || #category != null || #isVisible != null",
-            ttl = 1800, // 30分钟缓存
-            type = Page.class)
     public Page<Problem> pageProblems(
             Page<Problem> page,
             String keyword,
@@ -76,13 +66,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    @RedisCacheable(
-            key =
-                    "'problem:pageProblemVos:' + #page.current + ':' + #page.size  + ':' + (#difficulty != null ? #difficulty : '') + ':' + (#sort != null ? #sort : '')",
-            keyPrefix = "springoj:cache:",
-            condition = "!#hasText(#keyword) && #page.current <= 3 && #category == null",
-            ttl = 1800, // 30分钟缓存
-            type = Page.class)
     public Page<ProblemCardVo> pageProblemVos(
             Page<Problem> page,
             String keyword,
@@ -120,11 +103,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    @RedisCacheable(
-            key = "'problem:getProblemDetailVoById:' + #id",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800, // 30分钟缓存
-            type = ProblemDetailVo.class)
     public ProblemDetailVo getProblemDetailVoById(Long id) {
         Problem problem = this.getById(id);
         if (problem == null) {
@@ -139,11 +117,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    @RedisCacheable(
-            key = "'problem:getCodeTemplate:' + #problemId + ':' + #language",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800, // 30分钟缓存
-            type = String.class)
     public String getCodeTemplate(Long problemId, LanguageType language) {
         String solutionFunctionName = problemMapper.selectSolutionFunctionName(problemId);
         if (solutionFunctionName == null || solutionFunctionName.isEmpty()) {
@@ -173,11 +146,6 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
     }
 
     @Override
-    @RedisCacheable(
-            key = "'problem:getCompareDescription:' + #id",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800, // 30分钟缓存
-            type = CompareDescription.class)
     public CompareDescription getCompareDescription(Long id) {
         CompareDescription compareDescription = problemMapper.selectCompareDescription(id);
         if (compareDescription == null) {
@@ -188,58 +156,23 @@ public class ProblemServiceImpl extends ServiceImpl<ProblemMapper, Problem>
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = {
-                "'problem:pageProblems:'",
-                "'problem:pageProblemVos:'",
-                "'problem:getCodeTemplate:' + #entity.id + ':'",
-                "'problem:getCompareDescription:' + #entity.id",
-                "'problem:getById:' + #entity.id"
-            },
-            keyPrefix = "springoj:cache:")
     public boolean save(Problem entity) {
         return problemMapper.insert(entity) > 0;
     }
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = {
-                "'problem:pageProblems:'",
-                "'problem:pageProblemVos:'",
-                "'problem:getProblemDetailVoById:' + #entity.id",
-                "'problem:getCodeTemplate:' + #entity.id + ':'",
-                "'problem:getCompareDescription:' + #entity.id",
-                "'problem:getById:' + #entity.id"
-            },
-            keyPrefix = "springoj:cache:")
     public boolean updateById(Problem entity) {
         return problemMapper.updateById(entity) > 0;
     }
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = {
-                "'problem:pageProblems:'",
-                "'problem:pageProblemVos:'",
-                "'problem:getProblemDetailVoById:' + #entity.id",
-                "'problem:getProblemDetailVoById:'",
-                "'problem:getCodeTemplate:' + #entity.id + ':'",
-                "'problem:getCompareDescription:' + #entity.id",
-                "'problem:getById:' + #entity.id"
-            },
-            keyPrefix = "springoj:cache:")
     public boolean removeById(Serializable id) {
         return problemMapper.deleteById(id) > 0;
     }
 
     @Override
-    @RedisCacheable(
-            key = "'problem:getById:' + #id",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = Problem.class)
     public Problem getById(Serializable id) {
         return problemMapper.selectById(id);
     }

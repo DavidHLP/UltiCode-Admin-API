@@ -3,8 +3,6 @@ package com.david.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.calendar.enums.TargetType;
-import com.david.commons.redis.cache.annotation.RedisCacheable;
-import com.david.commons.redis.cache.annotation.RedisEvict;
 import com.david.entity.user.AuthUser;
 import com.david.exception.BizException;
 import com.david.interfaces.UserServiceFeignClient;
@@ -21,7 +19,9 @@ import com.david.solution.vo.SolutionManagementCardVo;
 import com.david.utils.MarkdownUtils;
 import com.david.utils.ResponseResult;
 import com.david.utils.enums.ResponseCode;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -51,11 +51,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     private final ILikeDislikeRecordService likeDislikeRecordService;
 
     @Override
-    @RedisCacheable(
-            key = "'solution:getSolutionDetailVoBy:' + #solutionId + ':' + #userId",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = SolutionDetailVo.class)
     public SolutionDetailVo getSolutionDetailVoBy(Long solutionId, Long userId) {
         // 基础参数校验
         validateRequiredId("题解ID", solutionId);
@@ -81,12 +76,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
-    @RedisCacheable(
-            key =
-                    "'solution:pageSolutionCardVos:' + #problemId + ':' + (#keyword != null ? #keyword : '')",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = Page.class)
     public Page<SolutionCardVo> pageSolutionCardVos(
             Page<SolutionCardVo> page, Long problemId, String keyword) {
         // 分页与参数校验
@@ -100,11 +89,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
-    @RedisCacheable(
-            key = "'solution:pageSolutionCardVosByUserId:' + #userId",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = Page.class)
     public Page<SolutionCardVo> pageSolutionCardVosByUserId(
             Page<SolutionCardVo> page, Long userId) {
         // 分页与参数校验
@@ -116,12 +100,6 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
-    @RedisCacheable(
-            key =
-                    "'solution:pageSolutionManagementCardVo:' + (#problemId != null ? #problemId : '') + ':' + (#keyword != null ? #keyword : '') + ':' + (#userId != null ? #userId : '') + ':' + (#status != null ? #status : '')",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = Page.class)
     public Page<SolutionManagementCardVo> pageSolutionManagementCardVo(
             Page<SolutionManagementCardVo> page,
             Long problemId,
@@ -153,55 +131,24 @@ public class SolutionServiceImpl extends ServiceImpl<SolutionMapper, Solution>
     }
 
     @Override
-    @RedisCacheable(
-            key = "'solution:getById:' + #id",
-            keyPrefix = "springoj:cache:",
-            ttl = 1800,
-            type = Solution.class)
     public Solution getById(Serializable id) {
         return solutionMapper.selectById(id);
     }
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = {
-                "'solution:getSolutionDetailVoBy:'",
-                "'solution:pageSolutionCardVos:'",
-                "'solution:pageSolutionCardVosByUserId:'",
-                "'solution:pageSolutionManagementCardVo:'",
-                "'solution:getById:' + #entity.id"
-            },
-            keyPrefix = "springoj:cache:")
     public boolean updateById(Solution entity) {
         return solutionMapper.updateById(entity) > 0;
     }
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = {
-                "'solution:getSolutionDetailVoBy:'",
-                "'solution:pageSolutionCardVos:'",
-                "'solution:pageSolutionCardVosByUserId:'",
-                "'solution:pageSolutionManagementCardVo:'",
-            },
-            keyPrefix = "springoj:cache:")
     public boolean save(Solution entity) {
         return solutionMapper.insert(entity) > 0;
     }
 
     @Override
     @Transactional
-    @RedisEvict(
-            keys = {
-                "'solution:getSolutionDetailVoBy:'",
-                "'solution:pageSolutionCardVos:'",
-                "'solution:pageSolutionCardVosByUserId:'",
-                "'solution:pageSolutionManagementCardVo:'",
-                "'solution:getById:' + #entity.id"
-            },
-            keyPrefix = "springoj:cache:")
     public boolean removeById(Solution entity) {
         return solutionMapper.deleteById(entity) > 0;
     }
