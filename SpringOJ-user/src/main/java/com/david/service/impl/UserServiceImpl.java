@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
     @Override
     @Transactional(readOnly = true)
     @RedisCacheable(
-            key = "'user:pageUsers:' + #page + ':' + #size + ':' + #status",
+            key = "'pageUsers:' + #page + ':' + #size + ':' + #status",
             ttl = 1800,
             type = Page.class,
             cacheNames = "user",
@@ -125,5 +126,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, AuthUser> implement
                     .forEach(r -> userRoleMapper.insert(new UserRole(user.getUserId(), r.getId())));
         }
         return true;
+    }
+
+    @Override
+    @RedisCacheEvict(cacheNames = "user", allEntries = true)
+    public boolean removeById(Serializable id) {
+        return super.removeById(id);
     }
 }

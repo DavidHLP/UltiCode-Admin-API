@@ -1,15 +1,15 @@
 package com.david.controller;
 
-import java.util.List;
-
-import org.springframework.web.bind.annotation.*;
-
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.entity.role.Role;
 import com.david.service.IRoleService;
 import com.david.utils.ResponseResult;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/user/api/role")
@@ -21,14 +21,14 @@ public class RoleController {
 	@GetMapping("/page")
 	public ResponseResult<Page<Role>> pageUsers(
 			@RequestParam int page,
-			@RequestParam int size,
+			@RequestParam(name = "pageSize") int size,
 			@RequestParam(required = false) String keyword,
-			@RequestParam(required = false) Integer status) {
+			@RequestParam(required = false) Boolean status) {
 		Page<Role> result = roleService.pageRoles(page, size, keyword, status);
 		return ResponseResult.success("分页获取角色成功", result);
 	}
 
-	@GetMapping
+	@GetMapping("/list")
 	public ResponseResult<List<Role>> getAllRoles() {
 		List<Role> roles = roleService.list();
 		return ResponseResult.success("获取角色列表成功", roles);

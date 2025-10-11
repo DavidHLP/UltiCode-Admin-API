@@ -2,20 +2,21 @@ package com.david.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.enums.CategoryType;
+import com.david.exception.BizException;
 import com.david.problem.Problem;
 import com.david.problem.enums.ProblemDifficulty;
 import com.david.service.IProblemService;
 import com.david.submission.dto.CompareDescription;
 import com.david.utils.ResponseResult;
-import com.david.exception.BizException;
-
-import lombok.RequiredArgsConstructor;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.web.bind.annotation.*;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -74,7 +75,8 @@ public class ProblemManagementController {
     }
 
     @GetMapping("/compareDescription")
-    public ResponseResult<CompareDescription> getCompareDescription(@RequestParam @NotNull @Min(1) Long id) {
+    public ResponseResult<CompareDescription> getCompareDescription(
+            @RequestParam @NotNull @Min(1) Long id) {
         return ResponseResult.success("成功获取题目函数名", problemService.getCompareDescription(id));
     }
 }

@@ -11,6 +11,8 @@ import com.david.entity.role.Role;
 
 @Mapper
 public interface RoleMapper extends BaseMapper<Role> {
-	List<Role> findRolesByUserId(@Param("userId") Long userId);
-	List<Role> selectRolePage(Page<Role> rolePage, @Param("keyword") String keyword, @Param("status") Integer status);
+    List<Role> findRolesByUserId(@Param("userId") Long userId);
+
+    List<Role> selectRolePage(
+            Page<Role> rolePage, @Param("keyword") String keyword, @Param("status") Boolean status);
 }
