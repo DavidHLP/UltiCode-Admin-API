@@ -12,7 +12,6 @@
 
     <modules>
         <module>basic-commons</module>
-        <module>redis-commons</module>
         <module>security-commons</module>
         <module>openfeign-commons</module>
         <module>judge-commons</module>

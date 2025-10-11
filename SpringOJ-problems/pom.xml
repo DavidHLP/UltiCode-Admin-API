@@ -38,6 +38,11 @@
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>io.github.davidhlp</groupId>
+            <artifactId>ResiCache</artifactId>
+            <version>0.0.7</version>
+        </dependency>
+        <dependency>
             <groupId>com.david</groupId>
             <artifactId>security-commons</artifactId>
             <version>0.0.1-SNAPSHOT</version>
