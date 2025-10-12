@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * 认证服务Feign客户端
  * 用于Gateway调用认证服务进行token验证
  */
-@FeignClient(name = "authentication-service", path = "/auth/api")
+@FeignClient(name = "auth-service", path = "/api/auth")
 public interface AuthFeignClient {
     /**
      * 验证token并获取用户信息

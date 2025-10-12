@@ -10,10 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 
 /** 题目服务Feign客户端 */
-@FeignClient(
-        name = "problems-service",
-        path = "/problems/api/management/testcase",
-        contextId = "testCaseServiceFeignClient")
+@FeignClient(name = "problems-service", path = "/api/problems/management/testcase", contextId = "testCaseServiceFeignClient")
 public interface TestCaseServiceFeignClient {
     @GetMapping("/{problemId}")
     ResponseResult<List<TestCase>> getTestCasesByProblemId(@PathVariable Long problemId);

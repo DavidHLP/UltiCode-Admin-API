@@ -19,7 +19,7 @@ export interface SolutionQueryParams {
 export const getSolutionsByProblemId = (
   params: SolutionQueryParams,
 ): Promise<Page<SolutionCardVo>> => {
-  return request.get('/problems/api/view/solution/page', {
+  return request.get('/api/problems/view/solution/page', {
     params: {
       page: params.page || 1,
       size: params.size || 10,
@@ -35,7 +35,7 @@ export const getSolutionsByProblemId = (
  * @returns 题解详情
  */
 export const getSolutionById = (solutionId: number): Promise<SolutionVo> => {
-  return request.get('/problems/api/view/solution', {
+  return request.get('/api/problems/view/solution', {
     params: { solutionId },
   })
 }
@@ -47,7 +47,7 @@ export const getSolutionById = (solutionId: number): Promise<SolutionVo> => {
  */
 export const addSolution = (solution: SolutionEditVo): Promise<void> => {
   solution.userId = useAuthStore().user?.userId
-  return request.post('/problems/api/view/solution', solution)
+  return request.post('/api/problems/view/solution', solution)
 }
 
 /**
@@ -58,5 +58,5 @@ export const addSolution = (solution: SolutionEditVo): Promise<void> => {
 export const updateSolution = (
   solution: Partial<SolutionEditVo> & { id: number },
 ): Promise<void> => {
-  return request.put('/problems/api/view/solution', solution)
+  return request.put('/api/problems/view/solution', solution)
 }

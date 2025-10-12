@@ -1,15 +1,16 @@
 package com.david.utils;
 
+import com.david.exception.BaseException;
+import com.david.exception.IErrorCode;
 import com.david.utils.enums.ResponseCode;
+
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * 响应结果封装，遵循统一响应格式规范
- */
+/** 统一响应结果封装，企业级字段更完善且保持兼容 */
 @Setter
 @Getter
 public class ResponseResult<T> {
@@ -17,6 +18,8 @@ public class ResponseResult<T> {
     private String message;
     private T data;
     private String timestamp;
+    private Boolean success;
+    private String traceId;
 
     public ResponseResult() {}
 
@@ -25,41 +28,68 @@ public class ResponseResult<T> {
         this.message = message;
         this.data = data;
         this.timestamp = timestamp;
+        this.success = code != null && code.equals(ResponseCode.RC200.getCode());
     }
 
     public static ResponseResult<Void> success() {
-        return new ResponseResult<>(ResponseCode.RC200.getCode(), ResponseCode.RC200.getMessage(), null, getCurrentTimestamp());
+        return new ResponseResult<>(
+                ResponseCode.RC200.getCode(),
+                ResponseCode.RC200.getMessage(),
+                null,
+                now());
+    }
+
+    public static <T> ResponseResult<T> success(T data) {
+        return new ResponseResult<>(ResponseCode.RC200.getCode(), ResponseCode.RC200.getMessage(), data, now());
     }
 
     public static <T> ResponseResult<T> success(String message, T data) {
-        return new ResponseResult<>(ResponseCode.RC200.getCode(), message, data, getCurrentTimestamp());
+        return new ResponseResult<>(ResponseCode.RC200.getCode(), message, data, now());
     }
 
     public static ResponseResult<Void> success(String message) {
-        return new ResponseResult<>(ResponseCode.RC200.getCode(), message, null, getCurrentTimestamp());
+        return new ResponseResult<>(ResponseCode.RC200.getCode(), message, null, now());
     }
 
     public static <T> ResponseResult<T> fail(Integer code, String message) {
-        return new ResponseResult<>(code, message, null, getCurrentTimestamp());
+        ResponseResult<T> r = new ResponseResult<>(code, message, null, now());
+        r.setSuccess(false);
+        return r;
     }
 
     public static <T> ResponseResult<T> fail(Integer code) {
         ResponseCode responseCode = ResponseCode.valueOf(code);
         if (responseCode == null) {
-            return new ResponseResult<>(code, "未知错误", null, getCurrentTimestamp());
+            return fail(code, "未知错误");
         }
-        return new ResponseResult<>(responseCode.getCode(), responseCode.getMessage(), null, getCurrentTimestamp());
+        return fail(responseCode);
     }
 
-    public static <T> ResponseResult<T> fail(ResponseCode responseCode) {
-        return new ResponseResult<>(responseCode.getCode(), responseCode.getMessage(), null, getCurrentTimestamp());
+    public static <T> ResponseResult<T> fail(IErrorCode errorCode) {
+        ResponseResult<T> r = new ResponseResult<>(errorCode.getCode(), errorCode.getMessage(), null, now());
+        r.setSuccess(false);
+        return r;
     }
 
-    public static <T> ResponseResult<T> fail(ResponseCode responseCode, String customMessage) {
-        return new ResponseResult<>(responseCode.getCode(), customMessage, null, getCurrentTimestamp());
+    public static <T> ResponseResult<T> fail(IErrorCode errorCode, String customMessage) {
+        ResponseResult<T> r = new ResponseResult<>(errorCode.getCode(), customMessage, null, now());
+        r.setSuccess(false);
+        return r;
     }
 
-    private static String getCurrentTimestamp() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    public static <T> ResponseResult<T> fromException(Throwable t) {
+        if (t instanceof BaseException be) {
+            return fail(be.getCode(), t.getMessage());
+        }
+        return fail(ResponseCode.RC500, t.getMessage());
+    }
+
+    private static String now() {
+        return OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    public ResponseResult<T> withTraceId(String traceId) {
+        this.traceId = traceId;
+        return this;
     }
 }

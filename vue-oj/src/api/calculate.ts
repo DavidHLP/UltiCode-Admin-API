@@ -5,21 +5,21 @@ import type { SubmissionCardVo } from '@/types/submission'
 import type { SolutionCardVo } from '@/types/solution'
 export const getSubmissionCalendar = (userId?: number): Promise<CalendarVo[]> => {
   return request({
-    url: '/problems/api/calculate/submission/calendar',
+    url: '/api/problems/calculate/submission/calendar',
     method: 'get',
     params: { userId },
   })
 }
 
 export const getUserOverview = (): Promise<UserOverviewVo> => {
-  return request.get('/problems/api/calculate/user/overview')
+  return request.get('/api/problems/calculate/user/overview')
 }
 
 export const getUserSubmissionPage = (params: {
   page?: number
   size?: number
 }): Promise<Page<SubmissionCardVo>> => {
-  return request.get('/problems/api/calculate/submission/userInfo', {
+  return request.get('/api/problems/calculate/submission/userInfo', {
     params: { page: params.page || 1, size: params.size || 10 },
   })
 }
@@ -28,7 +28,7 @@ export const getUserSolutionPage = (params: {
   page?: number
   size?: number
 }): Promise<Page<SolutionCardVo>> => {
-  return request.get('/problems/api/calculate/solution/userInfo', {
+  return request.get('/api/problems/calculate/solution/userInfo', {
     params: { page: params.page || 1, size: params.size || 10 },
   })
 }

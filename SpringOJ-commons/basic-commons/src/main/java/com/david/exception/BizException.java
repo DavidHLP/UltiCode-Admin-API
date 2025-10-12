@@ -2,25 +2,23 @@ package com.david.exception;
 
 import com.david.utils.enums.ResponseCode;
 
-/**
- * 业务异常，携带错误码与消息
- */
-public class BizException extends RuntimeException {
-    private final Integer code;
+/** 业务异常，默认使用 {@link ResponseCode#BUSINESS_ERROR} */
+public class BizException extends BaseException {
 
     public BizException(String message) {
-        super(message);
-        this.code = ResponseCode.BUSINESS_ERROR.getCode();
+        super(ResponseCode.BUSINESS_ERROR, message);
     }
 
     public BizException(Integer code, String message) {
-        super(message);
-        this.code = code;
+        super(code, message);
     }
 
     public BizException(ResponseCode responseCode) {
-        super(responseCode.getMessage());
-        this.code = responseCode.getCode();
+        super(responseCode);
+    }
+
+    public BizException(ResponseCode responseCode, String message) {
+        super(responseCode, message);
     }
 
     public static BizException of(Integer code, String message) {
@@ -29,9 +27,5 @@ public class BizException extends RuntimeException {
 
     public static BizException of(ResponseCode responseCode) {
         return new BizException(responseCode);
-    }
-
-    public Integer getCode() {
-        return code;
     }
 }

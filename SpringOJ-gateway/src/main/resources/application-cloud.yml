@@ -18,16 +18,16 @@ spring:
           enabled: true # 开启服务发现
           lower-case-service-id: true # 服务名小写
       routes: # 认证服务路由
-        - id: authentication
-          uri: lb://authentication-service
+        - id: auth
+          uri: lb://auth-service
           predicates:
-            - Path=/auth/api/**
+            - Path=/api/auth/**
           filters:
             - StripPrefix=0
         - id: user-service-user
           uri: lb://user-service
           predicates:
-            - Path=/user/api/**
+            - Path=/api/user/**
           filters:
             - StripPrefix=0
         - id: user-service-role
@@ -39,31 +39,61 @@ spring:
         - id: problems-service-problems
           uri: lb://problems-service
           predicates:
-            - Path=/problems/api/**
+            - Path=/api/problems/**
           filters:
             - StripPrefix=0
-        - id: problems-service-submissions
+        - id: problems-service-tags
           uri: lb://problems-service
           predicates:
-            - Path=/submissions/api/**
+            - Path=/api/tags/**
           filters:
             - StripPrefix=0
-        - id: problems-service-questions
+        - id: problems-service-problem-stats
           uri: lb://problems-service
           predicates:
-            - Path=/problem-bank/api/**
+            - Path=/api/problem-stats/**
           filters:
             - StripPrefix=0
-        - id: judge-service
-          uri: lb://judge-service
-          predicates:
-            - Path=/judge/api/**
-          filters:
-            - StripPrefix=0
-        - id: problems-service-solution
+        - id: problems-service-categories
           uri: lb://problems-service
           predicates:
-            - Path=/solutions/api/**
+            - Path=/api/categories/**
+          filters:
+            - StripPrefix=0
+        - id: problems-service-difficulties
+          uri: lb://problems-service
+          predicates:
+            - Path=/api/difficulties/**
+          filters:
+            - StripPrefix=0
+        - id: problems-service-testcase-steps
+          uri: lb://problems-service
+          predicates:
+            - Path=/api/testcase-steps/**
+          filters:
+            - StripPrefix=0
+        - id: problems-service-testcase-groups
+          uri: lb://problems-service
+          predicates:
+            - Path=/api/testcase-groups/**
+          filters:
+            - StripPrefix=0
+        - id: problems-service-testcases
+          uri: lb://problems-service
+          predicates:
+            - Path=/api/testcases/**
+          filters:
+            - StripPrefix=0
+        - id: problems-service-problem-locales
+          uri: lb://problems-service
+          predicates:
+            - Path=/api/problem-locales/**
+          filters:
+            - StripPrefix=0
+        - id: problems-service-problem-language-configs
+          uri: lb://problems-service
+          predicates:
+            - Path=/api/problem-language-configs/**
           filters:
             - StripPrefix=0
       default-filters:

@@ -6,7 +6,7 @@ import type {
   StatsParams,
 } from '@/types/like'
 
-const BASE = '/problems/api/likeDislike'
+const BASE = '/api/problems/likeDislike'
 
 /** 获取用户对目标的操作状态（含统计） */
 export const getStatus = (params: LikeStatusParams): Promise<LikeDislikeRecordVo> => {

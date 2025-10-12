@@ -15,40 +15,40 @@ import org.springframework.security.web.server.context.NoOpServerSecurityContext
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
 
-    /**
-     * 公开路径，无需认证
-     */
-    private static final String[] PUBLIC_PATHS = {
-            "/actuator/**",
-            "/favicon.ico",
-            "/error",
-            "/auth/api/login/**",
-            "/auth/api/register/**",
-            "/auth/api/refresh/**",
-            "/auth/api/validate/**",
-            "/auth/api/send-code/**"
-    };
+        /**
+         * 公开路径，无需认证
+         */
+        private static final String[] PUBLIC_PATHS = {
+                        "/actuator/**",
+                        "/favicon.ico",
+                        "/error",
+                        "/api/auth/login/**",
+                        "/api/auth/register/**",
+                        "/api/auth/refresh/**",
+                        "/api/auth/validate/**",
+                        "/api/auth/send-code/**"
+        };
 
-    /**
-     * 配置 WebFlux 安全过滤器链
-     * 简化配置，主要权限验证交给 AuthGlobalFilter 处理
-     */
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http
-                // 禁用 CSRF（API 网关不需要）
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                // 禁用表单登录
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                // 禁用 HTTP Basic 认证
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                // 配置无状态会话管理
-                .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-                // 简化权限配置，允许所有请求通过，具体权限由 AuthGlobalFilter 控制
-                .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(PUBLIC_PATHS).permitAll()
-                        .anyExchange().permitAll() // 改为 permitAll，由 AuthGlobalFilter 控制
-                )
-                .build();
-    }
+        /**
+         * 配置 WebFlux 安全过滤器链
+         * 简化配置，主要权限验证交给 AuthGlobalFilter 处理
+         */
+        @Bean
+        public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+                return http
+                                // 禁用 CSRF（API 网关不需要）
+                                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                                // 禁用表单登录
+                                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                                // 禁用 HTTP Basic 认证
+                                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                                // 配置无状态会话管理
+                                .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
+                                // 简化权限配置，允许所有请求通过，具体权限由 AuthGlobalFilter 控制
+                                .authorizeExchange(exchanges -> exchanges
+                                                .pathMatchers(PUBLIC_PATHS).permitAll()
+                                                .anyExchange().permitAll() // 改为 permitAll，由 AuthGlobalFilter 控制
+                                )
+                                .build();
+        }
 }

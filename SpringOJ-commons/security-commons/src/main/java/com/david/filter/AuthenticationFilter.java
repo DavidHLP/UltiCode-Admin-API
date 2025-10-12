@@ -33,11 +33,11 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             "/actuator/**",
             "/favicon.ico",
             "/error",
-            "/auth/api/login",
-            "/auth/api/register",
-            "/auth/api/refresh",
-            "/auth/api/validate",
-            "/auth/api/send-code"
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/refresh",
+            "/api/auth/validate",
+            "/api/auth/send-code"
     };
 
     @Override

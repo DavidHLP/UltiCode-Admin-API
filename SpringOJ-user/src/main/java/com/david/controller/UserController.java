@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/user/api/user")
+@RequestMapping("/api/user/user")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -19,8 +19,8 @@ public class UserController {
     /**
      * 分页查询用户（按关键字匹配用户名或邮箱）
      *
-     * @param page 第几页（从1开始）
-     * @param size 每页大小
+     * @param page    第几页（从1开始）
+     * @param size    每页大小
      * @param keyword 可选关键字（用户名/邮箱 模糊匹配）
      * @return 分页数据
      */
@@ -52,7 +52,7 @@ public class UserController {
     /**
      * 更新指定ID的用户信息
      *
-     * @param id 用户ID
+     * @param id   用户ID
      * @param user 待更新的用户信息（以ID为准）
      * @return 统一响应：成功或失败信息
      */
