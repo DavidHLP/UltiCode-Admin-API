@@ -1,9 +1,8 @@
 package com.david.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.david.entity.Problem;
-
+import com.david.entity.TestcaseGroup;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface ProblemMapper extends BaseMapper<Problem> {}
+public interface TestcaseGroupMapper extends BaseMapper<TestcaseGroup> {}
