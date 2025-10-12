@@ -16,4 +16,9 @@
         where problem_id = #{problemId}
         limit 1
     </select>
+    <select id="getPage" resultType="com.david.testcase.TestCaseOutput">
+        select *
+        from test_cases_outputs
+        where problem_id = #{problemId}
+    </select>
 </mapper>

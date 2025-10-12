@@ -1,5 +1,6 @@
 package com.david.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.david.testcase.TestCaseOutput;
 
@@ -12,4 +13,5 @@ import jakarta.validation.constraints.NotNull;
 public interface ITestCaseOutputService extends IService<TestCaseOutput> {
     List<TestCaseOutput> getByProblemId(@NotNull @Min(1) Long problemId);
     boolean removeById(Long id , Long problemId);
+	Page<TestCaseOutput> getPage(Long problemId, Page<TestCaseOutput> page);
 }

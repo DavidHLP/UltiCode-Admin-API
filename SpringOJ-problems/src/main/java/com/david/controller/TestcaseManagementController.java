@@ -1,5 +1,6 @@
 package com.david.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.exception.BizException;
 import com.david.service.impl.TestCaseServiceImpl;
 import com.david.testcase.TestCase;
@@ -29,6 +30,16 @@ public class TestcaseManagementController {
             @PathVariable @NotNull @Min(1) Long problemId) {
         List<TestCase> testCases = testCaseService.getList(problemId);
         return ResponseResult.success("成功获取测试用例", testCases);
+    }
+
+    @GetMapping("/page/{problemId}")
+    public ResponseResult<Page<TestCase>> pageResponseResult(
+            @PathVariable @NotNull @Min(1) Long problemId,
+            @RequestParam(defaultValue = "1") @Min(1) Integer pageNum,
+            @RequestParam(defaultValue = "10") @Min(1) Integer pageSize) {
+        Page<TestCase> page = new Page<>(pageNum, pageSize);
+        page = testCaseService.getPage(problemId, page);
+        return ResponseResult.success("成功获取测试用例", page);
     }
 
     /** 创建测试用例 */

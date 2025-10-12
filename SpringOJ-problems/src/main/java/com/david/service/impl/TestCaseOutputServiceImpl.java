@@ -1,5 +1,6 @@
 package com.david.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.david.mapper.TestCaseOutputMapper;
 import com.david.service.ITestCaseOutputService;
@@ -47,5 +48,10 @@ public class TestCaseOutputServiceImpl extends ServiceImpl<TestCaseOutputMapper,
     @Transactional
     public boolean removeById(Long id, Long problemId) {
         return testCaseOutputMapper.deleteById(id) > 0;
+    }
+
+    @Override
+    public Page<TestCaseOutput> getPage(Long problemId, Page<TestCaseOutput> page) {
+        return testCaseOutputMapper.getPage(problemId, page);
     }
 }

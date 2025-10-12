@@ -86,7 +86,10 @@ public class UserContentViewServiceImpl extends ServiceImpl<UserContentViewMappe
             try {
                 current = Long.parseLong(rawCurrent.toString());
             } catch (NumberFormatException e) {
-                log.warn("Failed to parse number from redis for key {} field {}", viewCountKey, contentId.toString());
+                log.warn(
+                        "Failed to parse number from redis for key {} field {}",
+                        viewCountKey,
+		                contentId);
             }
         }
 
@@ -112,7 +115,10 @@ public class UserContentViewServiceImpl extends ServiceImpl<UserContentViewMappe
             try {
                 count = Long.parseLong(rawCount.toString());
             } catch (NumberFormatException e) {
-                log.warn("Failed to parse number from redis for key {} field {}", viewCountKey, contentId.toString());
+                log.warn(
+                        "Failed to parse number from redis for key {} field {}",
+                        viewCountKey,
+		                contentId);
             }
         }
 
@@ -139,34 +145,30 @@ public class UserContentViewServiceImpl extends ServiceImpl<UserContentViewMappe
                     Long contentId = Long.parseLong(keyParts[keyParts.length - 1]);
                     log.info("处理内容 {} 的浏览记录同步", contentId);
 
-                    hashOps.entries(key).forEach(
-                            (userIdObj, isViewedObj) -> {
-                                String userId = userIdObj.toString();
-                                boolean isViewed = false;
-                                if (isViewedObj instanceof Boolean) {
-                                    isViewed = (Boolean) isViewedObj;
-                                } else if (isViewedObj != null) {
-                                    isViewed = Boolean.parseBoolean(isViewedObj.toString());
-                                }
+                    hashOps.entries(key)
+                            .forEach(
+                                    (userIdObj, isViewedObj) -> {
+                                        String userId = userIdObj.toString();
+                                        boolean isViewed = false;
+                                        if (isViewedObj instanceof Boolean) {
+                                            isViewed = (Boolean) isViewedObj;
+                                        } else if (isViewedObj != null) {
+                                            isViewed = Boolean.parseBoolean(isViewedObj.toString());
+                                        }
 
-                                if (isViewed
-                                        && !userContentViewMapper
-                                        .userHasViewedContent(
-                                                Long.parseLong(userId),
-                                                contentId)) {
-                                    log.info(
-                                            "同步用户 {} 对内容 {} 的浏览记录",
-                                            userId,
-                                            contentId);
-                                    userContentViewMapper.insert(
-                                            UserContentView.builder()
-                                                    .userId(Long.parseLong(userId))
-                                                    .contentId(contentId)
-                                                    .contentType(contentType)
-                                                    .build());
-                                    solutionMapper.updateViews(contentId);
-                                }
-                            });
+                                        if (isViewed
+                                                && !userContentViewMapper.userHasViewedContent(
+                                                        Long.parseLong(userId), contentId)) {
+                                            log.info("同步用户 {} 对内容 {} 的浏览记录", userId, contentId);
+                                            userContentViewMapper.insert(
+                                                    UserContentView.builder()
+                                                            .userId(Long.parseLong(userId))
+                                                            .contentId(contentId)
+                                                            .contentType(contentType)
+                                                            .build());
+                                            solutionMapper.updateViews(contentId);
+                                        }
+                                    });
                 } catch (Exception e) {
                     log.warn("Sync view task processing key {} failed", key, e);
                 }
@@ -176,28 +178,33 @@ public class UserContentViewServiceImpl extends ServiceImpl<UserContentViewMappe
             // 将缓存中的计数刷新为数据库真实值，避免长期漂移
             log.info("刷新 {} 类型内容的浏览次数缓存", contentType);
             String viewCountKey = buildContentViewCountKey(contentType);
-            hashOps.entries(viewCountKey).forEach(
-                    (contentIdObj, countObj) -> {
-                        String contentId = contentIdObj.toString();
-                        Long count = null;
-                        if (countObj instanceof Number) {
-                            count = ((Number) countObj).longValue();
-                        } else if (countObj != null) {
-                            try {
-                                count = Long.parseLong(countObj.toString());
-                            } catch (NumberFormatException e) {
-                                log.warn("Could not parse count for contentId {}", contentId, e);
-                                return;
-                            }
-                        }
+            hashOps.entries(viewCountKey)
+                    .forEach(
+                            (contentIdObj, countObj) -> {
+                                String contentId = contentIdObj.toString();
+                                Long count = null;
+                                if (countObj instanceof Number) {
+                                    count = ((Number) countObj).longValue();
+                                } else if (countObj != null) {
+                                    try {
+                                        count = Long.parseLong(countObj.toString());
+                                    } catch (NumberFormatException e) {
+                                        log.warn(
+                                                "Could not parse count for contentId {}",
+                                                contentId,
+                                                e);
+                                        return;
+                                    }
+                                }
 
-                        Long dbViews = Optional.ofNullable(solutionMapper.getViews(Long.parseLong(contentId))).orElse(0L);
-                        log.info("更新内容 {} 的浏览次数缓存，从 {} 更新为 {}", contentId, count, dbViews);
-                        hashOps.put(
-                                viewCountKey,
-                                contentId,
-                                dbViews);
-                    });
+                                Long dbViews =
+                                        Optional.ofNullable(
+                                                        solutionMapper.getViews(
+                                                                Long.parseLong(contentId)))
+                                                .orElse(0L);
+                                log.info("更新内容 {} 的浏览次数缓存，从 {} 更新为 {}", contentId, count, dbViews);
+                                hashOps.put(viewCountKey, contentId, dbViews);
+                            });
         }
         log.info("用户浏览记录同步任务执行完成");
     }

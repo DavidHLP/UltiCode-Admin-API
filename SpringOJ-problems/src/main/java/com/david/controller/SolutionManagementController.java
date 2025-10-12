@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 public class SolutionManagementController {
     private final ISolutionService solutionService;
 
-    @GetMapping("/pages")
+    @GetMapping("/page")
     public ResponseResult<Page<SolutionManagementCardVo>> getSolutionCardVos(
             @RequestParam @Min(value = 1, message = "页码必须>=1") long page,
             @RequestParam @Min(value = 1, message = "分页大小必须>=1") long size,

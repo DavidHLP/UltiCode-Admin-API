@@ -1,5 +1,6 @@
 package com.david.service.impl;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.exception.BizException;
 import com.david.service.ITestCaseInputService;
 import com.david.service.ITestCaseOutputService;
@@ -86,6 +87,24 @@ public class TestCaseServiceImpl {
                             .build());
         }
         return testCases;
+    }
+
+    public Page<TestCase> getPage(Long problemId, Page<TestCase> page) {
+        Page<TestCaseOutput> testCaseOutputPage = new Page<>(page.getCurrent(), page.getSize());
+        testCaseOutputPage = testCaseOutputService.getPage(problemId, testCaseOutputPage);
+        List<TestCase> testCases = new ArrayList<>();
+        for (TestCaseOutput testCaseOutput : testCaseOutputPage.getRecords()) {
+            testCases.add(
+                    TestCase.builder()
+                            .id(testCaseOutput.getId())
+                            .problemId(problemId)
+                            .testCaseOutput(testCaseOutput)
+                            .testCaseInput(
+                                    testCaseInputService.selectByTestCaseOutputId(
+                                            testCaseOutput.getId()))
+                            .build());
+        }
+        return page.setRecords(testCases);
     }
 
     public List<TestCaseVo> getTestCaseVoByProblemId(Long problemId) {
