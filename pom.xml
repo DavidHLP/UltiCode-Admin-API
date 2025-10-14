@@ -15,9 +15,9 @@
     <name>SpringOJ</name>
     <description>SpringOJ</description>
     <modules>
+        <module>common</module>
         <module>gateway</module>
         <module>auth</module>
-        <module>common</module>
     </modules>
 
     <properties>

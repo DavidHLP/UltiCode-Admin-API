@@ -1,5 +1,7 @@
 package com.david.gateway.filter;
 
+import com.david.common.forward.ForwardedUser;
+import com.david.common.forward.ForwardedUserHeaders;
 import com.david.gateway.config.AppProperties;
 import com.david.gateway.support.AuthClient;
 import com.david.gateway.support.ErrorResponse;
@@ -93,17 +95,29 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private Mono<Void> continueChainWithUser(
             GatewayFilterChain chain, ServerWebExchange exchange, IntrospectResponse payload) {
-        String rolesHeader = payload.roles() == null ? "" : String.join(",", payload.roles());
+        ForwardedUser forwardedUser =
+                ForwardedUser.of(payload.userId(), payload.username(), payload.roles());
         ServerHttpRequest mutatedRequest =
                 exchange.getRequest()
                         .mutate()
-                        .header(
-                                "X-User-Id",
-                                payload.userId() == null ? "" : String.valueOf(payload.userId()))
-                        .header("X-User-Name", payload.username() == null ? "" : payload.username())
-                        .header("X-User-Roles", rolesHeader)
+                        .headers(headers -> applyForwardedUser(headers, forwardedUser))
                         .build();
         return chain.filter(exchange.mutate().request(mutatedRequest).build());
+    }
+
+    private void applyForwardedUser(HttpHeaders headers, ForwardedUser user) {
+        if (user.id() != null) {
+            headers.set(ForwardedUserHeaders.USER_ID, String.valueOf(user.id()));
+        } else {
+            headers.remove(ForwardedUserHeaders.USER_ID);
+        }
+        String username = user.username();
+        headers.set(ForwardedUserHeaders.USER_NAME, username == null ? "" : username);
+        String roles =
+                String.join(
+                        ForwardedUserHeaders.ROLE_DELIMITER,
+                        user.roles() == null ? List.of() : user.roles());
+        headers.set(ForwardedUserHeaders.USER_ROLES, roles);
     }
 
     private Mono<Void> respond(ServerWebExchange exchange, HttpStatus status, String message) {

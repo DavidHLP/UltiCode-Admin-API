@@ -66,6 +66,13 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- Forwarded user shared utilities -->
+        <dependency>
+            <groupId>com.david</groupId>
+            <artifactId>forward</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+
         <!-- Lombok 简化代码 -->
         <dependency>
             <groupId>org.projectlombok</groupId>
