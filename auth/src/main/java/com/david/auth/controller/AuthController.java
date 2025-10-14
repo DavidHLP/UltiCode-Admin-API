@@ -2,6 +2,7 @@ package com.david.auth.controller;
 
 import com.david.auth.dto.AuthResponse;
 import com.david.auth.dto.LoginRequest;
+import com.david.auth.dto.PasswordResetRequest;
 import com.david.auth.dto.RefreshTokenRequest;
 import com.david.auth.dto.RegisterRequest;
 import com.david.auth.dto.TokenIntrospectRequest;
@@ -15,11 +16,13 @@ import jakarta.validation.Valid;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -47,9 +50,14 @@ public class AuthController {
     }
 
     @PostMapping("/introspect")
-    public TokenIntrospectResponse introspect(
-            @Valid @RequestBody TokenIntrospectRequest request) {
+    public TokenIntrospectResponse introspect(@Valid @RequestBody TokenIntrospectRequest request) {
         return authService.introspectAccessToken(request.token());
+    }
+
+    @PostMapping("/forgot")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void forgot(@Valid @RequestBody PasswordResetRequest request) {
+        authService.requestPasswordReset(request.email());
     }
 
     @GetMapping("/me")

@@ -14,6 +14,7 @@ public class AppProperties {
                     "/api/auth/register",
                     "/api/auth/login",
                     "/api/auth/refresh",
+                    "/api/auth/forgot",
                     "/actuator/**");
 
     public List<String> getWhiteListPaths() {

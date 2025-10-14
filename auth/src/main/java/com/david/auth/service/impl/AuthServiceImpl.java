@@ -119,6 +119,13 @@ public class AuthServiceImpl implements AuthService {
         return new TokenIntrospectResponse(user.getId(), user.getUsername(), roles);
     }
 
+    @Override
+    public void requestPasswordReset(String email) {
+        userService.findByUsernameOrEmail(email).ifPresent(user -> {
+            // TODO: 发送密码重置邮件或生成临时令牌
+        });
+    }
+
     private AuthResponse issueTokens(User user, List<String> roles) {
         JwtToken access = jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.ACCESS);
         JwtToken refresh = jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.REFRESH);

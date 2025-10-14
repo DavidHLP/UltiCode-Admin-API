@@ -19,4 +19,6 @@ public interface AuthService {
     UserProfileDto buildUserProfile(Long userId);
 
     TokenIntrospectResponse introspectAccessToken(String token);
+
+    void requestPasswordReset(String email);
 }
