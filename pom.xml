@@ -17,6 +17,7 @@
     <modules>
         <module>gateway</module>
         <module>auth</module>
+        <module>common</module>
     </modules>
 
     <properties>

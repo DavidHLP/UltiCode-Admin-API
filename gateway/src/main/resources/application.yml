@@ -27,11 +27,15 @@ spring:
         - AddResponseHeader=Access-Control-Allow-Headers,*
         - AddResponseHeader=Access-Control-Max-Age,3600
       routes:
-        - id: auth
+        - id: auth-id
           uri: lb://auth
           predicates:
             - Path=/api/auth/**
-
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.web.reactive: DEBUG
 management:
   endpoints:
     web:

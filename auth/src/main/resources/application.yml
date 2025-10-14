@@ -15,19 +15,14 @@ spring:
         dashboard: 127.0.0.1:9090
         port: 8719
       web-context-unify: false # 关闭上下文整合，启用链路模式
-    gateway:
-      discovery:
-        locator:
-          enabled: true # 开启服务发现
-          lower-case-service-id: true # 服务名小写
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-        - AddResponseHeader=Access-Control-Allow-Origin,*
-        - AddResponseHeader=Access-Control-Allow-Methods,GET,POST,PUT,DELETE,OPTIONS
-        - AddResponseHeader=Access-Control-Allow-Headers,*
-        - AddResponseHeader=Access-Control-Max-Age,3600
   profiles:
     active: datasource,redis,mail
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.web.reactive: DEBUG
 
 app:
   security:

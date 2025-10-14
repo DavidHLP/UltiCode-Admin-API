@@ -16,8 +16,8 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ServerWebExchange;
 
 import reactor.core.publisher.Mono;
 
@@ -62,12 +62,22 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         WebClientResponseException.class,
                         ex -> {
                             if (ex.getStatusCode().is4xxClientError()) {
-                                return respond(exchange, HttpStatus.UNAUTHORIZED, "Invalid or expired token");
+                                return respond(
+                                        exchange,
+                                        HttpStatus.UNAUTHORIZED,
+                                        "Invalid or expired token");
                             }
-                            return respond(exchange, HttpStatus.SERVICE_UNAVAILABLE, "Authentication service unavailable");
+                            return respond(
+                                    exchange,
+                                    HttpStatus.SERVICE_UNAVAILABLE,
+                                    "Authentication service unavailable");
                         })
                 .onErrorResume(
-                        ex -> respond(exchange, HttpStatus.SERVICE_UNAVAILABLE, "Authentication service unavailable"));
+                        ex ->
+                                respond(
+                                        exchange,
+                                        HttpStatus.SERVICE_UNAVAILABLE,
+                                        "Authentication service unavailable"));
     }
 
     @Override
@@ -77,8 +87,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isWhitelisted(String path) {
         List<String> whitelist = appProperties.getWhiteListPaths();
-        return whitelist != null && whitelist.stream()
-                .anyMatch(pattern -> pathMatcher.match(pattern, path));
+        return whitelist != null
+                && whitelist.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 
     private Mono<Void> continueChainWithUser(
@@ -87,7 +97,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         ServerHttpRequest mutatedRequest =
                 exchange.getRequest()
                         .mutate()
-                        .header("X-User-Id", payload.userId() == null ? "" : String.valueOf(payload.userId()))
+                        .header(
+                                "X-User-Id",
+                                payload.userId() == null ? "" : String.valueOf(payload.userId()))
                         .header("X-User-Name", payload.username() == null ? "" : payload.username())
                         .header("X-User-Roles", rolesHeader)
                         .build();
@@ -97,10 +109,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private Mono<Void> respond(ServerWebExchange exchange, HttpStatus status, String message) {
         ErrorResponse errorResponse =
                 new ErrorResponse(
-                        status.value(),
-                        status.getReasonPhrase(),
-                        message,
-                        LocalDateTime.now());
+                        status.value(), status.getReasonPhrase(), message, LocalDateTime.now());
         byte[] bytes;
         try {
             bytes = objectMapper.writeValueAsBytes(errorResponse);
