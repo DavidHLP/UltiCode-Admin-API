@@ -17,4 +17,6 @@ public interface UserService {
     List<String> findRoleCodes(Long userId);
 
     void updateLoginMetadata(Long userId, String ipAddress);
+
+    String hashPassword(String rawPassword);
 }

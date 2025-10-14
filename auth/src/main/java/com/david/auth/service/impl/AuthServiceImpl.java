@@ -34,11 +34,12 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
 
-    public AuthServiceImpl(UserService userService,
-                           TokenService tokenService,
-                           JwtService jwtService,
-                           PasswordEncoder passwordEncoder,
-                           AppProperties appProperties) {
+    public AuthServiceImpl(
+            UserService userService,
+            TokenService tokenService,
+            JwtService jwtService,
+            PasswordEncoder passwordEncoder,
+            AppProperties appProperties) {
         this.userService = userService;
         this.tokenService = tokenService;
         this.jwtService = jwtService;
@@ -58,13 +59,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse login(LoginRequest request, String ipAddress) {
-        User user = userService.findByUsernameOrEmail(request.getIdentifier())
-                .orElseThrow(() -> new BadCredentialsException("Invalid username/email or password"));
+        User user =
+                userService
+                        .findByUsernameOrEmail(request.identifier())
+                        .orElseThrow(
+                                () ->
+                                        new BadCredentialsException(
+                                                "Invalid username/email or password"));
 
         if (user.getStatus() == null || user.getStatus() == 0) {
             throw new BusinessException(HttpStatus.FORBIDDEN, "Account has been disabled");
         }
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid username/email or password");
         }
         List<String> roles = userService.findRoleCodes(user.getId());
@@ -82,11 +88,16 @@ public class AuthServiceImpl implements AuthService {
         }
         TokenKind tokenKind = jwtService.extractTokenKind(claims);
         if (!tokenKind.isRefresh()) {
-            throw new BusinessException(HttpStatus.BAD_REQUEST, "Only refresh tokens can be used to refresh");
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST, "Only refresh tokens can be used to refresh");
         }
         Long userId = jwtService.extractUserId(claims);
-        tokenService.findActiveToken(request.getRefreshToken(), TokenKind.REFRESH)
-                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "Refresh token is invalid"));
+        tokenService
+                .findActiveToken(request.getRefreshToken(), TokenKind.REFRESH)
+                .orElseThrow(
+                        () ->
+                                new BusinessException(
+                                        HttpStatus.UNAUTHORIZED, "Refresh token is invalid"));
 
         User user = userService.getActiveUser(userId);
         List<String> roles = userService.findRoleCodes(userId);
@@ -111,8 +122,12 @@ public class AuthServiceImpl implements AuthService {
         if (!tokenKind.isAccess()) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "Access token required");
         }
-        tokenService.findActiveToken(token, TokenKind.ACCESS)
-                .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, "Token is invalid or revoked"));
+        tokenService
+                .findActiveToken(token, TokenKind.ACCESS)
+                .orElseThrow(
+                        () ->
+                                new BusinessException(
+                                        HttpStatus.UNAUTHORIZED, "Token is invalid or revoked"));
         Long userId = jwtService.extractUserId(claims);
         User user = userService.getActiveUser(userId);
         List<String> roles = userService.findRoleCodes(userId);
@@ -121,20 +136,27 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void requestPasswordReset(String email) {
-        userService.findByUsernameOrEmail(email).ifPresent(user -> {
-            // TODO: 发送密码重置邮件或生成临时令牌
-        });
+        userService
+                .findByUsernameOrEmail(email)
+                .ifPresent(
+                        user -> {
+                            // TODO: 发送密码重置邮件或生成临时令牌
+                        });
     }
 
     private AuthResponse issueTokens(User user, List<String> roles) {
-        JwtToken access = jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.ACCESS);
-        JwtToken refresh = jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.REFRESH);
+        JwtToken access =
+                jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.ACCESS);
+        JwtToken refresh =
+                jwtService.generateToken(
+                        user.getId(), user.getUsername(), roles, TokenKind.REFRESH);
 
         tokenService.storeToken(user.getId(), TokenKind.ACCESS, access);
         tokenService.storeToken(user.getId(), TokenKind.REFRESH, refresh);
 
         long accessExpiresIn = appProperties.getSecurity().getJwt().getAccessTokenTtl().toSeconds();
-        long refreshExpiresIn = appProperties.getSecurity().getJwt().getRefreshTokenTtl().toSeconds();
+        long refreshExpiresIn =
+                appProperties.getSecurity().getJwt().getRefreshTokenTtl().toSeconds();
 
         return AuthResponse.builder()
                 .tokenType("Bearer")

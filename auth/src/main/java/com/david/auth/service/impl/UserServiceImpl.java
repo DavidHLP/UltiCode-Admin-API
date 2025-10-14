@@ -12,6 +12,7 @@ import com.david.auth.mapper.RoleMapper;
 import com.david.auth.mapper.UserMapper;
 import com.david.auth.mapper.UserRoleMapper;
 import com.david.auth.service.UserService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,12 +50,12 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public User register(RegisterRequest request) {
-        validateUniqueness(request.getUsername(), request.getEmail());
+        validateUniqueness(request.username(), request.email());
 
         User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setUsername(request.username());
+        user.setEmail(request.email());
+        user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setStatus(1);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
@@ -113,6 +114,11 @@ public class UserServiceImpl implements UserService {
                         .set(User::getLastLoginAt, LocalDateTime.now())
                         .set(User::getLastLoginIp, ipAddress);
         userMapper.update(null, update);
+    }
+
+    @Override
+    public String hashPassword(String rawPassword) {
+        return passwordEncoder.encode(rawPassword);
     }
 
     private void validateUniqueness(String username, String email) {
