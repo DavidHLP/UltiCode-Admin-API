@@ -1,6 +1,0 @@
-server:
-  port: 9999
-
-spring:
-  profiles:
-    active: cloud,utils,log,actuator

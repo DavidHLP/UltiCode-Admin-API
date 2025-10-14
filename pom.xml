@@ -15,13 +15,8 @@
     <name>SpringOJ</name>
     <description>SpringOJ</description>
     <modules>
-        <module>SpringOJ-gateway</module>
-        <module>SpringOJ-authentication</module>
-        <module>SpringOJ-user</module>
-        <module>SpringOJ-problems</module>
-        <module>SpringOJ-commons</module>
-        <module>SpringOJ-judge</module>
-        <module>SpringOJ-sandbox</module>
+        <module>gateway</module>
+        <module>auth</module>
     </modules>
 
     <properties>
@@ -195,7 +190,8 @@
                 <enabled>true</enabled>
             </releases>
             <snapshots>
-                <enabled>false</enabled> </snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 

@@ -1,9 +1,0 @@
-spring:
-  kafka:
-    bootstrap-servers: 127.0.0.1:9092
-    consumer:
-      group-id: judge-consumer-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"

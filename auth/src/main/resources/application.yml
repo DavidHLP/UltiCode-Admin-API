@@ -1,0 +1,38 @@
+server:
+  port: 9091
+
+spring:
+  application:
+    name: auth
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848 #配置Nacos地址
+        username: nacos
+        password: "#Alone117"
+    sentinel:
+      transport:
+        dashboard: 127.0.0.1:9090
+        port: 8719
+      web-context-unify: false # 关闭上下文整合，启用链路模式
+    gateway:
+      discovery:
+        locator:
+          enabled: true # 开启服务发现
+          lower-case-service-id: true # 服务名小写
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - AddResponseHeader=Access-Control-Allow-Origin,*
+        - AddResponseHeader=Access-Control-Allow-Methods,GET,POST,PUT,DELETE,OPTIONS
+        - AddResponseHeader=Access-Control-Allow-Headers,*
+        - AddResponseHeader=Access-Control-Max-Age,3600
+  profiles:
+    active: datasource,redis,mail
+
+app:
+  security:
+    jwt:
+      secret: ${APP_JWT_SECRET:kzQLOLB/9l8GN28AL5soiceqd7qV3CyMfCVx/gvBy08=}
+      issuer: auth
+      access-token-ttl: PT15M
+      refresh-token-ttl: P7D

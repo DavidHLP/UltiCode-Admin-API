@@ -1,0 +1,15 @@
+package com.david;
+
+import com.david.auth.config.AppProperties;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+
+@SpringBootApplication
+@EnableConfigurationProperties(AppProperties.class)
+public class SpringAuthenticationApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SpringAuthenticationApplication.class, args);
+    }
+}
