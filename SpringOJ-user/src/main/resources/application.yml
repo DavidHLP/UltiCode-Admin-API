@@ -1,6 +1,0 @@
-server:
-  port: 9093
-
-spring:
-  profiles:
-    active: cloud,datasource,redis,mybatis,utils,log,actuator

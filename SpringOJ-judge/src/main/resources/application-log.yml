@@ -1,6 +1,0 @@
-logging:
-  level:
-    com.david: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.cloud: DEBUG
-    org.mybatis: DEBUG

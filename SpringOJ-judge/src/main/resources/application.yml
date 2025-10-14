@@ -1,6 +1,0 @@
-server:
-  port: 9095
-
-spring:
-  profiles:
-    active: cloud,utils,log,actuator,kafka,datasource
