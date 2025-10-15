@@ -13,4 +13,7 @@ public record RegisterRequest(
                         message = "Username can only contain letters, numbers, and underscores")
                 String username,
         @NotBlank @Email String email,
-        @NotBlank @Size(min = 6, max = 64) String password) {}
+        @NotBlank @Size(min = 6, max = 64) String password,
+        @NotBlank
+                @Pattern(regexp = "^\\d{6}$", message = "Verification code must be 6 digits")
+                String verificationCode) {}

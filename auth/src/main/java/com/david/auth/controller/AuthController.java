@@ -5,11 +5,13 @@ import com.david.auth.dto.LoginRequest;
 import com.david.auth.dto.PasswordResetRequest;
 import com.david.auth.dto.RefreshTokenRequest;
 import com.david.auth.dto.RegisterRequest;
+import com.david.auth.dto.RegistrationCodeRequest;
 import com.david.auth.dto.TokenIntrospectRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.UserProfileDto;
 import com.david.auth.security.UserPrincipal;
 import com.david.auth.service.AuthService;
+import com.david.common.http.ApiResponse;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -35,53 +37,66 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public AuthResponse register(
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<AuthResponse> register(
             @Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
         log.debug("Register request received for email: {}", request.email());
         AuthResponse response = authService.register(request, resolveClientIp(httpRequest));
         log.debug("Registration completed successfully for email: {}", request.email());
-        return response;
+        return ApiResponse.success(response);
+    }
+
+    @PostMapping("/register/code")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ApiResponse<Void> sendRegistrationCode(
+            @Valid @RequestBody RegistrationCodeRequest request) {
+        log.debug("Registration code request received for email: {}", request.email());
+        authService.sendRegistrationVerificationCode(request.email());
+        log.debug("Registration code sent successfully for email: {}", request.email());
+        return ApiResponse.success(null);
     }
 
     @PostMapping("/login")
-    public AuthResponse login(
+    public ApiResponse<AuthResponse> login(
             @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         log.debug("Login request received for email or username : {}", request.identifier());
         AuthResponse response = authService.login(request, resolveClientIp(httpRequest));
         log.debug("Login completed successfully for email or username : {}", request.identifier());
-        return response;
+        return ApiResponse.success(response);
     }
 
     @PostMapping("/refresh")
-    public AuthResponse refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         log.debug("Token refresh request received");
         AuthResponse response = authService.refresh(request);
         log.debug("Token refresh completed successfully");
-        return response;
+        return ApiResponse.success(response);
     }
 
     @PostMapping("/introspect")
-    public TokenIntrospectResponse introspect(@Valid @RequestBody TokenIntrospectRequest request) {
+    public ApiResponse<TokenIntrospectResponse> introspect(
+            @Valid @RequestBody TokenIntrospectRequest request) {
         log.debug("Token introspection request received");
         TokenIntrospectResponse response = authService.introspectAccessToken(request.token());
         log.debug("Token introspection completed");
-        return response;
+        return ApiResponse.success(response);
     }
 
     @PostMapping("/forgot")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void forgot(@Valid @RequestBody PasswordResetRequest request) {
+    public ApiResponse<Void> forgot(@Valid @RequestBody PasswordResetRequest request) {
         log.debug("Password reset request received for email: {}", request.email());
         authService.requestPasswordReset(request.email());
         log.debug("Password reset request processed for email: {}", request.email());
+        return ApiResponse.success(null);
     }
 
     @GetMapping("/me")
-    public UserProfileDto me(@AuthenticationPrincipal UserPrincipal principal) {
+    public ApiResponse<UserProfileDto> me(@AuthenticationPrincipal UserPrincipal principal) {
         log.debug("User profile request received for user id: {}", principal.id());
         UserProfileDto profile = authService.buildUserProfile(principal.id());
         log.debug("User profile retrieved for user id: {}", principal.id());
-        return profile;
+        return ApiResponse.success(profile);
     }
 
     private String resolveClientIp(HttpServletRequest request) {

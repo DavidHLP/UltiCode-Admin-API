@@ -12,11 +12,15 @@ import com.david.auth.entity.User;
 import com.david.auth.exception.BusinessException;
 import com.david.auth.security.JwtService;
 import com.david.auth.service.AuthService;
+import com.david.auth.service.PasswordResetService;
+import com.david.auth.service.RegistrationVerificationService;
 import com.david.auth.service.TokenService;
 import com.david.auth.service.UserService;
 import com.david.auth.support.JwtToken;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,23 +37,31 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AppProperties appProperties;
+    private final RegistrationVerificationService registrationVerificationService;
+    private final PasswordResetService passwordResetService;
 
     public AuthServiceImpl(
             UserService userService,
             TokenService tokenService,
             JwtService jwtService,
             PasswordEncoder passwordEncoder,
-            AppProperties appProperties) {
+            AppProperties appProperties,
+            RegistrationVerificationService registrationVerificationService,
+            PasswordResetService passwordResetService) {
         this.userService = userService;
         this.tokenService = tokenService;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.appProperties = appProperties;
+        this.registrationVerificationService = registrationVerificationService;
+        this.passwordResetService = passwordResetService;
     }
 
     @Override
     @Transactional
     public AuthResponse register(RegisterRequest request, String ipAddress) {
+        registrationVerificationService.verifyRegistrationCode(
+                request.email(), request.verificationCode());
         User user = userService.register(request);
         List<String> roles = userService.findRoleCodes(user.getId());
         userService.updateLoginMetadata(user.getId(), ipAddress);
@@ -140,8 +152,13 @@ public class AuthServiceImpl implements AuthService {
                 .findByUsernameOrEmail(email)
                 .ifPresent(
                         user -> {
-                            // TODO: 发送密码重置邮件或生成临时令牌
+                            passwordResetService.sendPasswordResetEmail(user);
                         });
+    }
+
+    @Override
+    public void sendRegistrationVerificationCode(String email) {
+        registrationVerificationService.sendRegistrationCode(email);
     }
 
     private AuthResponse issueTokens(User user, List<String> roles) {

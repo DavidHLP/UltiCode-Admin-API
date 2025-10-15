@@ -2,10 +2,44 @@ spring:
   mail:
     host: smtp.163.com # 你邮箱的smtp地址
     username: davidblog117@163.com # 申请了smtp的邮箱
-    password: VIBXJWEUSYVJMJXK # SMTP服务的秘钥
+    password: QMs2c983mm7Lhz5K # SMTP服务的秘钥
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+
+app:
+  mail:
+    verification-subject: Registration Verification Code
+    verification-template: |-
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #333333;">
+          <h2 style="color: #2c7be5;">欢迎加入 CodeForge</h2>
+          <p>您好，</p>
+          <p>您的注册验证码是：<strong style="font-size: 20px; letter-spacing: 2px;">%s</strong></p>
+          <p>请在 <strong>%d</strong> 分钟内完成验证。若非本人操作，请忽略本邮件。</p>
+          <hr style="border:none; border-top:1px solid #e0e0e0; margin: 24px 0;">
+          <p style="font-size: 12px; color: #999999;">此邮件由系统自动发送，请不要直接回复。</p>
+        </body>
+      </html>
+    verification-code-ttl: PT10M
+    password-reset-subject: Password Reset Request
+    password-reset-template: |-
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #333333;">
+          <h2 style="color: #2c7be5;">重置您的密码</h2>
+          <p>我们收到了来自您账户的密码重置请求。</p>
+          <p>
+            <a href="%s" style="display:inline-block;padding:12px 20px;background-color:#2c7be5;color:#ffffff;text-decoration:none;border-radius:4px;">
+              立即重置密码
+            </a>
+          </p>
+          <p>该链接将在 <strong>%d</strong> 分钟后失效。如果不是您本人操作，请忽略本邮件。</p>
+          <hr style="border:none; border-top:1px solid #e0e0e0; margin: 24px 0;">
+          <p style="font-size: 12px; color: #999999;">此邮件由系统自动发送，请不要直接回复。</p>
+        </body>
+      </html>
+    password-reset-url-template: https://codeforge.example.com/reset-password?token=%s
+    password-reset-token-ttl: PT30M

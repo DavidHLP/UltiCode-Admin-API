@@ -2,9 +2,10 @@ package com.david.gateway.filter;
 
 import com.david.common.forward.ForwardedUser;
 import com.david.common.forward.ForwardedUserHeaders;
+import com.david.common.http.ApiError;
+import com.david.common.http.ApiResponse;
 import com.david.gateway.config.AppProperties;
 import com.david.gateway.support.AuthClient;
-import com.david.gateway.support.ErrorResponse;
 import com.david.gateway.support.IntrospectResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -24,7 +25,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -75,11 +75,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                                     "Authentication service unavailable");
                         })
                 .onErrorResume(
-                        ex ->
-                                respond(
-                                        exchange,
-                                        HttpStatus.SERVICE_UNAVAILABLE,
-                                        "Authentication service unavailable"));
+                        ex -> {
+                            if (ex instanceof IllegalStateException illegalStateException) {
+                                String failureMessage =
+                                        StringUtils.hasText(illegalStateException.getMessage())
+                                                ? illegalStateException.getMessage()
+                                                : "Invalid or expired token";
+                                return respond(exchange, HttpStatus.UNAUTHORIZED, failureMessage);
+                            }
+                            return respond(
+                                    exchange,
+                                    HttpStatus.SERVICE_UNAVAILABLE,
+                                    "Authentication service unavailable");
+                        });
     }
 
     @Override
@@ -121,9 +129,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> respond(ServerWebExchange exchange, HttpStatus status, String message) {
-        ErrorResponse errorResponse =
-                new ErrorResponse(
-                        status.value(), status.getReasonPhrase(), message, LocalDateTime.now());
+        ApiResponse<Void> errorResponse =
+                ApiResponse.failure(
+                        ApiError.of(status.value(), status.name(), message));
         byte[] bytes;
         try {
             bytes = objectMapper.writeValueAsBytes(errorResponse);
@@ -132,7 +140,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                     ("{\"status\":"
                                     + status.value()
                                     + ",\"message\":\""
-                                    + status.getReasonPhrase()
+                                    + message
                                     + "\"}")
                             .getBytes(StandardCharsets.UTF_8);
         }

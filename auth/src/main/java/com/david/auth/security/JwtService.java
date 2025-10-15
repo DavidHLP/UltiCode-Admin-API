@@ -44,26 +44,32 @@ public class JwtService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public JwtToken generateToken(Long userId,
-                                  String username,
-                                  List<String> roles,
-                                  TokenKind kind) {
+    public JwtToken generateToken(
+            Long userId, String username, List<String> roles, TokenKind kind) {
         AppProperties.Security.Jwt jwtProps = appProperties.getSecurity().getJwt();
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(kind.isAccess() ? jwtProps.getAccessTokenTtl() : jwtProps.getRefreshTokenTtl());
+        Instant expiresAt =
+                now.plus(
+                        kind.isAccess()
+                                ? jwtProps.getAccessTokenTtl()
+                                : jwtProps.getRefreshTokenTtl());
 
-        String token = Jwts.builder()
-                .setSubject(String.valueOf(userId))
-                .setIssuer(jwtProps.getIssuer())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(expiresAt))
-                .addClaims(Map.of(
-                        CLAIM_USERNAME, username,
-                        CLAIM_ROLES, roles,
-                        CLAIM_TOKEN_TYPE, kind.getValue()
-                ))
-                .signWith(signingKey, SignatureAlgorithm.HS256)
-                .compact();
+        String token =
+                Jwts.builder()
+                        .setSubject(String.valueOf(userId))
+                        .setIssuer(jwtProps.getIssuer())
+                        .setIssuedAt(Date.from(now))
+                        .setExpiration(Date.from(expiresAt))
+                        .addClaims(
+                                Map.of(
+                                        CLAIM_USERNAME,
+                                        username,
+                                        CLAIM_ROLES,
+                                        roles,
+                                        CLAIM_TOKEN_TYPE,
+                                        kind.getValue()))
+                        .signWith(signingKey, SignatureAlgorithm.HS256)
+                        .compact();
         return new JwtToken(token, expiresAt);
     }
 
@@ -99,6 +105,7 @@ public class JwtService {
 
     public boolean isExpired(Claims claims) {
         Date expiration = claims.getExpiration();
-        return expiration == null || expiration.toInstant().isBefore(Instant.now().minus(1, ChronoUnit.SECONDS));
+        return expiration == null
+                || expiration.toInstant().isBefore(Instant.now().minus(1, ChronoUnit.SECONDS));
     }
 }

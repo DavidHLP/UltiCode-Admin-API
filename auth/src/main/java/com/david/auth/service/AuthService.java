@@ -6,7 +6,6 @@ import com.david.auth.dto.RefreshTokenRequest;
 import com.david.auth.dto.RegisterRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.UserProfileDto;
-import com.david.auth.entity.User;
 
 public interface AuthService {
 
@@ -21,4 +20,6 @@ public interface AuthService {
     TokenIntrospectResponse introspectAccessToken(String token);
 
     void requestPasswordReset(String email);
+
+    void sendRegistrationVerificationCode(String email);
 }

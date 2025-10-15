@@ -1,15 +1,18 @@
 package com.david.auth.exception;
 
+import com.david.common.http.ApiError;
+import com.david.common.http.ApiResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolationException;
+
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,62 +20,61 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex) {
-        ErrorResponse body = ErrorResponse.builder()
-                .status(ex.getStatus().value())
-                .error(ex.getStatus().getReasonPhrase())
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return ResponseEntity.status(ex.getStatus()).body(body);
+    public ApiResponse<Void> handleBusinessException(
+            BusinessException ex, HttpServletResponse response) {
+        response.setStatus(ex.getStatus().value());
+        ApiError error =
+                ApiError.of(
+                        ex.getStatus().value(), ex.getStatus().name(), ex.getMessage());
+        return ApiResponse.failure(error);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    public ApiResponse<Void> handleBadCredentials(
+            BadCredentialsException ex, HttpServletResponse response) {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        ApiError error =
+                ApiError.of(
+                        HttpStatus.UNAUTHORIZED.value(), HttpStatus.UNAUTHORIZED.name(), ex.getMessage());
+        return ApiResponse.failure(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+    public ApiResponse<Void> handleValidationException(
+            MethodArgumentNotValidException ex, HttpServletResponse response) {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
         Map<String, Object> details = new HashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
             details.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message("Validation failed")
-                .timestamp(LocalDateTime.now())
-                .details(details)
-                .build();
-        return ResponseEntity.badRequest().body(body);
+        ApiError error =
+                ApiError.of(
+                        HttpStatus.BAD_REQUEST.value(),
+                        HttpStatus.BAD_REQUEST.name(),
+                        "Validation failed",
+                        details);
+        return ApiResponse.failure(error);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return ResponseEntity.badRequest().body(body);
+    public ApiResponse<Void> handleConstraintViolation(
+            ConstraintViolationException ex, HttpServletResponse response) {
+        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        ApiError error =
+                ApiError.of(
+                        HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.name(), ex.getMessage());
+        return ApiResponse.failure(error);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-        ErrorResponse body = ErrorResponse.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+    public ApiResponse<Void> handleGenericException(
+            Exception ex, HttpServletResponse response) {
+        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        ApiError error =
+                ApiError.of(
+                        HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                        HttpStatus.INTERNAL_SERVER_ERROR.name(),
+                        ex.getMessage());
+        return ApiResponse.failure(error);
     }
 }

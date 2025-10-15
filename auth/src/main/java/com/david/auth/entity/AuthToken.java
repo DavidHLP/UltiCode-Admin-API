@@ -18,8 +18,9 @@ public class AuthToken {
     @TableField("user_id")
     private Long userId;
 
+
     /**
-     * Persisted as SHA-256 hash.
+     * 以 SHA-256 哈希形式持久化存储。
      */
     private String token;
 
