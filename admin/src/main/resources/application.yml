@@ -18,3 +18,9 @@ spring:
   profiles:
     active: datasource
 
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.web.reactive: DEBUG
+

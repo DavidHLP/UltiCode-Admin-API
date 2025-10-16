@@ -3,7 +3,6 @@ package com.david.gateway.support;
 import com.david.common.http.ApiError;
 import com.david.common.http.ApiResponse;
 
-import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -15,13 +14,12 @@ import reactor.core.publisher.Mono;
 public class AuthClient {
 
     private static final ParameterizedTypeReference<ApiResponse<IntrospectResponse>>
-            INTROSPECT_RESPONSE_TYPE =
-                    new ParameterizedTypeReference<>() {};
+            INTROSPECT_RESPONSE_TYPE = new ParameterizedTypeReference<>() {};
 
     private final WebClient webClient;
 
-    public AuthClient(@LoadBalanced WebClient.Builder builder) {
-        this.webClient = builder.baseUrl("http://springoj-authentication").build();
+    public AuthClient(WebClient.Builder builder) {
+        this.webClient = builder.baseUrl("http://auth").build();
     }
 
     public Mono<IntrospectResponse> introspect(String token) {
@@ -39,9 +37,7 @@ public class AuthClient {
                             }
                             ApiError error = response.error();
                             String message =
-                                    error != null
-                                            ? error.message()
-                                            : "Token introspection failed";
+                                    error != null ? error.message() : "Token introspection failed";
                             return Mono.error(new IllegalStateException(message));
                         });
     }
