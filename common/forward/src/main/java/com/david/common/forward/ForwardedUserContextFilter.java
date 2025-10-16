@@ -10,10 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -109,9 +109,6 @@ public class ForwardedUserContextFilter extends OncePerRequestFilter {
         if (!currentAuthentication.isAuthenticated()) {
             return true;
         }
-        if (currentAuthentication instanceof AnonymousAuthenticationToken) {
-            return true;
-        }
-        return false;
+	    return currentAuthentication instanceof AnonymousAuthenticationToken;
     }
 }

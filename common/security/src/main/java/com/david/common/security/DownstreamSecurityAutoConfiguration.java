@@ -25,13 +25,15 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
-/**
- * 提供下游服务默认的安全配置，实现与网关转发身份的无缝衔接。
- */
+/** 提供下游服务默认的安全配置，实现与网关转发身份的无缝衔接。 */
 @AutoConfiguration(after = com.david.common.forward.ForwardedSecurityAutoConfiguration.class)
 @ConditionalOnClass({SecurityFilterChain.class, HttpSecurity.class})
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-@ConditionalOnProperty(prefix = "app.security.forwarded", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = "app.security.forwarded",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 @EnableConfigurationProperties(ForwardedSecurityProperties.class)
 public class DownstreamSecurityAutoConfiguration {
 
@@ -74,7 +76,8 @@ public class DownstreamSecurityAutoConfiguration {
             ForwardedAuthenticationEntryPoint authenticationEntryPoint)
             throws Exception {
         configureHttpSecurity(http, properties);
-        http.addFilterBefore(forwardedUserContextFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(
+                forwardedUserContextFilter, UsernamePasswordAuthenticationFilter.class);
         http.exceptionHandling(
                 exceptionHandling ->
                         exceptionHandling
@@ -108,7 +111,8 @@ public class DownstreamSecurityAutoConfiguration {
                                 .map(AntPathRequestMatcher::new)
                                 .forEach(matcher -> authorize.requestMatchers(matcher).permitAll());
                     }
-                    authorize.anyRequest().authenticated();
+                    // 根据指令，默认放行所有请求，这是微服务内部的security
+                    authorize.anyRequest().permitAll();
                 });
     }
 

@@ -1,6 +1,5 @@
 package com.david.common.security;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -10,17 +9,17 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 import java.io.IOException;
 
-/**
- * 权限不足时返回统一格式。
- */
-public record ForwardedAccessDeniedHandler(ForwardedErrorResponseWriter writer, ForwardedSecurityProperties properties) implements AccessDeniedHandler {
+/** 权限不足时返回统一格式。 */
+public record ForwardedAccessDeniedHandler(
+        ForwardedErrorResponseWriter writer, ForwardedSecurityProperties properties)
+        implements AccessDeniedHandler {
 
-	@Override
+    @Override
     public void handle(
             HttpServletRequest request,
             HttpServletResponse response,
             AccessDeniedException accessDeniedException)
-            throws IOException, ServletException {
+            throws IOException {
         writer.write(response, HttpStatus.FORBIDDEN, properties.getAccessDeniedMessage());
     }
 }

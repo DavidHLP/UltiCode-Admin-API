@@ -19,10 +19,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
+            <groupId>com.david</groupId>
+            <artifactId>password</artifactId>
+            <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>com.david</groupId>
             <artifactId>forward</artifactId>
@@ -35,6 +35,10 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-configuration-processor</artifactId>
