@@ -8,8 +8,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties(AppProperties.class)
-public class SpringAuthenticationApplication {
+public class AuthApplication {
     public static void main(String[] args) {
-        SpringApplication.run(SpringAuthenticationApplication.class, args);
+        SpringApplication.run(AuthApplication.class, args);
     }
 }

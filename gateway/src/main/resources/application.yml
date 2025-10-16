@@ -31,6 +31,10 @@ spring:
           uri: lb://auth
           predicates:
             - Path=/api/auth/**
+        - id: admin-id
+          uri: lb://admin
+          predicates:
+              - Path=/api/admin/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
