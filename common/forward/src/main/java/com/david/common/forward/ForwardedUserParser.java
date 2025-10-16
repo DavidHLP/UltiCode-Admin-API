@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-/** Utilities that read the forwarded user information from headers. */
+/** 用于从请求头中读取转发用户信息的工具类。 */
 public final class ForwardedUserParser {
 
     private ForwardedUserParser() {}

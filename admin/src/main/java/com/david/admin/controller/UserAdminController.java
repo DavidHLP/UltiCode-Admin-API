@@ -50,7 +50,13 @@ public class UserAdminController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Integer status,
             @RequestParam(required = false) Long roleId) {
-        log.info("查询用户列表，页码: {}, 大小: {}, 关键词: {}, 状态: {}, 角色ID: {}", page, size, keyword, status, roleId);
+        log.info(
+                "查询用户列表，页码: {}, 大小: {}, 关键词: {}, 状态: {}, 角色ID: {}",
+                page,
+                size,
+                keyword,
+                status,
+                roleId);
         PageResult<UserView> result =
                 userManagementService.listUsers(page, size, keyword, status, roleId);
         log.info("查询用户列表成功，共返回 {} 条记录", result.total());

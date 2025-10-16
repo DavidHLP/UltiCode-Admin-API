@@ -6,22 +6,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Simple value object describing the user identity that has already been
- * authenticated by the upstream gateway.
- */
+/** 简单的值对象，用于描述已经通过上游网关认证的用户身份。 */
 public record ForwardedUser(Long id, String username, List<String> roles) implements Serializable {
 
-    @Serial
-    private static final long serialVersionUID = 1L;
+    @Serial private static final long serialVersionUID = 1L;
 
     public ForwardedUser {
         roles = roles == null ? List.of() : List.copyOf(roles);
     }
 
-    /**
-     * Convenience factory that avoids null collections.
-     */
+    /** 便利工厂方法，避免空集合。 */
     public static ForwardedUser of(Long id, String username, List<String> roles) {
         return new ForwardedUser(id, username, roles == null ? Collections.emptyList() : roles);
     }

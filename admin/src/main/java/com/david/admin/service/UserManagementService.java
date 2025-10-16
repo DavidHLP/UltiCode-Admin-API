@@ -16,6 +16,12 @@ import com.david.admin.exception.BusinessException;
 import com.david.admin.mapper.RoleMapper;
 import com.david.admin.mapper.UserMapper;
 import com.david.admin.mapper.UserRoleMapper;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,10 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserManagementService {
@@ -58,7 +60,9 @@ public class UserManagementService {
         if (keyword != null && !keyword.isBlank()) {
             query.and(
                     wrapper ->
-                            wrapper.like(User::getUsername, keyword).or().like(User::getEmail, keyword));
+                            wrapper.like(User::getUsername, keyword)
+                                    .or()
+                                    .like(User::getEmail, keyword));
         }
         if (status != null) {
             query.eq(User::getStatus, status);
@@ -77,7 +81,8 @@ public class UserManagementService {
         if (records == null || records.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), result.getTotal(), page, size);
         }
-        Map<Long, List<Role>> roles = loadRolesByUserIds(records.stream().map(User::getId).toList());
+        Map<Long, List<Role>> roles =
+                loadRolesByUserIds(records.stream().map(User::getId).toList());
         List<UserView> items =
                 records.stream()
                         .map(user -> toUserView(user, roles.getOrDefault(user.getId(), List.of())))
@@ -105,8 +110,7 @@ public class UserManagementService {
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setAvatarUrl(request.avatarUrl());
         user.setBio(request.bio());
-        user.setStatus(
-                request.status() == null ? 1 : request.status());
+        user.setStatus(request.status() == null ? 1 : request.status());
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
@@ -125,7 +129,8 @@ public class UserManagementService {
             throw new BusinessException(HttpStatus.NOT_FOUND, "用户不存在");
         }
 
-        if (request.username() != null && !Objects.equals(request.username(), existing.getUsername())) {
+        if (request.username() != null
+                && !Objects.equals(request.username(), existing.getUsername())) {
             ensureUniqueUsername(request.username(), userId);
         }
         if (request.email() != null && !Objects.equals(request.email(), existing.getEmail())) {
@@ -192,8 +197,7 @@ public class UserManagementService {
         if (email == null || email.isBlank()) {
             return;
         }
-        LambdaQueryWrapper<User> query =
-                Wrappers.lambdaQuery(User.class).eq(User::getEmail, email);
+        LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class).eq(User::getEmail, email);
         if (excludeUserId != null) {
             query.ne(User::getId, excludeUserId);
         }
@@ -213,12 +217,11 @@ public class UserManagementService {
         if (relations == null || relations.isEmpty()) {
             return Collections.emptyMap();
         }
-        Set<Long> roleIds =
-                relations.stream().map(UserRole::getRoleId).collect(Collectors.toSet());
+        Set<Long> roleIds = relations.stream().map(UserRole::getRoleId).collect(Collectors.toSet());
         if (roleIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<Role> roles = roleMapper.selectBatchIds(roleIds);
+        List<Role> roles = roleMapper.selectByIds(roleIds);
         Map<Long, Role> roleMap =
                 roles == null
                         ? Collections.emptyMap()
@@ -236,12 +239,11 @@ public class UserManagementService {
     }
 
     private void replaceUserRoles(Long userId, List<Long> roleIds) {
-        userRoleMapper.delete(
-                Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getUserId, userId));
+        userRoleMapper.delete(Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getUserId, userId));
         if (roleIds == null || roleIds.isEmpty()) {
             return;
         }
-        List<Role> roles = roleMapper.selectBatchIds(roleIds);
+        List<Role> roles = roleMapper.selectByIds(roleIds);
         if (roles == null || roles.size() != new HashSet<>(roleIds).size()) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "存在无效的角色ID");
         }
@@ -259,10 +261,7 @@ public class UserManagementService {
         if (roleIds == null) {
             return List.of();
         }
-        return roleIds.stream()
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
+        return roleIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
     }
 
     private List<Long> findUserIdsByRole(Long roleId) {
@@ -296,4 +295,3 @@ public class UserManagementService {
         return new RoleDto(role.getId(), role.getCode(), role.getName());
     }
 }
-

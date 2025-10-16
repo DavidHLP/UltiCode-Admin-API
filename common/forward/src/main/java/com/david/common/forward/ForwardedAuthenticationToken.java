@@ -3,14 +3,14 @@ package com.david.common.forward;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
+import java.io.Serial;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Spring Security {@link org.springframework.security.core.Authentication}
- * implementation that represents an identity propagated from the gateway.
- */
+/** Spring Security {@link org.springframework.security.core.Authentication} 实现，表示从网关传播的身份。 */
 public class ForwardedAuthenticationToken extends AbstractAuthenticationToken {
+
+    @Serial private static final long serialVersionUID = 1L;
 
     private final ForwardedUser principal;
     private final String credentials;
@@ -38,5 +38,10 @@ public class ForwardedAuthenticationToken extends AbstractAuthenticationToken {
     @Override
     public String getCredentials() {
         return credentials;
+    }
+
+    @Override
+    public String getName() {
+        return principal == null ? super.getName() : principal.username();
     }
 }

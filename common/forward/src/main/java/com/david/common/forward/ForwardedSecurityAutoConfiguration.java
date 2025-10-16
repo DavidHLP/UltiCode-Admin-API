@@ -5,13 +5,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
-/** Autoconfiguration wiring the forwarded-user infrastructure into Spring MVC apps. */
+/** 自动配置类，用于将转发用户基础设施集成到Spring MVC应用程序中。 */
 @AutoConfiguration
 @ConditionalOnClass(OncePerRequestFilter.class)
 public class ForwardedSecurityAutoConfiguration {
@@ -34,7 +35,8 @@ public class ForwardedSecurityAutoConfiguration {
             ForwardedUserMethodArgumentResolver resolver) {
         return new WebMvcConfigurer() {
             @Override
-            public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            public void addArgumentResolvers(
+                    @NonNull List<HandlerMethodArgumentResolver> resolvers) {
                 resolvers.add(resolver);
             }
         };

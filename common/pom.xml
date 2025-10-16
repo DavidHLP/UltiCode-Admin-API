@@ -14,6 +14,7 @@
     <modules>
         <module>forward</module>
         <module>http</module>
+        <module>security</module>
     </modules>
 
     <properties>

@@ -36,13 +36,17 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final AuthClient authClient;
     private final AppProperties appProperties;
     private final ObjectMapper objectMapper;
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final AntPathMatcher pathMatcher;
 
     public JwtAuthenticationFilter(
-            AuthClient authClient, AppProperties appProperties, ObjectMapper objectMapper) {
+            AuthClient authClient,
+            AppProperties appProperties,
+            ObjectMapper objectMapper,
+            AntPathMatcher pathMatcher) {
         this.authClient = authClient;
         this.appProperties = appProperties;
         this.objectMapper = objectMapper;
+        this.pathMatcher = pathMatcher;
     }
 
     @Override
@@ -114,6 +118,14 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private Mono<Void> continueChainWithUser(
             GatewayFilterChain chain, ServerWebExchange exchange, IntrospectResponse payload) {
+        if (payload.userId() == null) {
+            log.warn("令牌验证成功但缺少用户ID，拒绝请求");
+            return respond(exchange, HttpStatus.UNAUTHORIZED, "认证信息不完整，缺少用户ID");
+        }
+        if (!StringUtils.hasText(payload.username())) {
+            log.warn("令牌验证成功但缺少用户名，拒绝请求");
+            return respond(exchange, HttpStatus.UNAUTHORIZED, "认证信息不完整，缺少用户名");
+        }
         ForwardedUser forwardedUser =
                 ForwardedUser.of(payload.userId(), payload.username(), payload.roles());
         ServerHttpRequest mutatedRequest =
@@ -137,7 +149,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         ForwardedUserHeaders.ROLE_DELIMITER,
                         user.roles() == null ? List.of() : user.roles());
         headers.set(ForwardedUserHeaders.USER_ROLES, roles);
-        log.trace("为用户 {} 应用转发用户头，ID：{}，角色：{}", username, user.id(), roles);
+        log.debug("为用户 {} 应用转发用户头，ID：{}，角色：{}", username, user.id(), roles);
     }
 
     private Mono<Void> respond(ServerWebExchange exchange, HttpStatus status, String message) {
