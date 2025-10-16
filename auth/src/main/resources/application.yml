@@ -23,6 +23,7 @@ logging:
     org.springframework.cloud.gateway: DEBUG
     reactor.netty.http.client: DEBUG
     org.springframework.web.reactive: DEBUG
+    com.david: DEBUG
 
 app:
   security:

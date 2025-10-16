@@ -2,12 +2,15 @@ package com.david.auth.config;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
 import lombok.Getter;
 import lombok.Setter;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
+import java.util.List;
 
 @Getter
 @Validated
@@ -16,6 +19,15 @@ public class AppProperties {
 
     private final Security security = new Security();
     private final Mail mail = new Mail();
+
+    private final List<String> whiteListPaths =
+            List.of(
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/refresh",
+                    "/api/auth/forgot",
+                    "/api/auth/introspect",
+                    "/actuator/**");
 
     @Getter
     @Validated
@@ -26,20 +38,14 @@ public class AppProperties {
         @Setter
         @Validated
         public static class Jwt {
-            /**
-             * 用于签名JWT的HMAC密钥，请妥善保管。
-             */
-            @NotBlank
-            private String secret;
+            /** 用于签名JWT的HMAC密钥，请妥善保管。 */
+            @NotBlank private String secret;
 
-            @NotBlank
-            private String issuer = "codeforge-auth";
+            @NotBlank private String issuer = "codeforge-auth";
 
-            @NotNull
-            private Duration accessTokenTtl = Duration.ofMinutes(15);
+            @NotNull private Duration accessTokenTtl = Duration.ofMinutes(15);
 
-            @NotNull
-            private Duration refreshTokenTtl = Duration.ofDays(7);
+            @NotNull private Duration refreshTokenTtl = Duration.ofDays(7);
         }
     }
 

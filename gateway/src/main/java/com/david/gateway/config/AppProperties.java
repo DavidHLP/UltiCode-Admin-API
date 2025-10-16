@@ -1,10 +1,15 @@
 package com.david.gateway.config;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
+@Setter
+@Getter
 @Validated
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
@@ -15,13 +20,6 @@ public class AppProperties {
                     "/api/auth/login",
                     "/api/auth/refresh",
                     "/api/auth/forgot",
+                    "/api/auth/introspect",
                     "/actuator/**");
-
-    public List<String> getWhiteListPaths() {
-        return whiteListPaths;
-    }
-
-    public void setWhiteListPaths(List<String> whiteListPaths) {
-        this.whiteListPaths = whiteListPaths;
-    }
 }

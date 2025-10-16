@@ -9,6 +9,8 @@ import com.david.gateway.support.AuthClient;
 import com.david.gateway.support.IntrospectResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -27,6 +29,7 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Slf4j
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
@@ -45,34 +48,38 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         if (exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
+            log.debug("跳过路径 {} 的 OPTIONS 请求", exchange.getRequest().getPath().value());
             return chain.filter(exchange);
         }
         String path = exchange.getRequest().getPath().value();
         if (isWhitelisted(path)) {
+            log.debug("路径 {} 在白名单中，跳过认证", path);
             return chain.filter(exchange);
         }
         String authorization =
                 exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
         if (!StringUtils.hasText(authorization) || !authorization.startsWith("Bearer ")) {
-            return respond(exchange, HttpStatus.UNAUTHORIZED, "Missing Authorization header");
+            log.warn("路径 {} 缺少或无效的 Authorization 头", path);
+            return respond(exchange, HttpStatus.UNAUTHORIZED, "缺少 Authorization 头");
         }
         String token = authorization.substring(7);
+        log.debug("为路径 {} 验证令牌", path);
         return authClient
                 .introspect(token)
-                .flatMap(payload -> continueChainWithUser(chain, exchange, payload))
+                .flatMap(
+                        payload -> {
+                            log.debug("用户 {} 的令牌验证成功，角色：{}", payload.username(), payload.roles());
+                            return continueChainWithUser(chain, exchange, payload);
+                        })
                 .onErrorResume(
                         WebClientResponseException.class,
                         ex -> {
                             if (ex.getStatusCode().is4xxClientError()) {
-                                return respond(
-                                        exchange,
-                                        HttpStatus.UNAUTHORIZED,
-                                        "Invalid or expired token");
+                                log.warn("令牌验证期间客户端错误：{}", ex.getMessage());
+                                return respond(exchange, HttpStatus.UNAUTHORIZED, "令牌无效或已过期");
                             }
-                            return respond(
-                                    exchange,
-                                    HttpStatus.SERVICE_UNAVAILABLE,
-                                    "Authentication service unavailable");
+                            log.error("令牌验证期间服务器错误", ex);
+                            return respond(exchange, HttpStatus.SERVICE_UNAVAILABLE, "认证服务不可用");
                         })
                 .onErrorResume(
                         ex -> {
@@ -80,13 +87,12 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                                 String failureMessage =
                                         StringUtils.hasText(illegalStateException.getMessage())
                                                 ? illegalStateException.getMessage()
-                                                : "Invalid or expired token";
+                                                : "令牌无效或已过期";
+                                log.warn("令牌处理期间非法状态：{}", failureMessage);
                                 return respond(exchange, HttpStatus.UNAUTHORIZED, failureMessage);
                             }
-                            return respond(
-                                    exchange,
-                                    HttpStatus.SERVICE_UNAVAILABLE,
-                                    "Authentication service unavailable");
+                            log.error("认证期间发生意外错误", ex);
+                            return respond(exchange, HttpStatus.SERVICE_UNAVAILABLE, "认证服务不可用");
                         });
     }
 
@@ -97,8 +103,13 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private boolean isWhitelisted(String path) {
         List<String> whitelist = appProperties.getWhiteListPaths();
-        return whitelist != null
-                && whitelist.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+        boolean result =
+                whitelist != null
+                        && whitelist.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+        if (result) {
+            log.trace("路径 {} 匹配白名单模式", path);
+        }
+        return result;
     }
 
     private Mono<Void> continueChainWithUser(
@@ -126,22 +137,20 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                         ForwardedUserHeaders.ROLE_DELIMITER,
                         user.roles() == null ? List.of() : user.roles());
         headers.set(ForwardedUserHeaders.USER_ROLES, roles);
+        log.trace("为用户 {} 应用转发用户头，ID：{}，角色：{}", username, user.id(), roles);
     }
 
     private Mono<Void> respond(ServerWebExchange exchange, HttpStatus status, String message) {
+        log.debug("响应状态：{}，消息：{}", status, message);
         ApiResponse<Void> errorResponse =
-                ApiResponse.failure(
-                        ApiError.of(status.value(), status.name(), message));
+                ApiResponse.failure(ApiError.of(status.value(), status.name(), message));
         byte[] bytes;
         try {
             bytes = objectMapper.writeValueAsBytes(errorResponse);
         } catch (Exception ex) {
+            log.warn("序列化错误响应失败，使用备用方案", ex);
             bytes =
-                    ("{\"status\":"
-                                    + status.value()
-                                    + ",\"message\":\""
-                                    + message
-                                    + "\"}")
+                    ("{\"status\":" + status.value() + ",\"message\":\"" + message + "\"}")
                             .getBytes(StandardCharsets.UTF_8);
         }
         exchange.getResponse().setStatusCode(status);

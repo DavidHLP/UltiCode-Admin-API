@@ -34,12 +34,14 @@ spring:
         - id: admin-id
           uri: lb://admin
           predicates:
-              - Path=/api/admin/**
+            - Path=/api/admin/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     reactor.netty.http.client: DEBUG
     org.springframework.web.reactive: DEBUG
+    com.david: DEBUG
+
 management:
   endpoints:
     web:

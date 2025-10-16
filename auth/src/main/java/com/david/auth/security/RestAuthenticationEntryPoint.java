@@ -4,9 +4,10 @@ import com.david.common.http.ApiError;
 import com.david.common.http.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
@@ -29,10 +31,12 @@ public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
             HttpServletRequest request,
             HttpServletResponse response,
             AuthenticationException authException)
-            throws IOException, ServletException {
+            throws IOException {
+        log.warn("用户认证失败: 请求URI={}, 错误信息={}", request.getRequestURI(), authException.getMessage());
+
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType("application/json;charset=UTF-8");
-        String message = authException != null ? authException.getMessage() : "Unauthorized";
+        String message = authException.getMessage();
         ApiResponse<Void> body =
                 ApiResponse.failure(
                         ApiError.of(
