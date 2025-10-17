@@ -4,7 +4,7 @@ import com.david.common.forward.ForwardedUser;
 import com.david.common.forward.ForwardedUserHeaders;
 import com.david.common.http.ApiError;
 import com.david.common.http.ApiResponse;
-import com.david.gateway.config.AppProperties;
+import com.david.common.forward.AppProperties;
 import com.david.gateway.support.AuthClient;
 import com.david.gateway.support.IntrospectResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;

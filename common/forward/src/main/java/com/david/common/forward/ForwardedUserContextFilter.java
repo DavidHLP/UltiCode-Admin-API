@@ -49,66 +49,45 @@ public class ForwardedUserContextFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 获取当前安全上下文中的认证信息
-        Authentication currentAuthentication =
-                SecurityContextHolder.getContext().getAuthentication();
+        // 总是从请求头中解析转发的用户信息
+        Optional<ForwardedUser> forwardedUser = ForwardedUserParser.from(request);
 
-        // 如果当前没有认证信息或认证未通过，则尝试从请求头中解析转发的用户信息
-        if (shouldPopulateFromHeaders(currentAuthentication)) {
-            Optional<ForwardedUser> forwardedUser = ForwardedUserParser.from(request);
+        // 如果解析到转发的用户信息，则构建认证对象并设置到安全上下文中
+        forwardedUser.ifPresent(
+                user -> {
+                    log.debug("检测到转发的用户信息，用户名: {}", user.username());
 
-            // 如果解析到转发的用户信息，则构建认证对象并设置到安全上下文中
-            forwardedUser.ifPresent(
-                    user -> {
-                        log.debug("检测到转发的用户信息，用户名: {}", user.username());
+                    // 将用户角色转换为Spring Security所需的权限格式
+                    List<SimpleGrantedAuthority> authorities =
+                            user.roles().stream()
+                                    .filter(StringUtils::hasText) // 过滤空字符串
+                                    .map(
+                                            role ->
+                                                    // 确保角色名称以 ROLE_ 开头
+                                                    role.startsWith("ROLE_")
+                                                            ? role
+                                                            : "ROLE_" + role)
+                                    .map(SimpleGrantedAuthority::new) // 转换为SimpleGrantedAuthority对象
+                                    .collect(Collectors.toList()); // 收集为List
 
-                        // 将用户角色转换为Spring Security所需的权限格式
-                        List<SimpleGrantedAuthority> authorities =
-                                user.roles().stream()
-                                        .filter(StringUtils::hasText) // 过滤空字符串
-                                        .map(
-                                                role ->
-                                                        // 确保角色名称以 ROLE_ 开头
-                                                        role.startsWith("ROLE_")
-                                                                ? role
-                                                                : "ROLE_" + role)
-                                        .map(
-                                                SimpleGrantedAuthority
-                                                        ::new) // 转换为SimpleGrantedAuthority对象
-                                        .collect(Collectors.toList()); // 收集为List
+                    log.debug("用户角色转换完成，角色数量: {}", authorities.size());
 
-                        log.debug("用户角色转换完成，角色数量: {}", authorities.size());
+                    // 创建转发认证令牌
+                    ForwardedAuthenticationToken authentication =
+                            new ForwardedAuthenticationToken(user, authorities);
 
-                        // 创建转发认证令牌
-                        ForwardedAuthenticationToken authentication =
-                                new ForwardedAuthenticationToken(user, authorities);
+                    // 将认证信息设置到Spring Security上下文中
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                        // 将认证信息设置到Spring Security上下文中
-                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    log.debug("成功设置转发用户认证信息到安全上下文，用户名: {}", user.username());
+                });
 
-                        log.debug("成功设置转发用户认证信息到安全上下文，用户名: {}", user.username());
-                    });
-
-            // 如果没有解析到转发的用户信息，记录警告日志
-            if (forwardedUser.isEmpty()) {
-                log.warn("未检测到转发的用户信息");
-            }
-        } else {
-            // 如果已有认证信息，记录调试日志
-            log.debug("已存在认证信息，跳过转发用户认证处理");
+        // 如果没有解析到转发的用户信息，记录警告日志
+        if (forwardedUser.isEmpty()) {
+            log.warn("未检测到转发的用户信息");
         }
 
         // 继续执行过滤器链
         filterChain.doFilter(request, response);
-    }
-
-    private boolean shouldPopulateFromHeaders(Authentication currentAuthentication) {
-        if (currentAuthentication == null) {
-            return true;
-        }
-        if (!currentAuthentication.isAuthenticated()) {
-            return true;
-        }
-	    return currentAuthentication instanceof AnonymousAuthenticationToken;
     }
 }

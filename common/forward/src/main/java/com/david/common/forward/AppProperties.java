@@ -1,4 +1,4 @@
-package com.david.gateway.config;
+package com.david.common.forward;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,6 +1,6 @@
 package com.david;
 
-import com.david.gateway.config.AppProperties;
+import com.david.common.forward.AppProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

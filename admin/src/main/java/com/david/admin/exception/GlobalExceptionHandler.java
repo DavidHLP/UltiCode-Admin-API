@@ -7,6 +7,8 @@ import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -54,6 +56,30 @@ public class GlobalExceptionHandler {
         return ApiResponse.failure(error);
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ApiResponse<Void> handleAuthenticationException(
+            AuthenticationException ex, HttpServletResponse response) {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        ApiError error =
+                ApiError.of(
+                        HttpStatus.UNAUTHORIZED.value(),
+                        HttpStatus.UNAUTHORIZED.name(),
+                        ex.getMessage());
+        return ApiResponse.failure(error);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ApiResponse<Void> handleAccessDeniedException(
+            AccessDeniedException ex, HttpServletResponse response) {
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        ApiError error =
+                ApiError.of(
+                        HttpStatus.FORBIDDEN.value(),
+                        HttpStatus.FORBIDDEN.name(),
+                        ex.getMessage());
+        return ApiResponse.failure(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ApiResponse<Void> handleGenericException(
             Exception ex, HttpServletResponse response) {
@@ -66,4 +92,3 @@ public class GlobalExceptionHandler {
         return ApiResponse.failure(error);
     }
 }
-
