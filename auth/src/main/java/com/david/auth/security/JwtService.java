@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -72,6 +73,7 @@ public class JwtService {
                 Jwts.builder()
                         .setSubject(String.valueOf(userId))
                         .setIssuer(jwtProps.getIssuer())
+                        .setId(UUID.randomUUID().toString())
                         .setIssuedAt(Date.from(now))
                         .setExpiration(Date.from(expiresAt))
                         .addClaims(

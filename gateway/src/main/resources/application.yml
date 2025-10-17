@@ -38,7 +38,7 @@ spring:
         - id: problem-id
           uri: lb://problem
           predicates:
-              - Path=/api/admin/problems**
+              - Path=/api/admin/problems/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
