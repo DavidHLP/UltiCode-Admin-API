@@ -1,7 +1,6 @@
 package com.david.admin.controller;
 
 import com.david.admin.dto.PageResult;
-import com.david.admin.dto.RoleDto;
 import com.david.admin.dto.UserCreateRequest;
 import com.david.admin.dto.UserUpdateRequest;
 import com.david.admin.dto.UserView;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -91,11 +89,4 @@ public class UserAdminController {
         return ApiResponse.success(userView);
     }
 
-    @GetMapping("/roles")
-    public ApiResponse<List<RoleDto>> listRoles() {
-        log.info("查询角色列表");
-        List<RoleDto> roles = userManagementService.listRoles();
-        log.info("查询角色列表成功，共返回 {} 条记录", roles.size());
-        return ApiResponse.success(roles);
-    }
 }
