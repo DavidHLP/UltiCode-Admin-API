@@ -36,6 +36,12 @@ CREATE TABLE `auth_tokens`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 71 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of auth_tokens
+-- ----------------------------
+INSERT INTO `auth_tokens` VALUES (71, 1, '29efc2bd1c0a44f1965cc4950af33d85d7283d0f4d22de652df317137a4d4fb8', 'access', 0, '2025-10-20 10:00:00', '2025-10-27 10:00:00');
+INSERT INTO `auth_tokens` VALUES (72, 1, '7ab1a6d4c1d78e5ff62ab3b7c4c685d7b19d9506b477a1f9c3b0c261d5bc4a21', 'refresh', 0, '2025-10-20 10:00:00', '2025-11-19 10:00:00');
+
+-- ----------------------------
 -- Table structure for bookmarks
 -- ----------------------------
 DROP TABLE IF EXISTS `bookmarks`;
@@ -51,6 +57,8 @@ CREATE TABLE `bookmarks`  (
 -- ----------------------------
 -- Records of bookmarks
 -- ----------------------------
+INSERT INTO `bookmarks` VALUES (1, 'problem', 1, '2025-10-20 09:12:00');
+INSERT INTO `bookmarks` VALUES (1, 'contest', 1, '2025-10-20 09:12:30');
 
 -- ----------------------------
 -- Table structure for categories
@@ -91,6 +99,7 @@ CREATE TABLE `comments`  (
 -- ----------------------------
 -- Records of comments
 -- ----------------------------
+INSERT INTO `comments` VALUES (1, 'problem', 1, 1, '这是一道很经典的题目，谢谢分享！', '2025-10-20 09:15:00', '2025-10-20 09:15:00');
 
 -- ----------------------------
 -- Table structure for contest_participants
@@ -109,6 +118,7 @@ CREATE TABLE `contest_participants`  (
 -- ----------------------------
 -- Records of contest_participants
 -- ----------------------------
+INSERT INTO `contest_participants` VALUES (1, 1, '2025-10-20 09:05:00');
 
 -- ----------------------------
 -- Table structure for contest_problems
@@ -130,6 +140,8 @@ CREATE TABLE `contest_problems`  (
 -- ----------------------------
 -- Records of contest_problems
 -- ----------------------------
+INSERT INTO `contest_problems` VALUES (1, 1, 'A', 100, 1);
+INSERT INTO `contest_problems` VALUES (1, 2, 'B', 100, 2);
 
 -- ----------------------------
 -- Table structure for contests
@@ -155,6 +167,7 @@ CREATE TABLE `contests`  (
 -- ----------------------------
 -- Records of contests
 -- ----------------------------
+INSERT INTO `contests` VALUES (1, '秋季热身赛', '一次针对初学者的热身赛，包含两道基础题。', 'icpc', '2025-11-01 09:00:00', '2025-11-01 12:00:00', 1, 1, '2025-10-20 09:00:00', '2025-10-20 09:00:00');
 
 -- ----------------------------
 -- Table structure for datasets
@@ -227,6 +240,8 @@ CREATE TABLE `files`  (
 -- ----------------------------
 -- Records of files
 -- ----------------------------
+INSERT INTO `files` VALUES (1, 'submissions/2025/10/17/1.cpp', '0f4b6cba72f787b8581fbc5eac109d3328d01fefbe17f4ad6d4b5d3c7f27e9a1', 'text/x-c++src', 428, 1, '2025-10-17 17:44:00');
+INSERT INTO `files` VALUES (2, 'submissions/2025/10/17/1.log', '31ed948a9920ba63dd1d8c2f954ed7be16ceb2068aec1a51ad8f7c837f0e9b77', 'text/plain', 182, 1, '2025-10-17 17:45:05');
 
 -- ----------------------------
 -- Table structure for judge_jobs
@@ -252,6 +267,7 @@ CREATE TABLE `judge_jobs`  (
 -- ----------------------------
 -- Records of judge_jobs
 -- ----------------------------
+INSERT INTO `judge_jobs` VALUES (1, 1, 1, 'finished', 0, '2025-10-17 17:46:00', '2025-10-17 17:46:05', '2025-10-17 17:46:07');
 
 -- ----------------------------
 -- Table structure for judge_nodes
@@ -271,6 +287,7 @@ CREATE TABLE `judge_nodes`  (
 -- ----------------------------
 -- Records of judge_nodes
 -- ----------------------------
+INSERT INTO `judge_nodes` VALUES (1, 'node-1', 'online', '{"cpu":"16c","mem_gb":32,"os":"Ubuntu 24.04"}', '2025-10-17 17:50:00', '2025-10-15 08:00:00');
 
 -- ----------------------------
 -- Table structure for languages
@@ -309,6 +326,11 @@ CREATE TABLE `permissions`  (
 -- ----------------------------
 -- Records of permissions
 -- ----------------------------
+INSERT INTO `permissions` VALUES (1, 'problem.view', '查看题目', '2025-10-14 08:00:00');
+INSERT INTO `permissions` VALUES (2, 'problem.manage', '管理题目', '2025-10-14 08:00:00');
+INSERT INTO `permissions` VALUES (3, 'contest.view', '查看比赛', '2025-10-14 08:00:00');
+INSERT INTO `permissions` VALUES (4, 'contest.manage', '管理比赛', '2025-10-14 08:00:00');
+INSERT INTO `permissions` VALUES (5, 'user.manage', '管理用户', '2025-10-14 08:00:00');
 
 -- ----------------------------
 -- Table structure for problem_language_configs
@@ -440,6 +462,7 @@ CREATE TABLE `reactions`  (
 -- ----------------------------
 -- Records of reactions
 -- ----------------------------
+INSERT INTO `reactions` VALUES (1, 'problem', 1, 'like', '2025-10-20 09:16:00');
 
 -- ----------------------------
 -- Table structure for role_permissions
@@ -457,6 +480,13 @@ CREATE TABLE `role_permissions`  (
 -- ----------------------------
 -- Records of role_permissions
 -- ----------------------------
+INSERT INTO `role_permissions` VALUES (2, 1);
+INSERT INTO `role_permissions` VALUES (2, 3);
+INSERT INTO `role_permissions` VALUES (3, 1);
+INSERT INTO `role_permissions` VALUES (3, 2);
+INSERT INTO `role_permissions` VALUES (3, 3);
+INSERT INTO `role_permissions` VALUES (3, 4);
+INSERT INTO `role_permissions` VALUES (3, 5);
 
 -- ----------------------------
 -- Table structure for roles
@@ -499,6 +529,7 @@ CREATE TABLE `submission_artifacts`  (
 -- ----------------------------
 -- Records of submission_artifacts
 -- ----------------------------
+INSERT INTO `submission_artifacts` VALUES (1, 1, 'compile_log', 2, '2025-10-17 17:45:05');
 
 -- ----------------------------
 -- Table structure for submission_tests
@@ -526,6 +557,10 @@ CREATE TABLE `submission_tests`  (
 -- ----------------------------
 -- Records of submission_tests
 -- ----------------------------
+INSERT INTO `submission_tests` VALUES (1, 1, 1, 1, 'AC', 5, 1024, 10, NULL);
+INSERT INTO `submission_tests` VALUES (2, 1, 2, 1, 'AC', 6, 1100, 10, NULL);
+INSERT INTO `submission_tests` VALUES (3, 1, 3, 2, 'AC', 7, 1152, 10, NULL);
+INSERT INTO `submission_tests` VALUES (4, 1, 4, 2, 'AC', 8, 1200, 10, NULL);
 
 -- ----------------------------
 -- Table structure for submissions
@@ -565,6 +600,7 @@ CREATE TABLE `submissions`  (
 -- ----------------------------
 -- Records of submissions
 -- ----------------------------
+INSERT INTO `submissions` VALUES (1, 1, 1, 1, 1, 1, 428, 'AC', 100, 12, 4096, '所有测试用例通过', '127.0.0.1', 1, '2025-10-17 17:45:00');
 
 -- ----------------------------
 -- Table structure for tags
