@@ -170,14 +170,6 @@ public class UserManagementService {
         return getUser(userId);
     }
 
-    public List<RoleDto> listRoles() {
-        List<Role> roles = roleMapper.selectList(Wrappers.emptyWrapper());
-        if (roles == null || roles.isEmpty()) {
-            return List.of();
-        }
-        return roles.stream().map(this::toRoleDto).toList();
-    }
-
     private void ensureUniqueUsername(String username, Long excludeUserId) {
         if (username == null || username.isBlank()) {
             return;

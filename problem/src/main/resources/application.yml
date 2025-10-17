@@ -1,9 +1,9 @@
 server:
-  port: 9093
+  port: 9094
 
 spring:
   application:
-    name: admin
+    name: problem
   cloud:
     nacos:
       discovery:
