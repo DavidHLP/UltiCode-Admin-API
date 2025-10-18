@@ -3,9 +3,11 @@ package com.david.problem.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.problem.dto.CategoryCreateRequest;
 import com.david.problem.dto.CategoryUpdateRequest;
 import com.david.problem.dto.CategoryView;
+import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Category;
 import com.david.problem.entity.Problem;
 import com.david.problem.exception.BusinessException;
@@ -31,7 +33,8 @@ public class CategoryManagementService {
         this.problemMapper = problemMapper;
     }
 
-    public List<CategoryView> listCategories(@Nullable String keyword) {
+    public PageResult<CategoryView> listCategories(
+            int page, int size, @Nullable String keyword) {
         LambdaQueryWrapper<Category> query = Wrappers.lambdaQuery(Category.class);
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
@@ -42,11 +45,15 @@ public class CategoryManagementService {
                                     .like(Category::getName, trimmed));
         }
         query.orderByAsc(Category::getName);
-        List<Category> categories = categoryMapper.selectList(query);
-        if (categories == null || categories.isEmpty()) {
-            return List.of();
-        }
-        return categories.stream().map(this::toView).toList();
+        Page<Category> pager = new Page<>(page, size);
+        Page<Category> result = categoryMapper.selectPage(pager, query);
+        List<Category> categories = result.getRecords();
+        List<CategoryView> items =
+                categories == null || categories.isEmpty()
+                        ? List.of()
+                        : categories.stream().map(this::toView).toList();
+        return new PageResult<>(
+                items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     public CategoryView getCategory(Integer categoryId) {

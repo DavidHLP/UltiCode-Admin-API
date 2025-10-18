@@ -3,9 +3,11 @@ package com.david.problem.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.problem.dto.TagCreateRequest;
 import com.david.problem.dto.TagUpdateRequest;
 import com.david.problem.dto.TagView;
+import com.david.problem.dto.PageResult;
 import com.david.problem.entity.ProblemTag;
 import com.david.problem.entity.Tag;
 import com.david.problem.exception.BusinessException;
@@ -32,7 +34,7 @@ public class TagManagementService {
         this.problemTagMapper = problemTagMapper;
     }
 
-    public List<TagView> listTags(@Nullable String keyword) {
+    public PageResult<TagView> listTags(int page, int size, @Nullable String keyword) {
         LambdaQueryWrapper<Tag> query = Wrappers.lambdaQuery(Tag.class);
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
@@ -43,11 +45,15 @@ public class TagManagementService {
                                     .like(Tag::getName, trimmed));
         }
         query.orderByDesc(Tag::getUpdatedAt).orderByAsc(Tag::getSlug);
-        List<Tag> tags = tagMapper.selectList(query);
-        if (tags == null || tags.isEmpty()) {
-            return List.of();
-        }
-        return tags.stream().map(this::toView).toList();
+        Page<Tag> pager = new Page<>(page, size);
+        Page<Tag> result = tagMapper.selectPage(pager, query);
+        List<Tag> tags = result.getRecords();
+        List<TagView> items =
+                tags == null || tags.isEmpty()
+                        ? List.of()
+                        : tags.stream().map(this::toView).toList();
+        return new PageResult<>(
+                items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     public TagView getTag(Long tagId) {

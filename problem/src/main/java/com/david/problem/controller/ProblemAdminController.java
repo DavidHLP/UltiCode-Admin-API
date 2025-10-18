@@ -65,7 +65,14 @@ public class ProblemAdminController {
                 langCode);
         PageResult<ProblemSummaryView> result =
                 problemManagementService.listProblems(
-                        page, size, keyword, problemType, difficultyId, categoryId, isPublic, langCode);
+                        page,
+                        size,
+                        keyword,
+                        problemType,
+                        difficultyId,
+                        categoryId,
+                        isPublic,
+                        langCode);
         return ApiResponse.success(result);
     }
 

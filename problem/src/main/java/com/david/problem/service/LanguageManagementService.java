@@ -3,9 +3,11 @@ package com.david.problem.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.problem.dto.LanguageCreateRequest;
 import com.david.problem.dto.LanguageUpdateRequest;
 import com.david.problem.dto.LanguageView;
+import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Language;
 import com.david.problem.entity.ProblemLanguageConfig;
 import com.david.problem.entity.ProblemStatement;
@@ -38,8 +40,8 @@ public class LanguageManagementService {
         this.problemStatementMapper = problemStatementMapper;
     }
 
-    public List<LanguageView> listLanguages(
-            @Nullable String keyword, @Nullable Boolean isActive) {
+    public PageResult<LanguageView> listLanguages(
+            int page, int size, @Nullable String keyword, @Nullable Boolean isActive) {
         LambdaQueryWrapper<Language> query = Wrappers.lambdaQuery(Language.class);
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
@@ -53,11 +55,15 @@ public class LanguageManagementService {
             query.eq(Language::getIsActive, Boolean.TRUE.equals(isActive) ? 1 : 0);
         }
         query.orderByAsc(Language::getDisplayName);
-        List<Language> languages = languageMapper.selectList(query);
-        if (languages == null || languages.isEmpty()) {
-            return List.of();
-        }
-        return languages.stream().map(this::toView).toList();
+        Page<Language> pager = new Page<>(page, size);
+        Page<Language> result = languageMapper.selectPage(pager, query);
+        List<Language> languages = result.getRecords();
+        List<LanguageView> items =
+                languages == null || languages.isEmpty()
+                        ? List.of()
+                        : languages.stream().map(this::toView).toList();
+        return new PageResult<>(
+                items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     public LanguageView getLanguage(Integer languageId) {

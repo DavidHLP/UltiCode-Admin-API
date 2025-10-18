@@ -3,9 +3,11 @@ package com.david.problem.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.problem.dto.DifficultyCreateRequest;
 import com.david.problem.dto.DifficultyUpdateRequest;
 import com.david.problem.dto.DifficultyView;
+import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Difficulty;
 import com.david.problem.entity.Problem;
 import com.david.problem.exception.BusinessException;
@@ -32,7 +34,8 @@ public class DifficultyManagementService {
         this.problemMapper = problemMapper;
     }
 
-    public List<DifficultyView> listDifficulties(@Nullable String keyword) {
+    public PageResult<DifficultyView> listDifficulties(
+            int page, int size, @Nullable String keyword) {
         LambdaQueryWrapper<Difficulty> query = Wrappers.lambdaQuery(Difficulty.class);
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
@@ -46,11 +49,15 @@ public class DifficultyManagementService {
                     });
         }
         query.orderByAsc(Difficulty::getSortKey).orderByAsc(Difficulty::getId);
-        List<Difficulty> difficulties = difficultyMapper.selectList(query);
-        if (difficulties == null || difficulties.isEmpty()) {
-            return List.of();
-        }
-        return difficulties.stream().map(this::toView).toList();
+        Page<Difficulty> pager = new Page<>(page, size);
+        Page<Difficulty> result = difficultyMapper.selectPage(pager, query);
+        List<Difficulty> difficulties = result.getRecords();
+        List<DifficultyView> items =
+                difficulties == null || difficulties.isEmpty()
+                        ? List.of()
+                        : difficulties.stream().map(this::toView).toList();
+        return new PageResult<>(
+                items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     public DifficultyView getDifficulty(Integer difficultyId) {

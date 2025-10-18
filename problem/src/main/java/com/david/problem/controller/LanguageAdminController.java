@@ -4,9 +4,11 @@ import com.david.common.http.ApiResponse;
 import com.david.problem.dto.LanguageCreateRequest;
 import com.david.problem.dto.LanguageUpdateRequest;
 import com.david.problem.dto.LanguageView;
+import com.david.problem.dto.PageResult;
 import com.david.problem.service.LanguageManagementService;
 import jakarta.validation.Valid;
-import java.util.List;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,14 +38,24 @@ public class LanguageAdminController {
     }
 
     @GetMapping
-    public ApiResponse<List<LanguageView>> listLanguages(
+    public ApiResponse<PageResult<LanguageView>> listLanguages(
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") int page,
+            @RequestParam(defaultValue = "10")
+                    @Min(value = 1, message = "分页大小不能小于1")
+                    @Max(value = 100, message = "分页大小不能超过100")
+                    int size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean isActive) {
-        log.info("查询语言列表，关键字: {}, 是否启用: {}", keyword, isActive);
-        List<LanguageView> languages =
-                languageManagementService.listLanguages(keyword, isActive);
+        log.info(
+                "查询语言列表，页码: {}, 大小: {}, 关键字: {}, 是否启用: {}",
+                page,
+                size,
+                keyword,
+                isActive);
+        PageResult<LanguageView> languages =
+                languageManagementService.listLanguages(page, size, keyword, isActive);
         return ApiResponse.success(languages);
-    }
+}
 
     @GetMapping("/{languageId}")
     public ApiResponse<LanguageView> getLanguage(@PathVariable Integer languageId) {

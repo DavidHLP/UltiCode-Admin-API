@@ -1,12 +1,14 @@
 package com.david.problem.controller;
 
 import com.david.common.http.ApiResponse;
+import com.david.problem.dto.PageResult;
 import com.david.problem.dto.TagCreateRequest;
 import com.david.problem.dto.TagUpdateRequest;
 import com.david.problem.dto.TagView;
 import com.david.problem.service.TagManagementService;
 import jakarta.validation.Valid;
-import java.util.List;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,11 +38,17 @@ public class TagAdminController {
     }
 
     @GetMapping
-    public ApiResponse<List<TagView>> listTags(@RequestParam(required = false) String keyword) {
-        log.info("查询标签列表，关键字: {}", keyword);
-        List<TagView> tags = tagManagementService.listTags(keyword);
+    public ApiResponse<PageResult<TagView>> listTags(
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") int page,
+            @RequestParam(defaultValue = "10")
+                    @Min(value = 1, message = "分页大小不能小于1")
+                    @Max(value = 100, message = "分页大小不能超过100")
+                    int size,
+            @RequestParam(required = false) String keyword) {
+        log.info("查询标签列表，页码: {}, 大小: {}, 关键字: {}", page, size, keyword);
+        PageResult<TagView> tags = tagManagementService.listTags(page, size, keyword);
         return ApiResponse.success(tags);
-    }
+}
 
     @GetMapping("/{tagId}")
     public ApiResponse<TagView> getTag(@PathVariable Long tagId) {
