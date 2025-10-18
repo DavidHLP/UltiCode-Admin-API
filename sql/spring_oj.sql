@@ -22,13 +22,13 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `auth_tokens`;
 CREATE TABLE `auth_tokens`  (
-                                `id` bigint NOT NULL AUTO_INCREMENT,
-                                `user_id` bigint NOT NULL,
-                                `token` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                `kind` enum('access','refresh','api') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                `revoked` tinyint(1) NOT NULL DEFAULT 0,
-                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                `expires_at` timestamp NULL DEFAULT NULL,
+                                `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+                                `user_id` bigint NOT NULL COMMENT '关联用户ID',
+                                `token` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '令牌值',
+                                `kind` enum('access','refresh','api') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '令牌类型',
+                                `revoked` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否已吊销',
+                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                `expires_at` timestamp NULL DEFAULT NULL COMMENT '过期时间',
                                 PRIMARY KEY (`id`) USING BTREE,
                                 UNIQUE INDEX `uk_auth_tokens_token`(`token` ASC) USING BTREE,
                                 INDEX `idx_auth_tokens_user`(`user_id` ASC, `kind` ASC, `revoked` ASC) USING BTREE,
@@ -46,10 +46,10 @@ INSERT INTO `auth_tokens` VALUES (72, 1, '7ab1a6d4c1d78e5ff62ab3b7c4c685d7b19d95
 -- ----------------------------
 DROP TABLE IF EXISTS `bookmarks`;
 CREATE TABLE `bookmarks`  (
-                              `user_id` bigint NOT NULL,
-                              `entity_type` enum('problem','contest') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                              `entity_id` bigint NOT NULL,
-                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              `user_id` bigint NOT NULL COMMENT '用户ID',
+                              `entity_type` enum('problem','contest') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                              `entity_id` bigint NOT NULL COMMENT '实体主键ID',
+                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
                               PRIMARY KEY (`user_id`, `entity_type`, `entity_id`) USING BTREE,
                               INDEX `idx_bookmarks_entity`(`entity_type` ASC, `entity_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -65,9 +65,9 @@ INSERT INTO `bookmarks` VALUES (1, 'contest', 1, '2025-10-20 09:12:30');
 -- ----------------------------
 DROP TABLE IF EXISTS `categories`;
 CREATE TABLE `categories`  (
-                               `id` smallint NOT NULL AUTO_INCREMENT,
-                               `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                               `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+                               `id` smallint NOT NULL AUTO_INCREMENT COMMENT '分类ID',
+                               `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类编码',
+                               `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '分类名称',
                                PRIMARY KEY (`id`) USING BTREE,
                                UNIQUE INDEX `uk_categories_code`(`code` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -83,13 +83,13 @@ INSERT INTO `categories` VALUES (2, 'data-structures', 'Data Structures');
 -- ----------------------------
 DROP TABLE IF EXISTS `comments`;
 CREATE TABLE `comments`  (
-                             `id` bigint NOT NULL AUTO_INCREMENT,
-                             `entity_type` enum('problem','contest','submission') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `entity_id` bigint NOT NULL,
-                             `user_id` bigint NOT NULL,
-                             `content_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                             `id` bigint NOT NULL AUTO_INCREMENT COMMENT '评论ID',
+                             `entity_type` enum('problem','contest','submission') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                             `entity_id` bigint NOT NULL COMMENT '实体ID',
+                             `user_id` bigint NOT NULL COMMENT '评论用户ID',
+                             `content_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '评论内容Markdown',
+                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                              PRIMARY KEY (`id`) USING BTREE,
                              INDEX `idx_comments_entity`(`entity_type` ASC, `entity_id` ASC, `created_at` ASC) USING BTREE,
                              INDEX `idx_comments_user`(`user_id` ASC, `created_at` ASC) USING BTREE,
@@ -106,9 +106,9 @@ INSERT INTO `comments` VALUES (1, 'problem', 1, 1, '这是一道很经典的题�
 -- ----------------------------
 DROP TABLE IF EXISTS `contest_participants`;
 CREATE TABLE `contest_participants`  (
-                                         `contest_id` bigint NOT NULL,
-                                         `user_id` bigint NOT NULL,
-                                         `registered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                         `contest_id` bigint NOT NULL COMMENT '比赛ID',
+                                         `user_id` bigint NOT NULL COMMENT '参赛用户ID',
+                                         `registered_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
                                          PRIMARY KEY (`contest_id`, `user_id`) USING BTREE,
                                          INDEX `idx_cpart_user`(`user_id` ASC, `contest_id` ASC) USING BTREE,
                                          CONSTRAINT `fk_cpart_contest` FOREIGN KEY (`contest_id`) REFERENCES `contests` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
@@ -125,11 +125,11 @@ INSERT INTO `contest_participants` VALUES (1, 1, '2025-10-20 09:05:00');
 -- ----------------------------
 DROP TABLE IF EXISTS `contest_problems`;
 CREATE TABLE `contest_problems`  (
-                                     `contest_id` bigint NOT NULL,
-                                     `problem_id` bigint NOT NULL,
-                                     `alias` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                                     `points` int NULL DEFAULT NULL,
-                                     `order_no` int NULL DEFAULT 0,
+                                     `contest_id` bigint NOT NULL COMMENT '比赛ID',
+                                     `problem_id` bigint NOT NULL COMMENT '题目ID',
+                                     `alias` varchar(8) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '题目别名',
+                                     `points` int NULL DEFAULT NULL COMMENT '题目分值',
+                                     `order_no` int NULL DEFAULT 0 COMMENT '题目排序号',
                                      PRIMARY KEY (`contest_id`, `problem_id`) USING BTREE,
                                      INDEX `idx_cp_order`(`contest_id` ASC, `order_no` ASC) USING BTREE,
                                      INDEX `fk_cp_problem`(`problem_id` ASC) USING BTREE,
@@ -148,16 +148,16 @@ INSERT INTO `contest_problems` VALUES (1, 2, 'B', 100, 2);
 -- ----------------------------
 DROP TABLE IF EXISTS `contests`;
 CREATE TABLE `contests`  (
-                             `id` bigint NOT NULL AUTO_INCREMENT,
-                             `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `description_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-                             `kind` enum('icpc','oi','ioi','cf','acm','custom') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'icpc',
-                             `start_time` datetime NOT NULL,
-                             `end_time` datetime NOT NULL,
-                             `is_visible` tinyint(1) NOT NULL DEFAULT 1,
-                             `created_by` bigint NULL DEFAULT NULL,
-                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                             `id` bigint NOT NULL AUTO_INCREMENT COMMENT '比赛ID',
+                             `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '比赛标题',
+                             `description_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '比赛描述Markdown',
+                             `kind` enum('icpc','oi','ioi','cf','acm','custom') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'icpc' COMMENT '比赛类型',
+                             `start_time` datetime NOT NULL COMMENT '开始时间',
+                             `end_time` datetime NOT NULL COMMENT '结束时间',
+                             `is_visible` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否公开',
+                             `created_by` bigint NULL DEFAULT NULL COMMENT '创建人ID',
+                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                              PRIMARY KEY (`id`) USING BTREE,
                              INDEX `idx_contest_time`(`start_time` ASC, `end_time` ASC) USING BTREE,
                              INDEX `fk_contest_creator`(`created_by` ASC) USING BTREE,
@@ -174,17 +174,17 @@ INSERT INTO `contests` VALUES (1, '秋季热身赛', '一次针对初学者的�
 -- ----------------------------
 DROP TABLE IF EXISTS `datasets`;
 CREATE TABLE `datasets`  (
-                             `id` bigint NOT NULL AUTO_INCREMENT,
-                             `problem_id` bigint NOT NULL,
-                             `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                             `is_active` tinyint(1) NOT NULL DEFAULT 0,
-                             `checker_type` enum('text','float','custom') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'text',
-                             `checker_file_id` bigint NULL DEFAULT NULL,
-                             `float_abs_tol` double NULL DEFAULT NULL,
-                             `float_rel_tol` double NULL DEFAULT NULL,
-                             `created_by` bigint NULL DEFAULT NULL,
-                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                             `id` bigint NOT NULL AUTO_INCREMENT COMMENT '数据集ID',
+                             `problem_id` bigint NOT NULL COMMENT '关联题目ID',
+                             `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '数据集名称',
+                             `is_active` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为激活数据集',
+                             `checker_type` enum('text','float','custom') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'text' COMMENT '校验器类型',
+                             `checker_file_id` bigint NULL DEFAULT NULL COMMENT '自定义校验器文件ID',
+                             `float_abs_tol` double NULL DEFAULT NULL COMMENT '浮点绝对误差阈值',
+                             `float_rel_tol` double NULL DEFAULT NULL COMMENT '浮点相对误差阈值',
+                             `created_by` bigint NULL DEFAULT NULL COMMENT '创建人ID',
+                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                              PRIMARY KEY (`id`) USING BTREE,
                              INDEX `idx_ds_problem`(`problem_id` ASC, `is_active` ASC) USING BTREE,
                              INDEX `fk_ds_checker_file`(`checker_file_id` ASC) USING BTREE,
@@ -205,9 +205,9 @@ INSERT INTO `datasets` VALUES (2, 2, 'v1', 1, 'text', NULL, NULL, NULL, 1, '2025
 -- ----------------------------
 DROP TABLE IF EXISTS `difficulties`;
 CREATE TABLE `difficulties`  (
-                                 `id` tinyint NOT NULL,
-                                 `code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                 `sort_key` tinyint NOT NULL,
+                                 `id` tinyint NOT NULL COMMENT '难度ID',
+                                 `code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '难度编码',
+                                 `sort_key` tinyint NOT NULL COMMENT '排序键',
                                  PRIMARY KEY (`id`) USING BTREE,
                                  UNIQUE INDEX `uk_difficulties_code`(`code` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -224,13 +224,13 @@ INSERT INTO `difficulties` VALUES (3, 'hard', 3);
 -- ----------------------------
 DROP TABLE IF EXISTS `files`;
 CREATE TABLE `files`  (
-                          `id` bigint NOT NULL AUTO_INCREMENT,
-                          `storage_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `sha256` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `mime_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                          `size_bytes` bigint NULL DEFAULT NULL,
-                          `created_by` bigint NULL DEFAULT NULL,
-                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          `id` bigint NOT NULL AUTO_INCREMENT COMMENT '文件ID',
+                          `storage_key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '存储路径Key',
+                          `sha256` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '文件哈希',
+                          `mime_type` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'MIME类型',
+                          `size_bytes` bigint NULL DEFAULT NULL COMMENT '文件大小字节数',
+                          `created_by` bigint NULL DEFAULT NULL COMMENT '上传用户ID',
+                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
                           PRIMARY KEY (`id`) USING BTREE,
                           UNIQUE INDEX `uk_files_sha`(`sha256` ASC) USING BTREE,
                           INDEX `idx_files_creator`(`created_by` ASC) USING BTREE,
@@ -248,14 +248,14 @@ INSERT INTO `files` VALUES (2, 'submissions/2025/10/17/1.log', '31ed948a9920ba63
 -- ----------------------------
 DROP TABLE IF EXISTS `judge_jobs`;
 CREATE TABLE `judge_jobs`  (
-                               `id` bigint NOT NULL AUTO_INCREMENT,
-                               `submission_id` bigint NOT NULL,
-                               `node_id` bigint NULL DEFAULT NULL,
-                               `status` enum('queued','running','finished','failed','canceled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'queued',
-                               `priority` tinyint NOT NULL DEFAULT 0,
-                               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                               `started_at` timestamp NULL DEFAULT NULL,
-                               `finished_at` timestamp NULL DEFAULT NULL,
+                               `id` bigint NOT NULL AUTO_INCREMENT COMMENT '评测任务ID',
+                               `submission_id` bigint NOT NULL COMMENT '关联提交ID',
+                               `node_id` bigint NULL DEFAULT NULL COMMENT '执行节点ID',
+                               `status` enum('queued','running','finished','failed','canceled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'queued' COMMENT '任务状态',
+                               `priority` tinyint NOT NULL DEFAULT 0 COMMENT '任务优先级',
+                               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                               `started_at` timestamp NULL DEFAULT NULL COMMENT '开始时间',
+                               `finished_at` timestamp NULL DEFAULT NULL COMMENT '完成时间',
                                PRIMARY KEY (`id`) USING BTREE,
                                UNIQUE INDEX `uk_job_submission`(`submission_id` ASC) USING BTREE,
                                INDEX `idx_jobs_status`(`status` ASC, `priority` ASC, `created_at` ASC) USING BTREE,
@@ -274,12 +274,12 @@ INSERT INTO `judge_jobs` VALUES (1, 1, 1, 'finished', 0, '2025-10-17 17:46:00', 
 -- ----------------------------
 DROP TABLE IF EXISTS `judge_nodes`;
 CREATE TABLE `judge_nodes`  (
-                                `id` bigint NOT NULL AUTO_INCREMENT,
-                                `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                `status` enum('online','offline','busy','draining') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'online',
-                                `runtime_info` json NULL,
-                                `last_heartbeat` timestamp NULL DEFAULT NULL,
-                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                `id` bigint NOT NULL AUTO_INCREMENT COMMENT '评测节点ID',
+                                `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '节点名称',
+                                `status` enum('online','offline','busy','draining') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'online' COMMENT '节点状态',
+                                `runtime_info` json NULL COMMENT '节点运行信息',
+                                `last_heartbeat` timestamp NULL DEFAULT NULL COMMENT '最后心跳',
+                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                 PRIMARY KEY (`id`) USING BTREE,
                                 UNIQUE INDEX `uk_jnode_name`(`name` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -294,11 +294,11 @@ INSERT INTO `judge_nodes` VALUES (1, 'node-1', 'online', '{"cpu":"16c","mem_gb":
 -- ----------------------------
 DROP TABLE IF EXISTS `languages`;
 CREATE TABLE `languages`  (
-                              `id` smallint NOT NULL AUTO_INCREMENT,
-                              `code` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                              `display_name` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                              `runtime_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                              `is_active` tinyint(1) NOT NULL DEFAULT 1,
+                              `id` smallint NOT NULL AUTO_INCREMENT COMMENT '语言ID',
+                              `code` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '语言编码',
+                              `display_name` varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '展示名称',
+                              `runtime_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '运行镜像',
+                              `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
                               PRIMARY KEY (`id`) USING BTREE,
                               UNIQUE INDEX `uk_languages_code`(`code` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -315,10 +315,10 @@ INSERT INTO `languages` VALUES (3, 'java17', 'Java 17', NULL, 1);
 -- ----------------------------
 DROP TABLE IF EXISTS `permissions`;
 CREATE TABLE `permissions`  (
-                                `id` bigint NOT NULL AUTO_INCREMENT,
-                                `code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                `id` bigint NOT NULL AUTO_INCREMENT COMMENT '权限ID',
+                                `code` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '权限编码',
+                                `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '权限名称',
+                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                 PRIMARY KEY (`id`) USING BTREE,
                                 UNIQUE INDEX `uk_permissions_code`(`code` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -337,11 +337,11 @@ INSERT INTO `permissions` VALUES (5, 'user.manage', '管理用户', '2025-10-14 
 -- ----------------------------
 DROP TABLE IF EXISTS `problem_language_configs`;
 CREATE TABLE `problem_language_configs`  (
-                                             `id` bigint NOT NULL AUTO_INCREMENT,
-                                             `problem_id` bigint NOT NULL,
-                                             `language_id` smallint NOT NULL,
-                                             `function_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                                             `starter_code` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+                                             `id` bigint NOT NULL AUTO_INCREMENT COMMENT '配置ID',
+                                             `problem_id` bigint NOT NULL COMMENT '题目ID',
+                                             `language_id` smallint NOT NULL COMMENT '语言ID',
+                                             `function_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '函数入口名',
+                                             `starter_code` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '初始代码模板',
                                              PRIMARY KEY (`id`) USING BTREE,
                                              UNIQUE INDEX `uk_problem_language`(`problem_id` ASC, `language_id` ASC) USING BTREE,
                                              INDEX `idx_plc_problem`(`problem_id` ASC) USING BTREE,
@@ -365,15 +365,15 @@ INSERT INTO `problem_language_configs` VALUES (2112, 1, 3, 'twoSum', '// LeetCod
 -- ----------------------------
 DROP TABLE IF EXISTS `problem_statements`;
 CREATE TABLE `problem_statements`  (
-                                       `id` bigint NOT NULL AUTO_INCREMENT,
-                                       `problem_id` bigint NOT NULL,
-                                       `lang_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                       `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                       `description_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                       `constraints_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-                                       `examples_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-                                       `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                       `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                       `id` bigint NOT NULL AUTO_INCREMENT COMMENT '题面ID',
+                                       `problem_id` bigint NOT NULL COMMENT '题目ID',
+                                       `lang_code` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '语言编码',
+                                       `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目标题',
+                                       `description_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目描述Markdown',
+                                       `constraints_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '约束信息Markdown',
+                                       `examples_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '示例说明Markdown',
+                                       `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                       `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                        PRIMARY KEY (`id`) USING BTREE,
                                        UNIQUE INDEX `uk_problem_lang`(`problem_id` ASC, `lang_code` ASC) USING BTREE,
                                        CONSTRAINT `fk_ps_problem` FOREIGN KEY (`problem_id`) REFERENCES `problems` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
@@ -392,8 +392,8 @@ INSERT INTO `problem_statements` VALUES (208, 1, 'zh-CN', '1. 两数之和', '�
 -- ----------------------------
 DROP TABLE IF EXISTS `problem_tags`;
 CREATE TABLE `problem_tags`  (
-                                 `problem_id` bigint NOT NULL,
-                                 `tag_id` bigint NOT NULL,
+                                 `problem_id` bigint NOT NULL COMMENT '题目ID',
+                                 `tag_id` bigint NOT NULL COMMENT '标签ID',
                                  PRIMARY KEY (`problem_id`, `tag_id`) USING BTREE,
                                  INDEX `idx_pt_tag`(`tag_id` ASC) USING BTREE,
                                  CONSTRAINT `fk_pt_problem` FOREIGN KEY (`problem_id`) REFERENCES `problems` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
@@ -412,20 +412,20 @@ INSERT INTO `problem_tags` VALUES (1, 11);
 -- ----------------------------
 DROP TABLE IF EXISTS `problems`;
 CREATE TABLE `problems`  (
-                             `id` bigint NOT NULL AUTO_INCREMENT,
-                             `slug` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `problem_type` enum('coding','sql','shell','concurrency','interactive','output-only') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'coding',
-                             `difficulty_id` tinyint NOT NULL,
-                             `category_id` smallint NULL DEFAULT NULL,
-                             `creator_id` bigint NULL DEFAULT NULL,
-                             `solution_entry` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                             `time_limit_ms` int NULL DEFAULT NULL,
-                             `memory_limit_kb` int NULL DEFAULT NULL,
-                             `is_public` tinyint(1) NOT NULL DEFAULT 1,
-                             `meta_json` json NULL,
-                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                             `active_dataset_id` bigint NULL DEFAULT NULL,
+                             `id` bigint NOT NULL AUTO_INCREMENT COMMENT '题目ID',
+                             `slug` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '题目别名',
+                             `problem_type` enum('coding','sql','shell','concurrency','interactive','output-only') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'coding' COMMENT '题目类型',
+                             `difficulty_id` tinyint NOT NULL COMMENT '难度ID',
+                             `category_id` smallint NULL DEFAULT NULL COMMENT '分类ID',
+                             `creator_id` bigint NULL DEFAULT NULL COMMENT '创建者ID',
+                             `solution_entry` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '评测入口函数',
+                             `time_limit_ms` int NULL DEFAULT NULL COMMENT '时间限制毫秒',
+                             `memory_limit_kb` int NULL DEFAULT NULL COMMENT '内存限制KB',
+                             `is_public` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否公开',
+                             `meta_json` json NULL COMMENT '题目元数据',
+                             `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                             `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                             `active_dataset_id` bigint NULL DEFAULT NULL COMMENT '激活数据集ID',
                              PRIMARY KEY (`id`) USING BTREE,
                              UNIQUE INDEX `uk_problems_slug`(`slug` ASC) USING BTREE,
                              INDEX `idx_problems_visibility`(`is_public` ASC, `id` ASC) USING BTREE,
@@ -450,11 +450,11 @@ INSERT INTO `problems` VALUES (2, '344-reverse-string', 'coding', 1, 1, 1, 'reve
 -- ----------------------------
 DROP TABLE IF EXISTS `reactions`;
 CREATE TABLE `reactions`  (
-                              `user_id` bigint NOT NULL,
-                              `entity_type` enum('problem','comment') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                              `entity_id` bigint NOT NULL,
-                              `kind` enum('like','dislike') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              `user_id` bigint NOT NULL COMMENT '用户ID',
+                              `entity_type` enum('problem','comment') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                              `entity_id` bigint NOT NULL COMMENT '实体ID',
+                              `kind` enum('like','dislike') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '反馈类型',
+                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                               PRIMARY KEY (`user_id`, `entity_type`, `entity_id`, `kind`) USING BTREE,
                               INDEX `idx_reactions_entity`(`entity_type` ASC, `entity_id` ASC, `kind` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -469,8 +469,8 @@ INSERT INTO `reactions` VALUES (1, 'problem', 1, 'like', '2025-10-20 09:16:00');
 -- ----------------------------
 DROP TABLE IF EXISTS `role_permissions`;
 CREATE TABLE `role_permissions`  (
-                                     `role_id` bigint NOT NULL,
-                                     `perm_id` bigint NOT NULL,
+                                     `role_id` bigint NOT NULL COMMENT '角色ID',
+                                     `perm_id` bigint NOT NULL COMMENT '权限ID',
                                      PRIMARY KEY (`role_id`, `perm_id`) USING BTREE,
                                      INDEX `idx_role_permissions_perm`(`perm_id` ASC) USING BTREE,
                                      CONSTRAINT `fk_role_permissions_perm` FOREIGN KEY (`perm_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
@@ -493,12 +493,12 @@ INSERT INTO `role_permissions` VALUES (3, 5);
 -- ----------------------------
 DROP TABLE IF EXISTS `roles`;
 CREATE TABLE `roles`  (
-                          `id` bigint NOT NULL AUTO_INCREMENT,
-                          `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                          `id` bigint NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+                          `code` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色编码',
+                          `name` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色名称',
+                          `remark` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '角色备注',
+                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           PRIMARY KEY (`id`) USING BTREE,
                           UNIQUE INDEX `uk_roles_code`(`code` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -514,11 +514,11 @@ INSERT INTO `roles` VALUES (3, 'admin', '管理员', '最高管理权限', '2025
 -- ----------------------------
 DROP TABLE IF EXISTS `submission_artifacts`;
 CREATE TABLE `submission_artifacts`  (
-                                         `id` bigint NOT NULL AUTO_INCREMENT,
-                                         `submission_id` bigint NOT NULL,
-                                         `kind` enum('compile_log','run_log','stderr','stdout','diff','system') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                         `file_id` bigint NOT NULL,
-                                         `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                         `id` bigint NOT NULL AUTO_INCREMENT COMMENT '提交附件ID',
+                                         `submission_id` bigint NOT NULL COMMENT '提交ID',
+                                         `kind` enum('compile_log','run_log','stderr','stdout','diff','system') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '附件类型',
+                                         `file_id` bigint NOT NULL COMMENT '文件ID',
+                                         `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                          PRIMARY KEY (`id`) USING BTREE,
                                          INDEX `idx_sa_submission`(`submission_id` ASC, `kind` ASC) USING BTREE,
                                          INDEX `fk_sa_file`(`file_id` ASC) USING BTREE,
@@ -536,15 +536,15 @@ INSERT INTO `submission_artifacts` VALUES (1, 1, 'compile_log', 2, '2025-10-17 1
 -- ----------------------------
 DROP TABLE IF EXISTS `submission_tests`;
 CREATE TABLE `submission_tests`  (
-                                     `id` bigint NOT NULL AUTO_INCREMENT,
-                                     `submission_id` bigint NOT NULL,
-                                     `testcase_id` bigint NOT NULL,
-                                     `group_id` bigint NOT NULL,
-                                     `verdict` enum('AC','WA','TLE','MLE','RE','OLE','PE','SKIP','IE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                                     `time_ms` int NULL DEFAULT NULL,
-                                     `memory_kb` int NULL DEFAULT NULL,
-                                     `score` int NULL DEFAULT NULL,
-                                     `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
+                                     `id` bigint NOT NULL AUTO_INCREMENT COMMENT '测试结果ID',
+                                     `submission_id` bigint NOT NULL COMMENT '提交ID',
+                                     `testcase_id` bigint NOT NULL COMMENT '测试用例ID',
+                                     `group_id` bigint NOT NULL COMMENT '测试组ID',
+                                     `verdict` enum('AC','WA','TLE','MLE','RE','OLE','PE','SKIP','IE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '判题结果',
+                                     `time_ms` int NULL DEFAULT NULL COMMENT '耗时毫秒',
+                                     `memory_kb` int NULL DEFAULT NULL COMMENT '内存消耗KB',
+                                     `score` int NULL DEFAULT NULL COMMENT '得分',
+                                     `message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '附加信息',
                                      PRIMARY KEY (`id`) USING BTREE,
                                      UNIQUE INDEX `uk_submission_test`(`submission_id` ASC, `testcase_id` ASC) USING BTREE,
                                      INDEX `idx_st_group`(`group_id` ASC) USING BTREE,
@@ -567,21 +567,21 @@ INSERT INTO `submission_tests` VALUES (4, 1, 4, 2, 'AC', 8, 1200, 10, NULL);
 -- ----------------------------
 DROP TABLE IF EXISTS `submissions`;
 CREATE TABLE `submissions`  (
-                                `id` bigint NOT NULL AUTO_INCREMENT,
-                                `user_id` bigint NOT NULL,
-                                `problem_id` bigint NOT NULL,
-                                `dataset_id` bigint NOT NULL,
-                                `language_id` smallint NOT NULL,
-                                `source_file_id` bigint NOT NULL,
-                                `code_bytes` int NULL DEFAULT NULL,
-                                `verdict` enum('PD','AC','WA','TLE','MLE','RE','CE','OLE','PE','IE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PD',
-                                `score` int NULL DEFAULT NULL,
-                                `time_ms` int NULL DEFAULT NULL,
-                                `memory_kb` int NULL DEFAULT NULL,
-                                `judge_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
-                                `ip_addr` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                                `contest_id` bigint NULL DEFAULT NULL,
-                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                `id` bigint NOT NULL AUTO_INCREMENT COMMENT '提交ID',
+                                `user_id` bigint NOT NULL COMMENT '提交用户ID',
+                                `problem_id` bigint NOT NULL COMMENT '题目ID',
+                                `dataset_id` bigint NOT NULL COMMENT '使用数据集ID',
+                                `language_id` smallint NOT NULL COMMENT '编程语言ID',
+                                `source_file_id` bigint NOT NULL COMMENT '源代码文件ID',
+                                `code_bytes` int NULL DEFAULT NULL COMMENT '代码大小字节',
+                                `verdict` enum('PD','AC','WA','TLE','MLE','RE','CE','OLE','PE','IE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PD' COMMENT '最终判题结果',
+                                `score` int NULL DEFAULT NULL COMMENT '得分',
+                                `time_ms` int NULL DEFAULT NULL COMMENT '总耗时毫秒',
+                                `memory_kb` int NULL DEFAULT NULL COMMENT '内存消耗KB',
+                                `judge_msg` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '评测消息',
+                                `ip_addr` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '提交IP',
+                                `contest_id` bigint NULL DEFAULT NULL COMMENT '所属比赛ID',
+                                `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
                                 PRIMARY KEY (`id`) USING BTREE,
                                 INDEX `idx_submissions_user`(`user_id` ASC, `created_at` ASC) USING BTREE,
                                 INDEX `idx_submissions_problem`(`problem_id` ASC, `created_at` ASC) USING BTREE,
@@ -607,11 +607,11 @@ INSERT INTO `submissions` VALUES (1, 1, 1, 1, 1, 1, 428, 'AC', 100, 12, 4096, '�
 -- ----------------------------
 DROP TABLE IF EXISTS `tags`;
 CREATE TABLE `tags`  (
-                         `id` bigint NOT NULL AUTO_INCREMENT,
-                         `slug` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                         `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                         `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                         `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                         `id` bigint NOT NULL AUTO_INCREMENT COMMENT '标签ID',
+                         `slug` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标签别名',
+                         `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '标签名称',
+                         `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                         `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                          PRIMARY KEY (`id`) USING BTREE,
                          UNIQUE INDEX `uk_tags_slug`(`slug` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 12 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -628,13 +628,13 @@ INSERT INTO `tags` VALUES (11, 'hash-table', 'Hash Table', '2025-10-17 16:53:25'
 -- ----------------------------
 DROP TABLE IF EXISTS `testcase_groups`;
 CREATE TABLE `testcase_groups`  (
-                                    `id` bigint NOT NULL AUTO_INCREMENT,
-                                    `dataset_id` bigint NOT NULL,
-                                    `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                                    `is_sample` tinyint(1) NOT NULL DEFAULT 0,
-                                    `weight` int NOT NULL DEFAULT 1,
-                                    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                                    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '测试组ID',
+                                    `dataset_id` bigint NOT NULL COMMENT '所属数据集ID',
+                                    `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '测试组名称',
+                                    `is_sample` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否为样例',
+                                    `weight` int NOT NULL DEFAULT 1 COMMENT '测试组权重',
+                                    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                     PRIMARY KEY (`id`) USING BTREE,
                                     INDEX `idx_tcg_dataset`(`dataset_id` ASC, `is_sample` ASC) USING BTREE,
                                     CONSTRAINT `fk_tcg_dataset` FOREIGN KEY (`dataset_id`) REFERENCES `datasets` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
@@ -653,17 +653,17 @@ INSERT INTO `testcase_groups` VALUES (4, 2, 'hidden', 0, 1, '2025-10-17 16:53:25
 -- ----------------------------
 DROP TABLE IF EXISTS `testcases`;
 CREATE TABLE `testcases`  (
-                              `id` bigint NOT NULL AUTO_INCREMENT,
-                              `group_id` bigint NOT NULL,
-                              `order_index` int NOT NULL DEFAULT 0,
-                              `input_file_id` bigint NULL DEFAULT NULL,
-                              `output_file_id` bigint NULL DEFAULT NULL,
-                              `input_json` json NULL,
-                              `output_json` json NULL,
-                              `output_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                              `score` int NOT NULL DEFAULT 10,
-                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                              `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                              `id` bigint NOT NULL AUTO_INCREMENT COMMENT '测试用例ID',
+                              `group_id` bigint NOT NULL COMMENT '测试组ID',
+                              `order_index` int NOT NULL DEFAULT 0 COMMENT '用例顺序',
+                              `input_file_id` bigint NULL DEFAULT NULL COMMENT '输入文件ID',
+                              `output_file_id` bigint NULL DEFAULT NULL COMMENT '输出文件ID',
+                              `input_json` json NULL COMMENT '输入JSON',
+                              `output_json` json NULL COMMENT '输出JSON',
+                              `output_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '输出类型',
+                              `score` int NOT NULL DEFAULT 10 COMMENT '用例分值',
+                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                              `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                               PRIMARY KEY (`id`) USING BTREE,
                               INDEX `idx_tc_group_order`(`group_id` ASC, `order_index` ASC) USING BTREE,
                               INDEX `fk_tc_input_file`(`input_file_id` ASC) USING BTREE,
@@ -690,9 +690,9 @@ INSERT INTO `testcases` VALUES (8, 4, 2, NULL, NULL, '{\"s\": \"OpenAI GPT\"}', 
 -- ----------------------------
 DROP TABLE IF EXISTS `user_roles`;
 CREATE TABLE `user_roles`  (
-                               `user_id` bigint NOT NULL,
-                               `role_id` bigint NOT NULL,
-                               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               `user_id` bigint NOT NULL COMMENT '用户ID',
+                               `role_id` bigint NOT NULL COMMENT '角色ID',
+                               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '绑定时间',
                                PRIMARY KEY (`user_id`, `role_id`) USING BTREE,
                                INDEX `idx_user_roles_role`(`role_id` ASC) USING BTREE,
                                CONSTRAINT `fk_user_roles_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
@@ -710,17 +710,17 @@ INSERT INTO `user_roles` VALUES (1, 3, '2025-10-17 13:13:57');
 -- ----------------------------
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users`  (
-                          `id` bigint NOT NULL AUTO_INCREMENT,
-                          `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `email` varchar(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-                          `avatar_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                          `bio` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                          `status` tinyint NOT NULL DEFAULT 1,
-                          `last_login_at` datetime NULL DEFAULT NULL,
-                          `last_login_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                          `id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+                          `username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名',
+                          `email` varchar(254) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '电子邮箱',
+                          `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码哈希',
+                          `avatar_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像地址',
+                          `bio` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '个人简介',
+                          `status` tinyint NOT NULL DEFAULT 1 COMMENT '账户状态',
+                          `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+                          `last_login_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后登录IP',
+                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           PRIMARY KEY (`id`) USING BTREE,
                           UNIQUE INDEX `uk_users_username`(`username` ASC) USING BTREE,
                           UNIQUE INDEX `uk_users_email`(`email` ASC) USING BTREE
