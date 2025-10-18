@@ -59,8 +59,7 @@ import java.util.stream.Collectors;
 @Service
 public class ProblemManagementService {
 
-    private static final TypeReference<Map<String, Object>> MAP_TYPE =
-            new TypeReference<>() {};
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
     private static final List<String> SUPPORTED_PROBLEM_TYPES =
             List.of("coding", "sql", "shell", "concurrency", "interactive", "output-only");
 
@@ -135,7 +134,8 @@ public class ProblemManagementService {
         Page<Problem> result = problemMapper.selectPage(pager, query);
         List<Problem> records = result.getRecords();
         if (records == null || records.isEmpty()) {
-            return new PageResult<>(List.of(), result.getTotal(), result.getCurrent(), result.getSize());
+            return new PageResult<>(
+                    List.of(), result.getTotal(), result.getCurrent(), result.getSize());
         }
 
         List<Long> problemIds = records.stream().map(Problem::getId).toList();
@@ -161,12 +161,13 @@ public class ProblemManagementService {
             Difficulty difficulty = difficultyMap.get(problem.getDifficultyId());
             Category category = categoryMap.get(problem.getCategoryId());
             List<ProblemTagDto> tagDtos =
-                    tagsGrouping.tagsByProblem()
-                            .getOrDefault(problem.getId(), List.of())
-                            .stream()
+                    tagsGrouping.tagsByProblem().getOrDefault(problem.getId(), List.of()).stream()
                             .map(tagsGrouping.tagsById()::get)
                             .filter(Objects::nonNull)
-                            .map(tag -> new ProblemTagDto(tag.getId(), tag.getSlug(), tag.getName()))
+                            .map(
+                                    tag ->
+                                            new ProblemTagDto(
+                                                    tag.getId(), tag.getSlug(), tag.getName()))
                             .toList();
 
             items.add(
@@ -229,10 +230,11 @@ public class ProblemManagementService {
         Map<Integer, Language> languages =
                 configs.isEmpty()
                         ? Map.of()
-                        : languageMapper.selectBatchIds(
-                                configs.stream()
-                                        .map(ProblemLanguageConfig::getLanguageId)
-                                        .collect(Collectors.toSet()))
+                        : languageMapper
+                                .selectBatchIds(
+                                        configs.stream()
+                                                .map(ProblemLanguageConfig::getLanguageId)
+                                                .collect(Collectors.toSet()))
                                 .stream()
                                 .collect(Collectors.toMap(Language::getId, l -> l));
         List<ProblemLanguageConfigView> languageViews =
@@ -252,9 +254,7 @@ public class ProblemManagementService {
 
         TagsGrouping tagsGrouping = loadTags(List.of(problemId));
         List<ProblemTagDto> tagDtos =
-                tagsGrouping.tagsByProblem()
-                        .getOrDefault(problemId, List.of())
-                        .stream()
+                tagsGrouping.tagsByProblem().getOrDefault(problemId, List.of()).stream()
                         .map(tagsGrouping.tagsById()::get)
                         .filter(Objects::nonNull)
                         .map(tag -> new ProblemTagDto(tag.getId(), tag.getSlug(), tag.getName()))
@@ -292,19 +292,7 @@ public class ProblemManagementService {
         ensureTagsExist(request.tagIds());
 
         Problem problem = new Problem();
-        problem.setSlug(request.slug().trim());
-        problem.setProblemType(request.problemType());
-        problem.setDifficultyId(request.difficultyId());
-        problem.setCategoryId(request.categoryId());
-        problem.setCreatorId(request.creatorId());
-        problem.setSolutionEntry(
-                StringUtils.hasText(request.solutionEntry())
-                        ? request.solutionEntry().trim()
-                        : null);
-        problem.setTimeLimitMs(request.timeLimitMs());
-        problem.setMemoryLimitKb(request.memoryLimitKb());
-        problem.setIsPublic(Boolean.FALSE.equals(request.isPublic()) ? 0 : 1);
-        problem.setMetaJson(toMetaJson(request.meta()));
+        setProblem(request, problem);
         problem.setCreatedAt(LocalDateTime.now());
         problem.setUpdatedAt(LocalDateTime.now());
 
@@ -332,6 +320,19 @@ public class ProblemManagementService {
         ensureLanguagesExist(request.languageConfigs());
         ensureTagsExist(request.tagIds());
 
+        setProblem(request, existing);
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        problemMapper.updateById(existing);
+
+        replaceProblemStatements(problemId, request.statements());
+        replaceProblemLanguageConfigs(problemId, request.languageConfigs());
+        replaceProblemTags(problemId, request.tagIds());
+
+        return getProblem(problemId, null);
+    }
+
+    private void setProblem(ProblemUpsertRequest request, Problem existing) {
         existing.setSlug(request.slug().trim());
         existing.setProblemType(request.problemType());
         existing.setDifficultyId(request.difficultyId());
@@ -345,15 +346,6 @@ public class ProblemManagementService {
         existing.setMemoryLimitKb(request.memoryLimitKb());
         existing.setIsPublic(Boolean.FALSE.equals(request.isPublic()) ? 0 : 1);
         existing.setMetaJson(toMetaJson(request.meta()));
-        existing.setUpdatedAt(LocalDateTime.now());
-
-        problemMapper.updateById(existing);
-
-        replaceProblemStatements(problemId, request.statements());
-        replaceProblemLanguageConfigs(problemId, request.languageConfigs());
-        replaceProblemTags(problemId, request.tagIds());
-
-        return getProblem(problemId, null);
     }
 
     public ProblemOptionsResponse loadOptions() {
@@ -376,15 +368,15 @@ public class ProblemManagementService {
 
         List<TagOption> tags =
                 tagMapper
-                        .selectList(
-                                Wrappers.lambdaQuery(Tag.class).orderByAsc(Tag::getName))
+                        .selectList(Wrappers.lambdaQuery(Tag.class).orderByAsc(Tag::getName))
                         .stream()
                         .map(tag -> new TagOption(tag.getId(), tag.getSlug(), tag.getName()))
                         .toList();
 
         List<LanguageOption> languages =
                 languageMapper
-                        .selectList(Wrappers.lambdaQuery(Language.class).orderByAsc(Language::getId))
+                        .selectList(
+                                Wrappers.lambdaQuery(Language.class).orderByAsc(Language::getId))
                         .stream()
                         .map(
                                 lang ->
