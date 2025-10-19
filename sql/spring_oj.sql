@@ -45,11 +45,16 @@ INSERT INTO `auth_tokens` VALUES (72, 1, '7ab1a6d4c1d78e5ff62ab3b7c4c685d7b19d95
 -- Table structure for bookmarks
 -- ----------------------------
 DROP TABLE IF EXISTS `bookmarks`;
-CREATE TABLE `bookmarks`  (
+CREATE TABLE `bookmarks` (
                               `user_id` bigint NOT NULL COMMENT '用户ID',
-                              `entity_type` enum('problem','contest') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                              `entity_type` enum('problem','contest','discussion','comment') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
                               `entity_id` bigint NOT NULL COMMENT '实体主键ID',
+                              `visibility` enum('private','public','team') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'private' COMMENT '可见范围',
+                              `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+                              `tags` json NULL COMMENT '标签集合',
+                              `source` enum('user','system','migration') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user' COMMENT '来源',
                               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+                              `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                               PRIMARY KEY (`user_id`, `entity_type`, `entity_id`) USING BTREE,
                               INDEX `idx_bookmarks_entity`(`entity_type` ASC, `entity_id` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -57,8 +62,10 @@ CREATE TABLE `bookmarks`  (
 -- ----------------------------
 -- Records of bookmarks
 -- ----------------------------
-INSERT INTO `bookmarks` VALUES (1, 'problem', 1, '2025-10-20 09:12:00');
-INSERT INTO `bookmarks` VALUES (1, 'contest', 1, '2025-10-20 09:12:30');
+INSERT INTO `bookmarks` (`user_id`, `entity_type`, `entity_id`, `visibility`, `note`, `tags`, `source`, `created_at`, `updated_at`)
+VALUES
+    (1, 'problem', 1, 'private', '常用题目，需二刷', JSON_ARRAY('数组', '技巧'), 'user', '2025-10-20 09:12:00', '2025-10-20 09:12:00'),
+    (1, 'contest', 1, 'public', NULL, NULL, 'system', '2025-10-20 09:12:30', '2025-10-20 09:12:30');
 
 -- ----------------------------
 -- Table structure for categories
@@ -82,24 +89,41 @@ INSERT INTO `categories` VALUES (2, 'data-structures', 'Data Structures');
 -- Table structure for comments
 -- ----------------------------
 DROP TABLE IF EXISTS `comments`;
-CREATE TABLE `comments`  (
+CREATE TABLE `comments` (
                              `id` bigint NOT NULL AUTO_INCREMENT COMMENT '评论ID',
-                             `entity_type` enum('problem','contest','submission') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                             `entity_type` enum('problem','contest','submission','comment','discussion') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
                              `entity_id` bigint NOT NULL COMMENT '实体ID',
                              `user_id` bigint NOT NULL COMMENT '评论用户ID',
+                             `parent_id` bigint NULL DEFAULT NULL COMMENT '父评论ID',
+                             `status` enum('pending','approved','rejected','hidden') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '审核状态',
+                             `visibility` enum('public','private','internal') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public' COMMENT '可见性',
                              `content_md` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '评论内容Markdown',
+                             `content_rendered` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '渲染后的内容',
+                             `sensitive_flag` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否命中敏感词',
+                             `sensitive_hits` json NULL COMMENT '敏感词命中详情',
+                             `moderation_level` enum('low','medium','high') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '风险等级',
+                             `moderation_notes` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '审核备注',
+                             `last_moderated_by` bigint NULL DEFAULT NULL COMMENT '最后审核人',
+                             `last_moderated_at` timestamp NULL DEFAULT NULL COMMENT '最后审核时间',
                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                              `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                              PRIMARY KEY (`id`) USING BTREE,
                              INDEX `idx_comments_entity`(`entity_type` ASC, `entity_id` ASC, `created_at` ASC) USING BTREE,
+                             INDEX `idx_comments_status`(`status` ASC, `created_at` ASC) USING BTREE,
                              INDEX `idx_comments_user`(`user_id` ASC, `created_at` ASC) USING BTREE,
-                             CONSTRAINT `fk_comments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+                             INDEX `idx_comments_parent`(`parent_id` ASC) USING BTREE,
+                             CONSTRAINT `fk_comments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                             CONSTRAINT `fk_comments_parent` FOREIGN KEY (`parent_id`) REFERENCES `comments` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                             CONSTRAINT `fk_comments_moderator` FOREIGN KEY (`last_moderated_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of comments
 -- ----------------------------
-INSERT INTO `comments` VALUES (1, 'problem', 1, 1, '这是一道很经典的题目，谢谢分享！', '2025-10-20 09:15:00', '2025-10-20 09:15:00');
+INSERT INTO `comments` (`id`, `entity_type`, `entity_id`, `user_id`, `parent_id`, `status`, `visibility`, `content_md`, `content_rendered`, `sensitive_flag`, `sensitive_hits`, `moderation_level`, `moderation_notes`, `last_moderated_by`, `last_moderated_at`, `created_at`, `updated_at`)
+VALUES
+    (1, 'problem', 1, 1, NULL, 'approved', 'public', '这是一道很经典的题目，谢谢分享！', NULL, 0, NULL, 'low', '自动通过', 1, '2025-10-20 09:20:00', '2025-10-20 09:15:00', '2025-10-20 09:20:00'),
+    (2, 'problem', 1, 1, 1, 'pending', 'public', '期待继续优化题解思路', NULL, 0, NULL, NULL, NULL, NULL, NULL, '2025-10-20 09:18:00', '2025-10-20 09:18:00');
 
 -- ----------------------------
 -- Table structure for contest_participants
@@ -449,12 +473,16 @@ INSERT INTO `problems` VALUES (2, '344-reverse-string', 'coding', 1, 1, 1, 'reve
 -- Table structure for reactions
 -- ----------------------------
 DROP TABLE IF EXISTS `reactions`;
-CREATE TABLE `reactions`  (
+CREATE TABLE `reactions` (
                               `user_id` bigint NOT NULL COMMENT '用户ID',
-                              `entity_type` enum('problem','comment') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                              `entity_type` enum('problem','comment','discussion') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
                               `entity_id` bigint NOT NULL COMMENT '实体ID',
-                              `kind` enum('like','dislike') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '反馈类型',
+                              `kind` enum('like','dislike','upvote','downvote') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '反馈类型',
+                              `weight` tinyint NOT NULL DEFAULT 1 COMMENT '权重',
+                              `source` enum('user','system','moderation') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'user' COMMENT '来源',
+                              `metadata` json NULL COMMENT '附加信息',
                               `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                              `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                               PRIMARY KEY (`user_id`, `entity_type`, `entity_id`, `kind`) USING BTREE,
                               INDEX `idx_reactions_entity`(`entity_type` ASC, `entity_id` ASC, `kind` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -462,7 +490,95 @@ CREATE TABLE `reactions`  (
 -- ----------------------------
 -- Records of reactions
 -- ----------------------------
-INSERT INTO `reactions` VALUES (1, 'problem', 1, 'like', '2025-10-20 09:16:00');
+INSERT INTO `reactions` (`user_id`, `entity_type`, `entity_id`, `kind`, `weight`, `source`, `metadata`, `created_at`, `updated_at`)
+VALUES
+    (1, 'problem', 1, 'like', 1, 'user', NULL, '2025-10-20 09:16:00', '2025-10-20 09:16:00'),
+    (1, 'comment', 1, 'upvote', 1, 'system', JSON_OBJECT('reason', 'featured'), '2025-10-20 09:22:00', '2025-10-20 09:22:00');
+
+-- ----------------------------
+-- Table structure for sensitive_words
+-- ----------------------------
+DROP TABLE IF EXISTS `sensitive_words`;
+CREATE TABLE `sensitive_words` (
+                                   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '敏感词ID',
+                                   `word` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '敏感词',
+                                   `category` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '分类',
+                                   `level` enum('block','review','replace') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'review' COMMENT '处理等级',
+                                   `replacement` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '替换词',
+                                   `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '说明',
+                                   `is_active` tinyint(1) NOT NULL DEFAULT 1 COMMENT '是否启用',
+                                   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                   PRIMARY KEY (`id`) USING BTREE,
+                                   UNIQUE INDEX `uk_sensitive_words_word`(`word` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sensitive_words
+-- ----------------------------
+INSERT INTO `sensitive_words` (`id`, `word`, `category`, `level`, `replacement`, `description`, `is_active`, `created_at`, `updated_at`)
+VALUES
+    (1, '违规示例', '违规', 'block', NULL, '命中即拦截', 1, '2025-10-20 08:00:00', '2025-10-20 08:00:00'),
+    (2, '待审核词', '审核', 'review', NULL, '触发人工审核', 1, '2025-10-20 08:05:00', '2025-10-20 08:05:00'),
+    (3, '敏感别称', '替换', 'replace', '***', '自动替换展示', 1, '2025-10-20 08:10:00', '2025-10-20 08:10:00');
+
+-- ----------------------------
+-- Table structure for moderation_tasks
+-- ----------------------------
+DROP TABLE IF EXISTS `moderation_tasks`;
+CREATE TABLE `moderation_tasks` (
+                                    `id` bigint NOT NULL AUTO_INCREMENT COMMENT '审核任务ID',
+                                    `entity_type` enum('comment') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '实体类型',
+                                    `entity_id` bigint NOT NULL COMMENT '实体ID',
+                                    `status` enum('pending','in_review','approved','rejected','escalated') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '任务状态',
+                                    `priority` tinyint NOT NULL DEFAULT 3 COMMENT '优先级(1最高)',
+                                    `source` enum('auto','user_report','manual') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'auto' COMMENT '来源',
+                                    `risk_level` enum('low','medium','high') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '风险等级',
+                                    `reviewer_id` bigint NULL DEFAULT NULL COMMENT '审核人',
+                                    `metadata` json NULL COMMENT '上下文信息',
+                                    `notes` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+                                    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                    `reviewed_at` timestamp NULL DEFAULT NULL COMMENT '审核完成时间',
+                                    PRIMARY KEY (`id`) USING BTREE,
+                                    INDEX `idx_moderation_tasks_status`(`status` ASC, `priority` ASC) USING BTREE,
+                                    INDEX `idx_moderation_tasks_entity`(`entity_type` ASC, `entity_id` ASC) USING BTREE,
+                                    CONSTRAINT `fk_moderation_tasks_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of moderation_tasks
+-- ----------------------------
+INSERT INTO `moderation_tasks` (`id`, `entity_type`, `entity_id`, `status`, `priority`, `source`, `risk_level`, `reviewer_id`, `metadata`, `notes`, `created_at`, `updated_at`, `reviewed_at`)
+VALUES
+    (1, 'comment', 2, 'pending', 2, 'auto', 'medium', NULL, JSON_OBJECT('hits', JSON_ARRAY('待审核词')), '命中敏感词等待审核', '2025-10-20 09:18:10', '2025-10-20 09:18:10', NULL),
+    (2, 'comment', 1, 'approved', 3, 'user_report', 'low', 1, JSON_OBJECT('reporterId', 2), '复核通过', '2025-10-19 10:18:10', '2025-10-19 11:00:00', '2025-10-19 11:00:00');
+
+-- ----------------------------
+-- Table structure for moderation_actions
+-- ----------------------------
+DROP TABLE IF EXISTS `moderation_actions`;
+CREATE TABLE `moderation_actions` (
+                                      `id` bigint NOT NULL AUTO_INCREMENT COMMENT '审核记录ID',
+                                      `task_id` bigint NOT NULL COMMENT '审核任务ID',
+                                      `action` enum('created','assigned','approved','rejected','escalated','comment_updated') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '动作',
+                                      `operator_id` bigint NULL DEFAULT NULL COMMENT '操作人',
+                                      `remarks` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+                                      `context` json NULL COMMENT '上下文',
+                                      `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                      PRIMARY KEY (`id`) USING BTREE,
+                                      INDEX `idx_moderation_actions_task`(`task_id` ASC, `created_at` ASC) USING BTREE,
+                                      CONSTRAINT `fk_moderation_actions_task` FOREIGN KEY (`task_id`) REFERENCES `moderation_tasks` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                                      CONSTRAINT `fk_moderation_actions_operator` FOREIGN KEY (`operator_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of moderation_actions
+-- ----------------------------
+INSERT INTO `moderation_actions` (`id`, `task_id`, `action`, `operator_id`, `remarks`, `context`, `created_at`)
+VALUES
+    (1, 1, 'created', NULL, '系统自动创建审核任务', JSON_OBJECT('trigger', 'sensitive_word'), '2025-10-20 09:18:10'),
+    (2, 2, 'approved', 1, '确认评论内容合规', JSON_OBJECT('decision', 'approve'), '2025-10-19 11:00:00');
 
 -- ----------------------------
 -- Table structure for role_permissions

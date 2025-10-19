@@ -35,6 +35,10 @@ spring:
           uri: lb://problem
           predicates:
             - Path=/api/admin/problems/**,/api/admin/tags/**,/api/admin/categories/**,/api/admin/difficulties/**,/api/admin/languages/**,/api/admin/datasets/**,/api/admin/groups/**
+        - id: interaction-id
+          uri: lb://interaction
+          predicates:
+            - Path=/api/admin/interaction/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
