@@ -33,6 +33,27 @@ public class AppProperties {
     @Validated
     public static class Security {
         private final Jwt jwt = new Jwt();
+        private final Cookies cookies = new Cookies();
+        private List<String> corsAllowedOrigins = List.of("http://localhost:5173");
+
+        @Getter
+        @Setter
+        @Validated
+        public static class Cookies {
+            private String refreshTokenName = "cf_refresh_token";
+            private String accessTokenName = "cf_access_token";
+            private String path = "/";
+            private String domain;
+            private boolean secure = false;
+            private String sameSite = "Lax";
+        }
+
+        public void setCorsAllowedOrigins(List<String> corsAllowedOrigins) {
+            this.corsAllowedOrigins =
+                    corsAllowedOrigins == null || corsAllowedOrigins.isEmpty()
+                            ? List.of("http://localhost:5173")
+                            : corsAllowedOrigins;
+        }
 
         @Getter
         @Setter

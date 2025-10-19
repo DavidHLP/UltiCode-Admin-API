@@ -39,17 +39,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenService tokenService;
     private final UserService userService;
     private final AppProperties appProperties;
+    private final TokenSessionManager tokenSessionManager;
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
             TokenService tokenService,
             UserService userService,
-            AppProperties appProperties) {
+            AppProperties appProperties,
+            TokenSessionManager tokenSessionManager) {
         this.jwtService = jwtService;
         this.tokenService = tokenService;
         this.userService = userService;
         this.appProperties = appProperties;
+        this.tokenSessionManager = tokenSessionManager;
     }
 
     @Override
@@ -71,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        String token = resolveToken(request);
+        String token = tokenSessionManager.resolveAccessToken(request);
         if (StringUtils.hasText(token)
                 && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
@@ -124,16 +127,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-    }
-
-    private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            log.debug("从Authorization头中提取Bearer令牌");
-            return bearerToken.substring(7);
-        }
-        log.debug("未找到有效的Bearer令牌");
-        return null;
     }
 
     private boolean isWhitelisted(String path) {

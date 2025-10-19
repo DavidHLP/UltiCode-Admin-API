@@ -1,5 +1,7 @@
 package com.david.auth.security;
 
+import com.david.auth.config.AppProperties;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,8 +17,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -26,12 +26,14 @@ public class SecurityConfig {
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
             RestAuthenticationEntryPoint authenticationEntryPoint,
-            RestAccessDeniedHandler accessDeniedHandler)
+            RestAccessDeniedHandler accessDeniedHandler,
+            CorsConfigurationSource corsConfigurationSource)
             throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(
-                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session ->
+                                session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .exceptionHandling(
                         ex ->
                                 ex.authenticationEntryPoint(authenticationEntryPoint)
@@ -65,12 +67,18 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(AppProperties appProperties) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("*"));
+        List<String> allowedOrigins = appProperties.getSecurity().getCorsAllowedOrigins();
+        if (allowedOrigins.stream().anyMatch(origin -> origin.contains("*"))) {
+            configuration.setAllowedOriginPatterns(allowedOrigins);
+        } else {
+            configuration.setAllowedOrigins(allowedOrigins);
+        }
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(false);
+        configuration.setExposedHeaders(List.of("Authorization", "Set-Cookie"));
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

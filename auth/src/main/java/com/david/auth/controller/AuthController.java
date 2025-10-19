@@ -9,18 +9,19 @@ import com.david.auth.dto.RegistrationCodeRequest;
 import com.david.auth.dto.TokenIntrospectRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.UserProfileDto;
+import com.david.auth.exception.BusinessException;
+import com.david.auth.security.TokenSessionManager;
 import com.david.auth.security.UserPrincipal;
 import com.david.auth.service.AuthService;
 import com.david.common.http.ApiResponse;
-
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,13 +36,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final TokenSessionManager tokenSessionManager;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<AuthResponse> register(
-            @Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody RegisterRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         log.debug("收到邮箱为 {} 的注册请求", request.email());
         AuthResponse response = authService.register(request, resolveClientIp(httpRequest));
+        tokenSessionManager.storeAuthResult(httpRequest, httpResponse, response);
         log.debug("邮箱为 {} 的注册请求处理成功", request.email());
         return ApiResponse.success(response);
     }
@@ -58,17 +63,28 @@ public class AuthController {
 
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(
-            @Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         log.debug("收到邮箱或用户名为 {} 的登录请求", request.identifier());
         AuthResponse response = authService.login(request, resolveClientIp(httpRequest));
+        tokenSessionManager.storeAuthResult(httpRequest, httpResponse, response);
         log.debug("邮箱或用户名为 {} 的登录请求处理成功", request.identifier());
         return ApiResponse.success(response);
     }
 
     @PostMapping("/refresh")
-    public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+    public ApiResponse<AuthResponse> refresh(
+            @RequestBody(required = false) RefreshTokenRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         log.debug("收到令牌刷新请求");
-        AuthResponse response = authService.refresh(request);
+        String refreshToken = tokenSessionManager.resolveRefreshToken(httpRequest, request);
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "缺少刷新令牌");
+        }
+        AuthResponse response = authService.refresh(refreshToken);
+        tokenSessionManager.storeAuthResult(httpRequest, httpResponse, response);
         log.debug("令牌刷新请求处理成功");
         return ApiResponse.success(response);
     }

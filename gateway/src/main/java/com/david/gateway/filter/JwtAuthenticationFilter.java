@@ -27,7 +27,9 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -37,6 +39,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     private final AppProperties appProperties;
     private final ObjectMapper objectMapper;
     private final AntPathMatcher pathMatcher;
+    private final long tokenCacheTtlMillis;
+    private static final String SESSION_CACHE_KEY = "CF_GATEWAY_AUTH_CACHE";
 
     public JwtAuthenticationFilter(
             AuthClient authClient,
@@ -47,6 +51,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         this.appProperties = appProperties;
         this.objectMapper = objectMapper;
         this.pathMatcher = pathMatcher;
+        Duration ttl = appProperties.getTokenCacheTtl();
+        this.tokenCacheTtlMillis = ttl == null ? 0 : Math.max(ttl.toMillis(), 0);
     }
 
     @Override
@@ -68,13 +74,35 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
         String token = authorization.substring(7);
         log.debug("为路径 {} 验证令牌", path);
-        return authClient
-                .introspect(token)
-                .flatMap(
-                        payload -> {
-                            log.debug("用户 {} 的令牌验证成功，角色：{}", payload.username(), payload.roles());
-                            return continueChainWithUser(chain, exchange, payload);
-                        })
+
+        return exchange
+                .getSession()
+                .flatMap(session -> {
+                    CachedAuth cached = session.getAttribute(SESSION_CACHE_KEY);
+                    if (cached != null && cached.matches(token) && !cached.isExpired()) {
+                        log.trace("命中会话缓存，用户: {}", cached.payload().username());
+                        return continueChainWithUser(chain, exchange, cached.payload());
+                    }
+                    return authClient
+                            .introspect(token)
+                            .flatMap(
+                                    payload -> {
+                                        log.debug(
+                                                "用户 {} 的令牌验证成功，角色：{}",
+                                                payload.username(),
+                                                payload.roles());
+                                        if (tokenCacheTtlMillis > 0) {
+                                            session.getAttributes()
+                                                    .put(
+                                                            SESSION_CACHE_KEY,
+                                                            CachedAuth.from(
+                                                                    token,
+                                                                    payload,
+                                                                    tokenCacheTtlMillis));
+                                        }
+                                        return continueChainWithUser(chain, exchange, payload);
+                                    });
+                })
                 .onErrorResume(
                         WebClientResponseException.class,
                         ex -> {
@@ -171,5 +199,21 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
                 .set(HttpHeaders.CONTENT_TYPE, "application/json;charset=UTF-8");
         return exchange.getResponse()
                 .writeWith(Mono.just(exchange.getResponse().bufferFactory().wrap(bytes)));
+    }
+
+    private record CachedAuth(String token, IntrospectResponse payload, long expiresAt) {
+        private boolean matches(String rawToken) {
+            return Objects.equals(this.token, rawToken);
+        }
+
+        private boolean isExpired() {
+            return System.currentTimeMillis() >= expiresAt;
+        }
+
+        private static CachedAuth from(String token, IntrospectResponse payload, long ttlMillis) {
+            long effectiveTtl = Math.max(ttlMillis, 0);
+            long expiresAt = System.currentTimeMillis() + effectiveTtl;
+            return new CachedAuth(token, payload, expiresAt);
+        }
     }
 }

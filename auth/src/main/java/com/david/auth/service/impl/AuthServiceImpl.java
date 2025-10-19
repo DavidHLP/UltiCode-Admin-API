@@ -3,7 +3,6 @@ package com.david.auth.service.impl;
 import com.david.auth.config.AppProperties;
 import com.david.auth.dto.AuthResponse;
 import com.david.auth.dto.LoginRequest;
-import com.david.auth.dto.RefreshTokenRequest;
 import com.david.auth.dto.RegisterRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.UserProfileDto;
@@ -28,6 +27,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -103,9 +103,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public AuthResponse refresh(RefreshTokenRequest request) {
+    public AuthResponse refresh(String refreshToken) {
         log.info("开始处理刷新令牌请求");
-        Jws<Claims> parsed = jwtService.parseAndValidate(request.getRefreshToken());
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "Refresh token is required");
+        }
+        Jws<Claims> parsed = jwtService.parseAndValidate(refreshToken);
         Claims claims = parsed.getBody();
         if (jwtService.isExpired(claims)) {
             log.warn("刷新令牌已过期");
@@ -119,7 +122,7 @@ public class AuthServiceImpl implements AuthService {
         }
         Long userId = jwtService.extractUserId(claims);
         tokenService
-                .findActiveToken(request.getRefreshToken(), TokenKind.REFRESH)
+                .findActiveToken(refreshToken, TokenKind.REFRESH)
                 .orElseThrow(
                         () -> {
                             log.warn("刷新令牌无效或已被撤销，用户ID: {}", userId);

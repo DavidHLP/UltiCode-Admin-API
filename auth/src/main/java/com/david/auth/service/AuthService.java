@@ -2,7 +2,6 @@ package com.david.auth.service;
 
 import com.david.auth.dto.AuthResponse;
 import com.david.auth.dto.LoginRequest;
-import com.david.auth.dto.RefreshTokenRequest;
 import com.david.auth.dto.RegisterRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.UserProfileDto;
@@ -13,7 +12,7 @@ public interface AuthService {
 
     AuthResponse login(LoginRequest request, String ipAddress);
 
-    AuthResponse refresh(RefreshTokenRequest request);
+    AuthResponse refresh(String refreshToken);
 
     UserProfileDto buildUserProfile(Long userId);
 

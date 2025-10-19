@@ -20,6 +20,7 @@
         <module>auth</module>
         <module>admin</module>
         <module>problem</module>
+        <module>interaction</module>
     </modules>
 
     <properties>
