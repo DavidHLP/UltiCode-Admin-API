@@ -17,6 +17,7 @@ public record ProblemDetailView(
         Integer timeLimitMs,
         Integer memoryLimitKb,
         Boolean isPublic,
+        Long activeDatasetId,
         Map<String, Object> meta,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,

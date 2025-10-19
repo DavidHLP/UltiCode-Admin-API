@@ -273,6 +273,7 @@ public class ProblemManagementService {
                 problem.getTimeLimitMs(),
                 problem.getMemoryLimitKb(),
                 problem.getIsPublic() != null && problem.getIsPublic() == 1,
+                problem.getActiveDatasetId(),
                 parseMeta(problem.getMetaJson()),
                 problem.getCreatedAt(),
                 problem.getUpdatedAt(),

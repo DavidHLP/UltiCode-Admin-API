@@ -48,4 +48,7 @@ public class Problem {
 
     @TableField("updated_at")
     private LocalDateTime updatedAt;
+
+    @TableField("active_dataset_id")
+    private Long activeDatasetId;
 }
