@@ -9,6 +9,7 @@ import com.david.problem.service.DifficultyManagementService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,14 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @PreAuthorize("hasRole('admin')")
 @RequestMapping("/api/admin/difficulties")
+@RequiredArgsConstructor
 public class DifficultyAdminController {
 
     private final DifficultyManagementService difficultyManagementService;
-
-    public DifficultyAdminController(
-            DifficultyManagementService difficultyManagementService) {
-        this.difficultyManagementService = difficultyManagementService;
-    }
 
     @GetMapping
     public ApiResponse<PageResult<DifficultyView>> listDifficulties(
@@ -50,7 +47,7 @@ public class DifficultyAdminController {
         PageResult<DifficultyView> difficulties =
                 difficultyManagementService.listDifficulties(page, size, keyword);
         return ApiResponse.success(difficulties);
-}
+    }
 
     @GetMapping("/{difficultyId}")
     public ApiResponse<DifficultyView> getDifficulty(@PathVariable Integer difficultyId) {
@@ -74,7 +71,8 @@ public class DifficultyAdminController {
             @PathVariable Integer difficultyId,
             @Valid @RequestBody DifficultyUpdateRequest request) {
         log.info("更新难度，难度ID: {}", difficultyId);
-        DifficultyView difficulty = difficultyManagementService.updateDifficulty(difficultyId, request);
+        DifficultyView difficulty =
+                difficultyManagementService.updateDifficulty(difficultyId, request);
         log.info("更新难度成功，难度ID: {}", difficulty.id());
         return ApiResponse.success(difficulty);
     }

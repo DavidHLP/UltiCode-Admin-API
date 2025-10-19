@@ -9,6 +9,7 @@ import com.david.problem.service.TagManagementService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,13 +30,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @PreAuthorize("hasRole('admin')")
 @RequestMapping("/api/admin/tags")
+@RequiredArgsConstructor
 public class TagAdminController {
 
     private final TagManagementService tagManagementService;
-
-    public TagAdminController(TagManagementService tagManagementService) {
-        this.tagManagementService = tagManagementService;
-    }
 
     @GetMapping
     public ApiResponse<PageResult<TagView>> listTags(
@@ -48,7 +46,7 @@ public class TagAdminController {
         log.info("查询标签列表，页码: {}, 大小: {}, 关键字: {}", page, size, keyword);
         PageResult<TagView> tags = tagManagementService.listTags(page, size, keyword);
         return ApiResponse.success(tags);
-}
+    }
 
     @GetMapping("/{tagId}")
     public ApiResponse<TagView> getTag(@PathVariable Long tagId) {

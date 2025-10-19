@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
@@ -32,13 +33,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @PreAuthorize("hasRole('admin')")
 @RequestMapping("/api/admin/problems")
+@RequiredArgsConstructor
 public class ProblemAdminController {
 
     private final ProblemManagementService problemManagementService;
-
-    public ProblemAdminController(ProblemManagementService problemManagementService) {
-        this.problemManagementService = problemManagementService;
-    }
 
     @GetMapping
     public ApiResponse<PageResult<ProblemSummaryView>> listProblems(

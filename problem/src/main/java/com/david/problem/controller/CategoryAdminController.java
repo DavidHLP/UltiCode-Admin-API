@@ -6,10 +6,14 @@ import com.david.problem.dto.CategoryUpdateRequest;
 import com.david.problem.dto.CategoryView;
 import com.david.problem.dto.PageResult;
 import com.david.problem.service.CategoryManagementService;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -29,13 +33,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @PreAuthorize("hasRole('admin')")
 @RequestMapping("/api/admin/categories")
+@RequiredArgsConstructor
 public class CategoryAdminController {
 
     private final CategoryManagementService categoryManagementService;
-
-    public CategoryAdminController(CategoryManagementService categoryManagementService) {
-        this.categoryManagementService = categoryManagementService;
-    }
 
     @GetMapping
     public ApiResponse<PageResult<CategoryView>> listCategories(
@@ -49,7 +50,7 @@ public class CategoryAdminController {
         PageResult<CategoryView> categories =
                 categoryManagementService.listCategories(page, size, keyword);
         return ApiResponse.success(categories);
-}
+    }
 
     @GetMapping("/{categoryId}")
     public ApiResponse<CategoryView> getCategory(@PathVariable Integer categoryId) {
