@@ -40,6 +40,12 @@ import org.springframework.util.StringUtils;
 public class DatasetManagementService {
 
     private static final Set<String> CHECKER_TYPES = Set.of("text", "float", "custom");
+    private static final String REVIEW_APPROVED = "approved";
+    private static final String STATUS_APPROVED = "approved";
+    private static final String STATUS_READY = "ready";
+    private static final String STATUS_PUBLISHED = "published";
+    private static final String STATUS_ARCHIVED = "archived";
+    private static final String STATUS_DRAFT = "draft";
 
     private final DatasetMapper datasetMapper;
     private final TestcaseGroupMapper testcaseGroupMapper;
@@ -491,6 +497,17 @@ public class DatasetManagementService {
     }
 
     private void activateDataset(Long problemId, Long datasetId) {
+        Problem existingProblem = problemMapper.selectById(problemId);
+        if (existingProblem == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "题目不存在");
+        }
+        if (!REVIEW_APPROVED.equals(existingProblem.getReviewStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "题目尚未通过审核，无法激活数据集");
+        }
+        if (STATUS_ARCHIVED.equals(existingProblem.getLifecycleStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "已归档题目无法激活数据集");
+        }
+
         LambdaUpdateWrapper<Dataset> deactivateOthers =
                 Wrappers.lambdaUpdate(Dataset.class)
                         .eq(Dataset::getProblemId, problemId)
@@ -508,6 +525,9 @@ public class DatasetManagementService {
         Problem problem = new Problem();
         problem.setId(problemId);
         problem.setActiveDatasetId(datasetId);
+        if (!STATUS_PUBLISHED.equals(existingProblem.getLifecycleStatus())) {
+            problem.setLifecycleStatus(STATUS_READY);
+        }
         problemMapper.updateById(problem);
     }
 
@@ -517,6 +537,14 @@ public class DatasetManagementService {
             Problem update = new Problem();
             update.setId(problemId);
             update.setActiveDatasetId(null);
+            update.setIsPublic(0);
+            if (!STATUS_ARCHIVED.equals(problem.getLifecycleStatus())) {
+                if (REVIEW_APPROVED.equals(problem.getReviewStatus())) {
+                    update.setLifecycleStatus(STATUS_APPROVED);
+                } else {
+                    update.setLifecycleStatus(STATUS_DRAFT);
+                }
+            }
             problemMapper.updateById(update);
         }
     }

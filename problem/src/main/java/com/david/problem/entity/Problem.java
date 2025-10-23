@@ -40,6 +40,24 @@ public class Problem {
     @TableField("is_public")
     private Integer isPublic;
 
+    @TableField("lifecycle_status")
+    private String lifecycleStatus;
+
+    @TableField("review_status")
+    private String reviewStatus;
+
+    @TableField("reviewed_by")
+    private Long reviewedBy;
+
+    @TableField("reviewed_at")
+    private LocalDateTime reviewedAt;
+
+    @TableField("review_notes")
+    private String reviewNotes;
+
+    @TableField("submitted_for_review_at")
+    private LocalDateTime submittedForReviewAt;
+
     @TableField("meta_json")
     private String metaJson;
 

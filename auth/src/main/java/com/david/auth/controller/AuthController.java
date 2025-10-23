@@ -14,11 +14,14 @@ import com.david.auth.security.TokenSessionManager;
 import com.david.auth.security.UserPrincipal;
 import com.david.auth.service.AuthService;
 import com.david.common.http.ApiResponse;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.util.StringUtils;

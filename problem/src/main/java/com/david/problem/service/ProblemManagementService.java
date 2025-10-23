@@ -10,13 +10,16 @@ import com.david.problem.dto.ProblemDetailView;
 import com.david.problem.dto.ProblemLanguageConfigPayload;
 import com.david.problem.dto.ProblemLanguageConfigView;
 import com.david.problem.dto.ProblemOptionsResponse;
+import com.david.problem.dto.ProblemReviewDecisionRequest;
 import com.david.problem.dto.ProblemStatementPayload;
 import com.david.problem.dto.ProblemStatementView;
 import com.david.problem.dto.ProblemSummaryView;
 import com.david.problem.dto.ProblemTagDto;
 import com.david.problem.dto.ProblemUpsertRequest;
+import com.david.problem.dto.ProblemSubmitReviewRequest;
 import com.david.problem.dto.TagOption;
 import com.david.problem.entity.Category;
+import com.david.problem.entity.Dataset;
 import com.david.problem.entity.Difficulty;
 import com.david.problem.entity.Language;
 import com.david.problem.entity.Problem;
@@ -26,6 +29,7 @@ import com.david.problem.entity.ProblemTag;
 import com.david.problem.entity.Tag;
 import com.david.problem.exception.BusinessException;
 import com.david.problem.mapper.CategoryMapper;
+import com.david.problem.mapper.DatasetMapper;
 import com.david.problem.mapper.DifficultyMapper;
 import com.david.problem.mapper.LanguageMapper;
 import com.david.problem.mapper.ProblemLanguageConfigMapper;
@@ -39,22 +43,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.annotation.Nullable;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 @Service
 public class ProblemManagementService {
@@ -62,6 +67,28 @@ public class ProblemManagementService {
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
     private static final List<String> SUPPORTED_PROBLEM_TYPES =
             List.of("coding", "sql", "shell", "concurrency", "interactive", "output-only");
+
+    private static final String STATUS_DRAFT = "draft";
+    private static final String STATUS_IN_REVIEW = "in_review";
+    private static final String STATUS_APPROVED = "approved";
+    private static final String STATUS_READY = "ready";
+    private static final String STATUS_PUBLISHED = "published";
+    private static final String STATUS_ARCHIVED = "archived";
+
+    private static final String REVIEW_PENDING = "pending";
+    private static final String REVIEW_APPROVED = "approved";
+    private static final String REVIEW_REJECTED = "rejected";
+
+    private static final Set<String> LIFECYCLE_STATUSES =
+            Set.of(
+                    STATUS_DRAFT,
+                    STATUS_IN_REVIEW,
+                    STATUS_APPROVED,
+                    STATUS_READY,
+                    STATUS_PUBLISHED,
+                    STATUS_ARCHIVED);
+    private static final Set<String> REVIEW_STATUSES =
+            Set.of(REVIEW_PENDING, REVIEW_APPROVED, REVIEW_REJECTED);
 
     private final ProblemMapper problemMapper;
     private final ProblemStatementMapper problemStatementMapper;
@@ -71,6 +98,7 @@ public class ProblemManagementService {
     private final DifficultyMapper difficultyMapper;
     private final CategoryMapper categoryMapper;
     private final LanguageMapper languageMapper;
+    private final DatasetMapper datasetMapper;
     private final ObjectMapper objectMapper;
 
     public ProblemManagementService(
@@ -82,6 +110,7 @@ public class ProblemManagementService {
             DifficultyMapper difficultyMapper,
             CategoryMapper categoryMapper,
             LanguageMapper languageMapper,
+            DatasetMapper datasetMapper,
             ObjectMapper objectMapper) {
         this.problemMapper = problemMapper;
         this.problemStatementMapper = problemStatementMapper;
@@ -91,6 +120,7 @@ public class ProblemManagementService {
         this.difficultyMapper = difficultyMapper;
         this.categoryMapper = categoryMapper;
         this.languageMapper = languageMapper;
+        this.datasetMapper = datasetMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -102,6 +132,8 @@ public class ProblemManagementService {
             @Nullable Integer difficultyId,
             @Nullable Integer categoryId,
             @Nullable Boolean isPublic,
+            @Nullable String lifecycleStatus,
+            @Nullable String reviewStatus,
             @Nullable String preferredLangCode) {
         Page<Problem> pager = new Page<>(page, size);
         LambdaQueryWrapper<Problem> query = Wrappers.lambdaQuery(Problem.class);
@@ -118,6 +150,12 @@ public class ProblemManagementService {
         }
         if (isPublic != null) {
             query.eq(Problem::getIsPublic, isPublic ? 1 : 0);
+        }
+        if (StringUtils.hasText(lifecycleStatus)) {
+            query.eq(Problem::getLifecycleStatus, normalizeLifecycleStatus(lifecycleStatus));
+        }
+        if (StringUtils.hasText(reviewStatus)) {
+            query.eq(Problem::getReviewStatus, normalizeReviewStatus(reviewStatus));
         }
         if (StringUtils.hasText(keyword)) {
             List<Long> matchedIds = findProblemIdsByStatementKeyword(keyword, preferredLangCode);
@@ -181,6 +219,12 @@ public class ProblemManagementService {
                             problem.getCategoryId(),
                             category != null ? category.getName() : null,
                             problem.getIsPublic() != null && problem.getIsPublic() == 1,
+                            problem.getLifecycleStatus(),
+                            problem.getReviewStatus(),
+                            problem.getActiveDatasetId(),
+                            problem.getReviewedBy(),
+                            problem.getReviewedAt(),
+                            problem.getSubmittedForReviewAt(),
                             problem.getTimeLimitMs(),
                             problem.getMemoryLimitKb(),
                             problem.getUpdatedAt(),
@@ -273,6 +317,12 @@ public class ProblemManagementService {
                 problem.getTimeLimitMs(),
                 problem.getMemoryLimitKb(),
                 problem.getIsPublic() != null && problem.getIsPublic() == 1,
+                problem.getLifecycleStatus(),
+                problem.getReviewStatus(),
+                problem.getReviewedBy(),
+                problem.getReviewedAt(),
+                problem.getReviewNotes(),
+                problem.getSubmittedForReviewAt(),
                 problem.getActiveDatasetId(),
                 parseMeta(problem.getMetaJson()),
                 problem.getCreatedAt(),
@@ -293,7 +343,14 @@ public class ProblemManagementService {
         ensureTagsExist(request.tagIds());
 
         Problem problem = new Problem();
-        setProblem(request, problem);
+        problem.setLifecycleStatus(STATUS_DRAFT);
+        problem.setReviewStatus(REVIEW_PENDING);
+        problem.setReviewNotes(null);
+        problem.setReviewedAt(null);
+        problem.setReviewedBy(null);
+        problem.setSubmittedForReviewAt(null);
+        problem.setIsPublic(0);
+        setProblem(request, problem, true);
         problem.setCreatedAt(LocalDateTime.now());
         problem.setUpdatedAt(LocalDateTime.now());
 
@@ -321,7 +378,7 @@ public class ProblemManagementService {
         ensureLanguagesExist(request.languageConfigs());
         ensureTagsExist(request.tagIds());
 
-        setProblem(request, existing);
+        setProblem(request, existing, false);
         existing.setUpdatedAt(LocalDateTime.now());
 
         problemMapper.updateById(existing);
@@ -333,20 +390,112 @@ public class ProblemManagementService {
         return getProblem(problemId, null);
     }
 
-    private void setProblem(ProblemUpsertRequest request, Problem existing) {
-        existing.setSlug(request.slug().trim());
-        existing.setProblemType(request.problemType());
-        existing.setDifficultyId(request.difficultyId());
-        existing.setCategoryId(request.categoryId());
-        existing.setCreatorId(request.creatorId());
-        existing.setSolutionEntry(
+    @Transactional
+    public ProblemDetailView submitForReview(
+            Long problemId, @Nullable ProblemSubmitReviewRequest request) {
+        Problem problem = problemMapper.selectById(problemId);
+        if (problem == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "题目不存在");
+        }
+        if (STATUS_ARCHIVED.equals(problem.getLifecycleStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "已归档的题目无法提交审核");
+        }
+        if (STATUS_IN_REVIEW.equals(problem.getLifecycleStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "题目已处于审核流程中");
+        }
+
+        problem.setLifecycleStatus(STATUS_IN_REVIEW);
+        problem.setReviewStatus(REVIEW_PENDING);
+        problem.setReviewedBy(null);
+        problem.setReviewedAt(null);
+        problem.setSubmittedForReviewAt(LocalDateTime.now());
+        if (problem.getIsPublic() != null && problem.getIsPublic() == 1) {
+            problem.setIsPublic(0);
+        }
+        if (request != null && StringUtils.hasText(request.notes())) {
+            problem.setReviewNotes(request.notes().trim());
+        }
+        problem.setUpdatedAt(LocalDateTime.now());
+        problemMapper.updateById(problem);
+
+        return getProblem(problemId, null);
+    }
+
+    @Transactional
+    public ProblemDetailView reviewProblem(
+            Long problemId, ProblemReviewDecisionRequest request) {
+        Problem problem = problemMapper.selectById(problemId);
+        if (problem == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "题目不存在");
+        }
+        if (!STATUS_IN_REVIEW.equals(problem.getLifecycleStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "题目当前状态不支持审核操作");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        problem.setReviewedBy(request.reviewerId());
+        problem.setReviewedAt(now);
+        if (StringUtils.hasText(request.notes())) {
+            problem.setReviewNotes(request.notes().trim());
+        }
+        if (Boolean.TRUE.equals(request.approved())) {
+            problem.setReviewStatus(REVIEW_APPROVED);
+            problem.setLifecycleStatus(STATUS_APPROVED);
+        } else {
+            problem.setReviewStatus(REVIEW_REJECTED);
+            problem.setLifecycleStatus(STATUS_DRAFT);
+            problem.setIsPublic(0);
+        }
+        problem.setUpdatedAt(now);
+        problemMapper.updateById(problem);
+        return getProblem(problemId, null);
+    }
+
+    @Transactional
+    public ProblemDetailView togglePublish(
+            Long problemId, boolean publish, @Nullable String notes) {
+        Problem problem = problemMapper.selectById(problemId);
+        if (problem == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "题目不存在");
+        }
+        if (publish) {
+            ensurePublicationPrerequisites(problem);
+            problem.setIsPublic(1);
+            problem.setLifecycleStatus(STATUS_PUBLISHED);
+        } else {
+            problem.setIsPublic(0);
+            if (STATUS_PUBLISHED.equals(problem.getLifecycleStatus())) {
+                if (problem.getActiveDatasetId() != null) {
+                    problem.setLifecycleStatus(STATUS_READY);
+                } else if (REVIEW_APPROVED.equals(problem.getReviewStatus())) {
+                    problem.setLifecycleStatus(STATUS_APPROVED);
+                } else if (!STATUS_ARCHIVED.equals(problem.getLifecycleStatus())) {
+                    problem.setLifecycleStatus(STATUS_DRAFT);
+                }
+            }
+        }
+        if (StringUtils.hasText(notes)) {
+            problem.setReviewNotes(notes.trim());
+        }
+        problem.setUpdatedAt(LocalDateTime.now());
+        problemMapper.updateById(problem);
+        return getProblem(problemId, null);
+    }
+
+    private void setProblem(ProblemUpsertRequest request, Problem target, boolean isNew) {
+        target.setSlug(request.slug().trim());
+        target.setProblemType(request.problemType());
+        target.setDifficultyId(request.difficultyId());
+        target.setCategoryId(request.categoryId());
+        target.setCreatorId(request.creatorId());
+        target.setSolutionEntry(
                 StringUtils.hasText(request.solutionEntry())
                         ? request.solutionEntry().trim()
                         : null);
-        existing.setTimeLimitMs(request.timeLimitMs());
-        existing.setMemoryLimitKb(request.memoryLimitKb());
-        existing.setIsPublic(Boolean.FALSE.equals(request.isPublic()) ? 0 : 1);
-        existing.setMetaJson(toMetaJson(request.meta()));
+        target.setTimeLimitMs(request.timeLimitMs());
+        target.setMemoryLimitKb(request.memoryLimitKb());
+        target.setMetaJson(toMetaJson(request.meta()));
+        applyPublicationFlag(target, request.isPublic(), isNew);
     }
 
     public ProblemOptionsResponse loadOptions() {
@@ -392,6 +541,73 @@ public class ProblemManagementService {
 
         return new ProblemOptionsResponse(
                 difficulties, categories, tags, languages, SUPPORTED_PROBLEM_TYPES);
+    }
+
+    private void applyPublicationFlag(
+            Problem problem, @Nullable Boolean requested, boolean isNew) {
+        if (requested == null) {
+            if (isNew && problem.getIsPublic() == null) {
+                problem.setIsPublic(0);
+            }
+            return;
+        }
+        if (Boolean.TRUE.equals(requested)) {
+            ensurePublicationPrerequisites(problem);
+            problem.setIsPublic(1);
+            problem.setLifecycleStatus(STATUS_PUBLISHED);
+        } else {
+            problem.setIsPublic(0);
+            if (!isNew && STATUS_PUBLISHED.equals(problem.getLifecycleStatus())) {
+                if (problem.getActiveDatasetId() != null) {
+                    problem.setLifecycleStatus(STATUS_READY);
+                } else if (REVIEW_APPROVED.equals(problem.getReviewStatus())) {
+                    problem.setLifecycleStatus(STATUS_APPROVED);
+                } else if (!STATUS_ARCHIVED.equals(problem.getLifecycleStatus())) {
+                    problem.setLifecycleStatus(STATUS_DRAFT);
+                }
+            } else if (isNew && problem.getLifecycleStatus() == null) {
+                problem.setLifecycleStatus(STATUS_DRAFT);
+            }
+        }
+    }
+
+    private void ensurePublicationPrerequisites(Problem problem) {
+        if (!REVIEW_APPROVED.equals(problem.getReviewStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "题目尚未通过审核，无法公布");
+        }
+        Long datasetId = problem.getActiveDatasetId();
+        if (datasetId == null) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "请先为题目激活数据集");
+        }
+        Dataset dataset = datasetMapper.selectById(datasetId);
+        if (dataset == null || dataset.getIsActive() == null || dataset.getIsActive() != 1) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "激活数据集不存在或未启用，无法公布");
+        }
+        if (STATUS_ARCHIVED.equals(problem.getLifecycleStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "已归档题目无法公布");
+        }
+        if (STATUS_IN_REVIEW.equals(problem.getLifecycleStatus())) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "审核中的题目无法公布");
+        }
+        if (!STATUS_PUBLISHED.equals(problem.getLifecycleStatus())) {
+            problem.setLifecycleStatus(STATUS_READY);
+        }
+    }
+
+    private String normalizeLifecycleStatus(String lifecycleStatus) {
+        String normalized = lifecycleStatus.trim().toLowerCase(Locale.ROOT);
+        if (!LIFECYCLE_STATUSES.contains(normalized)) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "不支持的生命周期状态");
+        }
+        return normalized;
+    }
+
+    private String normalizeReviewStatus(String reviewStatus) {
+        String normalized = reviewStatus.trim().toLowerCase(Locale.ROOT);
+        if (!REVIEW_STATUSES.contains(normalized)) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "不支持的审核状态");
+        }
+        return normalized;
     }
 
     private void ensureValidProblemType(String problemType) {

@@ -4,6 +4,9 @@ import com.david.common.http.ApiResponse;
 import com.david.problem.dto.PageResult;
 import com.david.problem.dto.ProblemDetailView;
 import com.david.problem.dto.ProblemOptionsResponse;
+import com.david.problem.dto.ProblemPublishRequest;
+import com.david.problem.dto.ProblemReviewDecisionRequest;
+import com.david.problem.dto.ProblemSubmitReviewRequest;
 import com.david.problem.dto.ProblemSummaryView;
 import com.david.problem.dto.ProblemUpsertRequest;
 import com.david.problem.service.ProblemManagementService;
@@ -50,9 +53,11 @@ public class ProblemAdminController {
             @RequestParam(required = false) Integer difficultyId,
             @RequestParam(required = false) Integer categoryId,
             @RequestParam(required = false) Boolean isPublic,
+            @RequestParam(required = false) String lifecycleStatus,
+            @RequestParam(required = false) String reviewStatus,
             @RequestParam(required = false) String langCode) {
         log.info(
-                "查询题目列表，页码: {}, 大小: {}, 关键字: {}, 类型: {}, 难度: {}, 分类: {}, 是否公开: {}, 语言: {}",
+                "查询题目列表，页码: {}, 大小: {}, 关键字: {}, 类型: {}, 难度: {}, 分类: {}, 是否公开: {}, 生命周期: {}, 审核状态: {}, 语言: {}",
                 page,
                 size,
                 keyword,
@@ -60,6 +65,8 @@ public class ProblemAdminController {
                 difficultyId,
                 categoryId,
                 isPublic,
+                lifecycleStatus,
+                reviewStatus,
                 langCode);
         PageResult<ProblemSummaryView> result =
                 problemManagementService.listProblems(
@@ -70,6 +77,8 @@ public class ProblemAdminController {
                         difficultyId,
                         categoryId,
                         isPublic,
+                        lifecycleStatus,
+                        reviewStatus,
                         langCode);
         return ApiResponse.success(result);
     }
@@ -98,6 +107,33 @@ public class ProblemAdminController {
         log.info("更新题目，ID: {}, 请求参数: {}", problemId, request);
         ProblemDetailView detail = problemManagementService.updateProblem(problemId, request);
         log.info("更新题目成功，ID: {}", detail.id());
+        return ApiResponse.success(detail);
+    }
+
+    @PostMapping("/{problemId}/submit-review")
+    public ApiResponse<ProblemDetailView> submitForReview(
+            @PathVariable Long problemId,
+            @Valid @RequestBody(required = false) ProblemSubmitReviewRequest request) {
+        log.info("题目 {} 提交审核，请求: {}", problemId, request);
+        ProblemDetailView detail =
+                problemManagementService.submitForReview(problemId, request);
+        return ApiResponse.success(detail);
+    }
+
+    @PostMapping("/{problemId}/review")
+    public ApiResponse<ProblemDetailView> reviewProblem(
+            @PathVariable Long problemId, @Valid @RequestBody ProblemReviewDecisionRequest request) {
+        log.info("处理题目 {} 的审核结果，请求: {}", problemId, request);
+        ProblemDetailView detail = problemManagementService.reviewProblem(problemId, request);
+        return ApiResponse.success(detail);
+    }
+
+    @PostMapping("/{problemId}/publish")
+    public ApiResponse<ProblemDetailView> togglePublish(
+            @PathVariable Long problemId, @Valid @RequestBody ProblemPublishRequest request) {
+        log.info("更新题目 {} 的发布状态，请求: {}", problemId, request);
+        ProblemDetailView detail =
+                problemManagementService.togglePublish(problemId, request.publish(), request.notes());
         return ApiResponse.success(detail);
     }
 
