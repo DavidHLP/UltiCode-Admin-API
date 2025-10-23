@@ -39,6 +39,10 @@ spring:
           uri: lb://interaction
           predicates:
             - Path=/api/admin/interaction/**
+        - id: contests-id
+          uri: lb://contests
+          predicates:
+            - Path=/api/admin/contests/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG

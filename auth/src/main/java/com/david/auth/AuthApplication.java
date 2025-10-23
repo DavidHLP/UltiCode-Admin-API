@@ -1,4 +1,4 @@
-package com.david;
+package com.david.auth;
 
 import com.david.auth.config.AppProperties;
 
