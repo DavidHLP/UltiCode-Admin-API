@@ -12,5 +12,7 @@ public record BookmarkView(
         List<String> tags,
         String source,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {}
-
+        LocalDateTime updatedAt,
+        Boolean sensitiveFlag,
+        List<String> sensitiveHits,
+        String riskLevel) {}

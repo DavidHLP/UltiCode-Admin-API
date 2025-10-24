@@ -27,7 +27,12 @@ import org.springframework.util.StringUtils;
 @Service
 public class SensitiveWordAdminService {
 
+    private static final long ACTIVE_WORD_CACHE_TTL_MILLIS = 60_000L;
+
     private final SensitiveWordMapper sensitiveWordMapper;
+    private final Object cacheLock = new Object();
+    private volatile List<SensitiveWord> cachedActiveWords = List.of();
+    private volatile long activeWordCacheLoadedAt = 0L;
 
     public SensitiveWordAdminService(SensitiveWordMapper sensitiveWordMapper) {
         this.sensitiveWordMapper = sensitiveWordMapper;
@@ -84,6 +89,7 @@ public class SensitiveWordAdminService {
         entity.setUpdatedAt(LocalDateTime.now());
 
         sensitiveWordMapper.insert(entity);
+        invalidateActiveWordCache();
         return toView(entity);
     }
 
@@ -107,6 +113,7 @@ public class SensitiveWordAdminService {
         existing.setUpdatedAt(LocalDateTime.now());
 
         sensitiveWordMapper.updateById(existing);
+        invalidateActiveWordCache();
         return toView(existing);
     }
 
@@ -117,16 +124,40 @@ public class SensitiveWordAdminService {
             return;
         }
         sensitiveWordMapper.deleteById(id);
+        invalidateActiveWordCache();
     }
 
     public SensitiveWordAnalysisResult analyzeContent(String content) {
         if (!StringUtils.hasText(content)) {
             return SensitiveWordAnalysisResult.empty();
         }
-        List<SensitiveWord> activeWords =
-                sensitiveWordMapper.selectList(
-                        Wrappers.lambdaQuery(SensitiveWord.class)
-                                .eq(SensitiveWord::getActive, Boolean.TRUE));
+        return analyzeContent(content, loadActiveWords());
+    }
+
+    public List<SensitiveWord> loadActiveWords() {
+        long now = System.currentTimeMillis();
+        if (now - activeWordCacheLoadedAt < ACTIVE_WORD_CACHE_TTL_MILLIS) {
+            return cachedActiveWords;
+        }
+        synchronized (cacheLock) {
+            if (now - activeWordCacheLoadedAt < ACTIVE_WORD_CACHE_TTL_MILLIS) {
+                return cachedActiveWords;
+            }
+            List<SensitiveWord> latest =
+                    sensitiveWordMapper.selectList(
+                            Wrappers.lambdaQuery(SensitiveWord.class)
+                                    .eq(SensitiveWord::getActive, Boolean.TRUE));
+            cachedActiveWords = latest == null || latest.isEmpty() ? List.of() : List.copyOf(latest);
+            activeWordCacheLoadedAt = now;
+            return cachedActiveWords;
+        }
+    }
+
+    public SensitiveWordAnalysisResult analyzeContent(
+            String content, List<SensitiveWord> activeWords) {
+        if (!StringUtils.hasText(content)) {
+            return SensitiveWordAnalysisResult.empty();
+        }
         if (activeWords == null || activeWords.isEmpty()) {
             return SensitiveWordAnalysisResult.empty();
         }
@@ -195,5 +226,9 @@ public class SensitiveWordAdminService {
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
     }
-}
 
+    private void invalidateActiveWordCache() {
+        activeWordCacheLoadedAt = 0L;
+        cachedActiveWords = List.of();
+    }
+}

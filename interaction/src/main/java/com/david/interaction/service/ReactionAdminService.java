@@ -8,7 +8,9 @@ import com.david.interaction.dto.ReactionDeleteRequest;
 import com.david.interaction.dto.ReactionQuery;
 import com.david.interaction.dto.ReactionView;
 import com.david.interaction.entity.Reaction;
+import com.david.interaction.entity.SensitiveWord;
 import com.david.interaction.mapper.ReactionMapper;
+import com.david.interaction.service.model.SensitiveWordAnalysisResult;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,9 +20,12 @@ import org.springframework.util.StringUtils;
 public class ReactionAdminService {
 
     private final ReactionMapper reactionMapper;
+    private final SensitiveWordAdminService sensitiveWordAdminService;
 
-    public ReactionAdminService(ReactionMapper reactionMapper) {
+    public ReactionAdminService(
+            ReactionMapper reactionMapper, SensitiveWordAdminService sensitiveWordAdminService) {
         this.reactionMapper = reactionMapper;
+        this.sensitiveWordAdminService = sensitiveWordAdminService;
     }
 
     public PageResult<ReactionView> listReactions(ReactionQuery query) {
@@ -47,8 +52,11 @@ public class ReactionAdminService {
         wrapper.orderByDesc(Reaction::getCreatedAt);
 
         Page<Reaction> result = reactionMapper.selectPage(pager, wrapper);
+        List<SensitiveWord> activeWords = sensitiveWordAdminService.loadActiveWords();
         List<ReactionView> items =
-                result.getRecords().stream().map(this::toView).toList();
+                result.getRecords().stream()
+                        .map(reaction -> toView(reaction, activeWords))
+                        .toList();
         return new PageResult<>(
                 items, result.getTotal(), result.getCurrent(), result.getSize());
     }
@@ -63,7 +71,10 @@ public class ReactionAdminService {
                         .eq(Reaction::getKind, request.kind()));
     }
 
-    private ReactionView toView(Reaction reaction) {
+    private ReactionView toView(Reaction reaction, List<SensitiveWord> activeWords) {
+        SensitiveWordAnalysisResult analysis =
+                sensitiveWordAdminService.analyzeContent(reaction.getMetadata(), activeWords);
+        boolean hasSensitive = analysis.hasSensitive();
         return new ReactionView(
                 reaction.getUserId(),
                 reaction.getEntityType(),
@@ -73,7 +84,9 @@ public class ReactionAdminService {
                 reaction.getSource(),
                 reaction.getMetadata(),
                 reaction.getCreatedAt(),
-                reaction.getUpdatedAt());
+                reaction.getUpdatedAt(),
+                hasSensitive,
+                hasSensitive ? analysis.hits() : List.of(),
+                hasSensitive ? analysis.riskLevel() : null);
     }
 }
-

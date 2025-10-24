@@ -1,6 +1,7 @@
 package com.david.interaction.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ReactionView(
         Long userId,
@@ -11,5 +12,7 @@ public record ReactionView(
         String source,
         String metadata,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {}
-
+        LocalDateTime updatedAt,
+        Boolean sensitiveFlag,
+        List<String> sensitiveHits,
+        String riskLevel) {}
