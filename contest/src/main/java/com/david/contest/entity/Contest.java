@@ -34,8 +34,29 @@ public class Contest {
     private Long createdBy;
 
     @TableField("created_at")
-    private LocalDateTime createdAt;
+   private LocalDateTime createdAt;
 
     @TableField("updated_at")
     private LocalDateTime updatedAt;
+
+    @TableField("registration_mode")
+    private String registrationMode;
+
+    @TableField("registration_start_time")
+    private LocalDateTime registrationStartTime;
+
+    @TableField("registration_end_time")
+    private LocalDateTime registrationEndTime;
+
+    @TableField("max_participants")
+    private Integer maxParticipants;
+
+    @TableField("penalty_per_wrong")
+    private Integer penaltyPerWrong;
+
+    @TableField("scoreboard_freeze_minutes")
+    private Integer scoreboardFreezeMinutes;
+
+    @TableField("hide_score_during_freeze")
+    private Integer hideScoreDuringFreeze;
 }

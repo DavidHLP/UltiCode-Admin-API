@@ -74,9 +74,33 @@ public class ContestOperationsService {
         if (contest == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "比赛不存在");
         }
+        LocalDateTime generatedAt = LocalDateTime.now();
+        int penaltyPerWrong =
+                contest.getPenaltyPerWrong() != null && contest.getPenaltyPerWrong() > 0
+                        ? contest.getPenaltyPerWrong()
+                        : 20;
+        int freezeMinutes =
+                contest.getScoreboardFreezeMinutes() != null && contest.getScoreboardFreezeMinutes() > 0
+                        ? contest.getScoreboardFreezeMinutes()
+                        : 0;
+        boolean freezeHideScore = contest.getHideScoreDuringFreeze() != null
+                && contest.getHideScoreDuringFreeze() == 1;
+        LocalDateTime freezeStartTime = null;
+        boolean freezeWindowActive = false;
+        if (freezeMinutes > 0 && contest.getEndTime() != null) {
+            freezeStartTime = contest.getEndTime().minusMinutes(freezeMinutes);
+            if (!generatedAt.isBefore(freezeStartTime)
+                    && generatedAt.isBefore(contest.getEndTime())) {
+                freezeWindowActive = true;
+            }
+        }
+
         ContestDetailView detail = contestPlanningService.getContest(contestId);
         List<ContestProblemView> problemViews = detail.problems();
         List<ContestParticipantView> participantViews = detail.participants();
+
+        boolean freezeActive = freezeWindowActive && freezeHideScore;
+        int pendingSubmissionTotal = 0;
 
         Map<Long, ProblemContext> problemContexts =
                 buildProblemContexts(problemViews);
@@ -88,7 +112,13 @@ public class ContestOperationsService {
             return new ContestScoreboardView(
                     contestId,
                     contest.getKind(),
-                    LocalDateTime.now(),
+                    generatedAt,
+                    penaltyPerWrong,
+                    freezeWindowActive && freezeHideScore,
+                    freezeHideScore,
+                    freezeStartTime,
+                    freezeMinutes,
+                    0,
                     buildScoreboardProblemViews(problemContexts),
                     List.of());
         }
@@ -122,8 +152,35 @@ public class ContestOperationsService {
             }
             ParticipantProblemState state = participant.problemStates.computeIfAbsent(
                     submission.getProblemId(), id -> new ParticipantProblemState(problem.alias()));
+            LocalDateTime submissionTime = submission.getCreatedAt();
+            if (submissionTime != null
+                    && (participant.lastSubmissionAt == null
+                            || submissionTime.isAfter(participant.lastSubmissionAt))) {
+                participant.lastSubmissionAt = submissionTime;
+            }
+
+            boolean isPending =
+                    freezeWindowActive
+                            && freezeStartTime != null
+                            && submissionTime != null
+                            && submissionTime.isAfter(freezeStartTime);
+            if (isPending) {
+                state.pendingAttempts += 1;
+                state.pendingLastVerdict = submission.getVerdict();
+                state.pendingLastSubmissionAt = submissionTime;
+                if (submission.getScore() != null) {
+                    int score = submission.getScore();
+                    if (state.pendingBestScore == null || score > state.pendingBestScore) {
+                        state.pendingBestScore = score;
+                    }
+                }
+                participant.pendingSubmissionCount += 1;
+                pendingSubmissionTotal += 1;
+                continue;
+            }
+
             state.totalAttempts += 1;
-            state.lastSubmissionAt = submission.getCreatedAt();
+            state.lastSubmissionAt = submissionTime;
             state.lastVerdict = submission.getVerdict();
             if (submission.getScore() != null) {
                 int score = submission.getScore();
@@ -146,12 +203,19 @@ public class ContestOperationsService {
                         participantContexts,
                         participantProblemIndex,
                         strategy,
-                        globalBestScoreMap);
+                        globalBestScoreMap,
+                        penaltyPerWrong);
 
         return new ContestScoreboardView(
                 contestId,
                 contest.getKind(),
-                LocalDateTime.now(),
+                generatedAt,
+                penaltyPerWrong,
+                freezeActive,
+                freezeHideScore,
+                freezeStartTime,
+                freezeMinutes,
+                pendingSubmissionTotal,
                 buildScoreboardProblemViews(problemContexts),
                 participants);
     }
@@ -250,7 +314,8 @@ public class ContestOperationsService {
             Map<Long, ParticipantContext> participantContexts,
             Map<Long, Set<Long>> participantProblemIndex,
             ScoreboardStrategy strategy,
-            Map<String, Integer> globalBestScoreMap) {
+            Map<String, Integer> globalBestScoreMap,
+            int penaltyPerWrong) {
 
         for (ParticipantContext participant : participantContexts.values()) {
             Set<Long> problems = participantProblemIndex.get(participant.userId());
@@ -262,7 +327,7 @@ public class ContestOperationsService {
                         problemId,
                         id -> new ParticipantProblemState(problemContexts.get(id).alias()));
             }
-            computeParticipantScore(contest, participant, problemContexts, strategy);
+            computeParticipantScore(contest, participant, problemContexts, strategy, penaltyPerWrong);
         }
 
         List<ParticipantContext> sortedParticipants =
@@ -306,7 +371,11 @@ public class ContestOperationsService {
                                                 state.lastVerdict,
                                                 state.firstAcceptedAt,
                                                 state.lastSubmissionAt,
-                                                globalBest);
+                                                globalBest,
+                                                state.pendingAttempts,
+                                                state.pendingBestScore,
+                                                state.pendingLastVerdict,
+                                                state.pendingLastSubmissionAt);
                                     })
                             .toList();
 
@@ -321,6 +390,7 @@ public class ContestOperationsService {
                             current.penalty,
                             current.lastAcceptedAt,
                             current.lastSubmissionAt,
+                            current.pendingSubmissionCount,
                             recordViews));
         }
         return result;
@@ -349,15 +419,19 @@ public class ContestOperationsService {
             Contest contest,
             ParticipantContext participant,
             Map<Long, ProblemContext> problemContexts,
-            ScoreboardStrategy strategy) {
+            ScoreboardStrategy strategy,
+            int penaltyPerWrong) {
         switch (strategy) {
-            case ICPC -> computeIcpcScore(contest, participant, problemContexts);
+            case ICPC -> computeIcpcScore(contest, participant, problemContexts, penaltyPerWrong);
             case OI -> computeOiScore(participant, problemContexts);
         }
     }
 
     private void computeIcpcScore(
-            Contest contest, ParticipantContext participant, Map<Long, ProblemContext> problemContexts) {
+            Contest contest,
+            ParticipantContext participant,
+            Map<Long, ProblemContext> problemContexts,
+            int penaltyPerWrong) {
         int solved = 0;
         long penalty = 0;
         LocalDateTime lastAccepted = null;
@@ -379,13 +453,17 @@ public class ContestOperationsService {
                     contest.getStartTime() == null
                             ? 0
                             : Duration.between(contest.getStartTime(), state.firstAcceptedAt).toMinutes();
-            penalty += minutes + (long) state.wrongAttemptsBeforeAc * 20;
+            penalty += minutes + (long) state.wrongAttemptsBeforeAc * Math.max(penaltyPerWrong, 0);
         }
         participant.solvedCount = solved;
         participant.totalScore = solved;
         participant.penalty = penalty;
         participant.lastAcceptedAt = lastAccepted;
-        participant.lastSubmissionAt = lastSubmission;
+        if (lastSubmission != null
+                && (participant.lastSubmissionAt == null
+                        || lastSubmission.isAfter(participant.lastSubmissionAt))) {
+            participant.lastSubmissionAt = lastSubmission;
+        }
     }
 
     private void computeOiScore(
@@ -411,7 +489,11 @@ public class ContestOperationsService {
         participant.totalScore = totalScore;
         participant.solvedCount = solved;
         participant.penalty = 0;
-        participant.lastSubmissionAt = lastSubmission;
+        if (lastSubmission != null
+                && (participant.lastSubmissionAt == null
+                        || lastSubmission.isAfter(participant.lastSubmissionAt))) {
+            participant.lastSubmissionAt = lastSubmission;
+        }
     }
 
     private ScoreboardStrategy resolveStrategy(String kind) {
@@ -616,6 +698,7 @@ public class ContestOperationsService {
         private long penalty;
         private LocalDateTime lastAcceptedAt;
         private LocalDateTime lastSubmissionAt;
+        private int pendingSubmissionCount;
 
         private ParticipantContext(Long userId, String username, String displayName, LocalDateTime registeredAt) {
             this.userId = userId;
@@ -645,6 +728,10 @@ public class ContestOperationsService {
         private String lastVerdict;
         private LocalDateTime firstAcceptedAt;
         private LocalDateTime lastSubmissionAt;
+        private int pendingAttempts;
+        private Integer pendingBestScore;
+        private String pendingLastVerdict;
+        private LocalDateTime pendingLastSubmissionAt;
 
         private ParticipantProblemState(String alias) {
             this.alias = alias;

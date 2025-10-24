@@ -140,9 +140,37 @@ CREATE TABLE `contest_participants`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Table structure for contest_registrations
+-- ----------------------------
+DROP TABLE IF EXISTS `contest_registrations`;
+CREATE TABLE `contest_registrations`  (
+                                          `id` bigint NOT NULL AUTO_INCREMENT COMMENT '报名记录ID',
+                                          `contest_id` bigint NOT NULL COMMENT '比赛ID',
+                                          `user_id` bigint NOT NULL COMMENT '用户ID',
+                                          `status` enum('pending','approved','rejected','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending' COMMENT '报名状态',
+                                          `source` enum('self','invite','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'self' COMMENT '报名来源',
+                                          `note` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '备注',
+                                          `reviewed_by` bigint NULL DEFAULT NULL COMMENT '审核人',
+                                          `reviewed_at` timestamp NULL DEFAULT NULL COMMENT '审核时间',
+                                          `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                          `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                          PRIMARY KEY (`id`) USING BTREE,
+                                          UNIQUE INDEX `uk_contest_registration_user`(`contest_id` ASC, `user_id` ASC) USING BTREE,
+                                          INDEX `idx_creg_status`(`contest_id` ASC, `status` ASC, `created_at` ASC) USING BTREE,
+                                          CONSTRAINT `fk_creg_contest` FOREIGN KEY (`contest_id`) REFERENCES `contests` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                                          CONSTRAINT `fk_creg_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+                                          CONSTRAINT `fk_creg_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
 -- Records of contest_participants
 -- ----------------------------
 INSERT INTO `contest_participants` VALUES (1, 1, '2025-10-20 09:05:00');
+
+-- ----------------------------
+-- Records of contest_registrations
+-- ----------------------------
+INSERT INTO `contest_registrations` VALUES (1, 1, 1, 'approved', 'admin', '系统导入', 1, '2025-10-20 09:05:00', '2025-10-20 09:00:00', '2025-10-20 09:05:00');
 
 -- ----------------------------
 -- Table structure for contest_problems
@@ -182,8 +210,16 @@ CREATE TABLE `contests`  (
                              `created_by` bigint NULL DEFAULT NULL COMMENT '创建人ID',
                              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                              `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                             `registration_mode` enum('open','approval','invite_only') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open' COMMENT '报名模式',
+                             `registration_start_time` datetime NULL DEFAULT NULL COMMENT '报名开始时间',
+                             `registration_end_time` datetime NULL DEFAULT NULL COMMENT '报名结束时间',
+                             `max_participants` int NULL DEFAULT NULL COMMENT '参赛人数上限',
+                             `penalty_per_wrong` int NOT NULL DEFAULT 20 COMMENT '每次罚时(分钟)',
+                             `scoreboard_freeze_minutes` int NOT NULL DEFAULT 0 COMMENT '封榜提前分钟数',
+                             `hide_score_during_freeze` tinyint(1) NOT NULL DEFAULT 1 COMMENT '封榜期隐藏最新成绩',
                              PRIMARY KEY (`id`) USING BTREE,
                              INDEX `idx_contest_time`(`start_time` ASC, `end_time` ASC) USING BTREE,
+                             INDEX `idx_contest_registration_window`(`registration_start_time` ASC, `registration_end_time` ASC) USING BTREE,
                              INDEX `fk_contest_creator`(`created_by` ASC) USING BTREE,
                              CONSTRAINT `fk_contest_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
@@ -191,7 +227,7 @@ CREATE TABLE `contests`  (
 -- ----------------------------
 -- Records of contests
 -- ----------------------------
-INSERT INTO `contests` VALUES (1, '秋季热身赛', '一次针对初学者的热身赛，包含两道基础题。', 'icpc', '2025-11-01 09:00:00', '2025-11-01 12:00:00', 1, 1, '2025-10-20 09:00:00', '2025-10-20 09:00:00');
+INSERT INTO `contests` VALUES (1, '秋季热身赛', '一次针对初学者的热身赛，包含两道基础题。', 'icpc', '2025-11-01 09:00:00', '2025-11-01 12:00:00', 1, 1, '2025-10-20 09:00:00', '2025-10-20 09:00:00', 'open', '2025-10-15 00:00:00', '2025-10-31 23:59:59', NULL, 20, 30, 1);
 
 -- ----------------------------
 -- Table structure for datasets

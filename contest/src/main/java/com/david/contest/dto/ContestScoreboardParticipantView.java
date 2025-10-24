@@ -13,4 +13,5 @@ public record ContestScoreboardParticipantView(
         Long penalty,
         LocalDateTime lastAcceptedAt,
         LocalDateTime lastSubmissionAt,
+        Integer pendingCount,
         List<ContestScoreboardRecordView> records) {}

@@ -11,4 +11,11 @@ public record ContestUpsertRequest(
         @NotNull(message = "开始时间不能为空") LocalDateTime startTime,
         @NotNull(message = "结束时间不能为空") LocalDateTime endTime,
         Boolean visible,
-        Long createdBy) {}
+        Long createdBy,
+        String registrationMode,
+        LocalDateTime registrationStartTime,
+        LocalDateTime registrationEndTime,
+        Integer maxParticipants,
+        Integer penaltyPerWrong,
+        Integer scoreboardFreezeMinutes,
+        Boolean hideScoreDuringFreeze) {}

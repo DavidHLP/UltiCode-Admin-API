@@ -9,9 +9,16 @@ import com.david.contest.dto.ContestParticipantView;
 import com.david.contest.dto.ContestParticipantsUpsertRequest;
 import com.david.contest.dto.ContestProblemView;
 import com.david.contest.dto.ContestProblemsUpsertRequest;
+import com.david.contest.dto.ContestRegistrationCreateRequest;
+import com.david.contest.dto.ContestRegistrationDecisionRequest;
+import com.david.contest.dto.ContestRegistrationView;
 import com.david.contest.dto.ContestSummaryView;
 import com.david.contest.dto.ContestUpsertRequest;
 import com.david.contest.dto.PageResult;
+import com.david.contest.dto.ProblemSummaryOption;
+import com.david.contest.dto.UserSummaryOption;
+import com.david.contest.enums.ContestRegistrationStatus;
+import com.david.contest.exception.BusinessException;
 import com.david.contest.service.ContestPlanningService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -34,6 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Validated
@@ -139,18 +147,99 @@ public class ContestAdminController {
     @PostMapping("/{contestId}/participants")
     public ApiResponse<List<ContestParticipantView>> addParticipants(
             @PathVariable Long contestId,
-            @Valid @RequestBody ContestParticipantsUpsertRequest request) {
-        log.info("批量新增参赛者 contestId={}, size={}", contestId, request.userIds().size());
+            @Valid @RequestBody ContestParticipantsUpsertRequest request,
+            @CurrentForwardedUser ForwardedUser operator) {
+        log.info(
+                "批量新增参赛者 contestId={}, size={}, operator={}",
+                contestId,
+                request.userIds().size(),
+                operator != null ? operator.id() : null);
         List<ContestParticipantView> participants =
-                contestPlanningService.addParticipants(contestId, request);
+                contestPlanningService.addParticipants(
+                        contestId, request, operator != null ? operator.id() : null);
         return ApiResponse.success(participants);
     }
 
     @DeleteMapping("/{contestId}/participants/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeParticipant(@PathVariable Long contestId, @PathVariable Long userId) {
-        log.info("移除参赛者 contestId={}, userId={}", contestId, userId);
-        contestPlanningService.removeParticipant(contestId, userId);
+    public void removeParticipant(
+            @PathVariable Long contestId,
+            @PathVariable Long userId,
+            @CurrentForwardedUser ForwardedUser operator) {
+        log.info(
+                "移除参赛者 contestId={}, userId={}, operator={}",
+                contestId,
+                userId,
+                operator != null ? operator.id() : null);
+        contestPlanningService.removeParticipant(contestId, userId, operator != null ? operator.id() : null);
+    }
+
+    @GetMapping("/{contestId}/registrations")
+    public ApiResponse<PageResult<ContestRegistrationView>> listRegistrations(
+            @PathVariable Long contestId,
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") int page,
+            @RequestParam(defaultValue = "20")
+                    @Min(value = 1, message = "分页大小不能小于1")
+                    @Max(value = 200, message = "分页大小不能超过200")
+                    int size,
+            @RequestParam(required = false) String status) {
+        ContestRegistrationStatus filterStatus = null;
+        if (StringUtils.hasText(status)) {
+            try {
+                filterStatus = ContestRegistrationStatus.fromCode(status);
+            } catch (IllegalArgumentException ex) {
+                throw new BusinessException(HttpStatus.BAD_REQUEST, "无效的报名状态");
+            }
+        }
+        log.info(
+                "查询报名列表 contestId={}, page={}, size={}, status={}",
+                contestId,
+                page,
+                size,
+                status);
+        PageResult<ContestRegistrationView> result =
+                contestPlanningService.listRegistrations(contestId, filterStatus, page, size);
+        return ApiResponse.success(result);
+    }
+
+    @PostMapping("/{contestId}/registrations")
+    public ApiResponse<ContestRegistrationView> createRegistration(
+            @PathVariable Long contestId,
+            @Valid @RequestBody ContestRegistrationCreateRequest request,
+            @CurrentForwardedUser ForwardedUser operator) {
+        ContestRegistrationCreateRequest sanitized =
+                new ContestRegistrationCreateRequest(
+                        request.userId(),
+                        request.source() != null
+                                ? request.source()
+                                : com.david.contest.enums.ContestRegistrationSource.ADMIN,
+                        request.note());
+        log.info(
+                "创建报名记录 contestId={}, userId={}, operator={}",
+                contestId,
+                sanitized.userId(),
+                operator != null ? operator.id() : null);
+        ContestRegistrationView view =
+                contestPlanningService.createRegistration(
+                        contestId, sanitized, operator != null ? operator.id() : null);
+        return ApiResponse.success(view);
+    }
+
+    @PostMapping("/{contestId}/registrations/decision")
+    public ApiResponse<List<ContestRegistrationView>> decideRegistrations(
+            @PathVariable Long contestId,
+            @Valid @RequestBody ContestRegistrationDecisionRequest request,
+            @CurrentForwardedUser ForwardedUser operator) {
+        log.info(
+                "处理报名审批 contestId={}, size={}, target={}, operator={}",
+                contestId,
+                request.registrationIds().size(),
+                request.targetStatus(),
+                operator != null ? operator.id() : null);
+        List<ContestRegistrationView> result =
+                contestPlanningService.decideRegistrations(
+                        contestId, request, operator != null ? operator.id() : null);
+        return ApiResponse.success(result);
     }
 
     @GetMapping("/options")
@@ -158,6 +247,22 @@ public class ContestAdminController {
         log.info("加载比赛选项数据");
         ContestOptionsResponse options = contestPlanningService.loadOptions();
         return ApiResponse.success(options);
+    }
+
+    @GetMapping("/problem-search")
+    public ApiResponse<List<ProblemSummaryOption>> searchProblems(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit) {
+        log.info("搜索题目 keyword={}, limit={}", keyword, limit);
+        return ApiResponse.success(contestPlanningService.searchProblems(keyword, limit));
+    }
+
+    @GetMapping("/user-search")
+    public ApiResponse<List<UserSummaryOption>> searchUsers(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(50) int limit) {
+        log.info("搜索用户 keyword={}, limit={}", keyword, limit);
+        return ApiResponse.success(contestPlanningService.searchUsers(keyword, limit));
     }
 
     private ContestUpsertRequest enrichCreator(
@@ -170,6 +275,13 @@ public class ContestAdminController {
                 request.startTime(),
                 request.endTime(),
                 request.visible(),
-                creatorId);
+                creatorId,
+                request.registrationMode(),
+                request.registrationStartTime(),
+                request.registrationEndTime(),
+                request.maxParticipants(),
+                request.penaltyPerWrong(),
+                request.scoreboardFreezeMinutes(),
+                request.hideScoreDuringFreeze());
     }
 }

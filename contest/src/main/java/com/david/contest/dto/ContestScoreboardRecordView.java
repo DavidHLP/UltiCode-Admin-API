@@ -12,4 +12,8 @@ public record ContestScoreboardRecordView(
         String lastVerdict,
         LocalDateTime firstAcceptedAt,
         LocalDateTime lastSubmissionAt,
-        Integer globalBestScore) {}
+        Integer globalBestScore,
+        Integer pendingAttempts,
+        Integer pendingBestScore,
+        String pendingLastVerdict,
+        LocalDateTime pendingLastSubmissionAt) {}
