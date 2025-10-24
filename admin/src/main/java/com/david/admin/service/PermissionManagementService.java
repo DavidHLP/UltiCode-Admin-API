@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.david.admin.dto.PermissionCreateRequest;
 import com.david.admin.dto.PermissionDto;
+import com.david.admin.dto.PermissionUpdateRequest;
+import com.david.admin.dto.PermissionView;
 import com.david.admin.entity.Permission;
 import com.david.admin.exception.BusinessException;
 import com.david.admin.mapper.PermissionMapper;
@@ -42,16 +44,54 @@ public class PermissionManagementService {
         return permissions.stream().map(this::toDto).toList();
     }
 
+    public List<PermissionView> listPermissionViews(String keyword) {
+        LambdaQueryWrapper<Permission> query = Wrappers.lambdaQuery(Permission.class);
+        if (keyword != null && !keyword.isBlank()) {
+            String trimmed = keyword.trim();
+            query.and(wrapper -> wrapper.like(Permission::getCode, trimmed).or().like(Permission::getName, trimmed));
+        }
+        query.orderByAsc(Permission::getCode);
+        List<Permission> permissions = permissionMapper.selectList(query);
+        if (permissions == null || permissions.isEmpty()) {
+            return List.of();
+        }
+        return permissions.stream().map(this::toView).toList();
+    }
+
     @Transactional
-    public PermissionDto createPermission(ForwardedUser principal, PermissionCreateRequest request) {
-        ensureCodeUnique(request.code(), null);
+    public PermissionView createPermission(ForwardedUser principal, PermissionCreateRequest request) {
+        String code = request.code().trim();
+        String name = request.name().trim();
+        ensureCodeUnique(code, null);
         Permission permission = new Permission();
-        permission.setCode(request.code().trim());
-        permission.setName(request.name().trim());
+        permission.setCode(code);
+        permission.setName(name);
         permission.setCreatedAt(LocalDateTime.now());
         permissionMapper.insert(permission);
         recordAudit(principal, permission.getId(), "创建权限");
-        return toDto(permission);
+        return toView(permission);
+    }
+
+    @Transactional
+    public PermissionView updatePermission(
+            ForwardedUser principal, Long permissionId, PermissionUpdateRequest request) {
+        Permission permission = permissionMapper.selectById(permissionId);
+        if (permission == null) {
+            throw new BusinessException(HttpStatus.NOT_FOUND, "权限不存在");
+        }
+        String newCode = request.code().trim();
+        String newName = request.name().trim();
+        if (!permission.getCode().equals(newCode)) {
+            ensureCodeUnique(newCode, permissionId);
+            permission.setCode(newCode);
+        } else {
+            permission.setCode(newCode);
+        }
+        permission.setName(newName);
+        permissionMapper.updateById(permission);
+        recordAudit(principal, permissionId, "更新权限");
+        Permission refreshed = permissionMapper.selectById(permissionId);
+        return toView(refreshed != null ? refreshed : permission);
     }
 
     @Transactional
@@ -66,6 +106,11 @@ public class PermissionManagementService {
 
     private PermissionDto toDto(Permission permission) {
         return new PermissionDto(permission.getId(), permission.getCode(), permission.getName());
+    }
+
+    private PermissionView toView(Permission permission) {
+        return new PermissionView(
+                permission.getId(), permission.getCode(), permission.getName(), permission.getCreatedAt());
     }
 
     private void ensureCodeUnique(String code, Long excludeId) {

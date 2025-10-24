@@ -92,8 +92,8 @@ public class TokenSessionManager {
     public String resolveRefreshToken(
             HttpServletRequest request, RefreshTokenRequest refreshTokenRequest) {
         if (refreshTokenRequest != null
-                && StringUtils.hasText(refreshTokenRequest.getRefreshToken())) {
-            return refreshTokenRequest.getRefreshToken();
+                && StringUtils.hasText(refreshTokenRequest.refreshToken())) {
+            return refreshTokenRequest.refreshToken();
         }
         String refreshFromCookie = readRefreshCookie(request);
         if (StringUtils.hasText(refreshFromCookie)) {

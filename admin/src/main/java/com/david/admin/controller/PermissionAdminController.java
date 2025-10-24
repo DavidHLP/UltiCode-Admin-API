@@ -1,7 +1,8 @@
 package com.david.admin.controller;
 
 import com.david.admin.dto.PermissionCreateRequest;
-import com.david.admin.dto.PermissionDto;
+import com.david.admin.dto.PermissionUpdateRequest;
+import com.david.admin.dto.PermissionView;
 import com.david.admin.service.PermissionManagementService;
 import com.david.admin.service.SensitiveOperationGuard;
 import com.david.common.forward.ForwardedUser;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,20 +37,32 @@ public class PermissionAdminController {
     private final SensitiveOperationGuard sensitiveOperationGuard;
 
     @GetMapping
-    public ApiResponse<List<PermissionDto>> listPermissions(@RequestParam(required = false) String keyword) {
-        List<PermissionDto> permissions = permissionManagementService.listPermissions(keyword);
+    public ApiResponse<List<PermissionView>> listPermissions(@RequestParam(required = false) String keyword) {
+        List<PermissionView> permissions = permissionManagementService.listPermissionViews(keyword);
         return ApiResponse.success(permissions);
     }
 
     @PostMapping
-    public ApiResponse<PermissionDto> createPermission(
+    public ApiResponse<PermissionView> createPermission(
             @AuthenticationPrincipal ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @Valid @RequestBody PermissionCreateRequest request) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
-        PermissionDto created = permissionManagementService.createPermission(principal, request);
+        PermissionView created = permissionManagementService.createPermission(principal, request);
         log.info("创建权限成功，code={} by user {}", created.code(), principal.username());
         return ApiResponse.success(created);
+    }
+
+    @PutMapping("/{permissionId}")
+    public ApiResponse<PermissionView> updatePermission(
+            @AuthenticationPrincipal ForwardedUser principal,
+            @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
+            @PathVariable Long permissionId,
+            @Valid @RequestBody PermissionUpdateRequest request) {
+        sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
+        PermissionView updated = permissionManagementService.updatePermission(principal, permissionId, request);
+        log.info("更新权限成功，permissionId={} by user {}", permissionId, principal.username());
+        return ApiResponse.success(updated);
     }
 
     @DeleteMapping("/{permissionId}")

@@ -1,9 +1,11 @@
 package com.david.admin.controller;
 
+import com.david.admin.dto.PermissionDto;
 import com.david.admin.dto.RoleCreateRequest;
 import com.david.admin.dto.RoleDto;
 import com.david.admin.dto.RoleUpdateRequest;
 import com.david.admin.dto.RoleView;
+import com.david.admin.service.PermissionManagementService;
 import com.david.admin.service.RoleManagementService;
 import com.david.admin.service.SensitiveOperationGuard;
 import com.david.common.forward.ForwardedUser;
@@ -40,12 +42,15 @@ public class RoleAdminController {
 
     private final RoleManagementService roleManagementService;
     private final SensitiveOperationGuard sensitiveOperationGuard;
+    private final PermissionManagementService permissionManagementService;
 
     public RoleAdminController(
             RoleManagementService roleManagementService,
-            SensitiveOperationGuard sensitiveOperationGuard) {
+            SensitiveOperationGuard sensitiveOperationGuard,
+            PermissionManagementService permissionManagementService) {
         this.roleManagementService = roleManagementService;
         this.sensitiveOperationGuard = sensitiveOperationGuard;
+        this.permissionManagementService = permissionManagementService;
     }
 
     @GetMapping
@@ -63,6 +68,15 @@ public class RoleAdminController {
         List<RoleDto> roles = roleManagementService.listRoleOptions();
         log.info("查询角色选项列表成功，共返回 {} 条记录", roles.size());
         return ApiResponse.success(roles);
+    }
+
+    @GetMapping("/permissions")
+    public ApiResponse<List<PermissionDto>> listRolePermissions(
+            @RequestParam(required = false) String keyword) {
+        log.info("查询角色可用权限列表，关键词: {}", keyword);
+        List<PermissionDto> permissions = permissionManagementService.listPermissions(keyword);
+        log.info("查询权限列表成功，共返回 {} 条记录", permissions.size());
+        return ApiResponse.success(permissions);
     }
 
     @GetMapping("/{roleId}")
