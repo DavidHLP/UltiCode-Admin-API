@@ -4,8 +4,12 @@ import com.david.admin.dto.PageResult;
 import com.david.admin.dto.UserCreateRequest;
 import com.david.admin.dto.UserUpdateRequest;
 import com.david.admin.dto.UserView;
+import com.david.admin.service.SensitiveOperationGuard;
 import com.david.admin.service.UserManagementService;
+import com.david.common.forward.ForwardedUser;
 import com.david.common.http.ApiResponse;
+import com.david.common.security.SensitiveDataMasker;
+import com.david.common.security.SensitiveDataMasker;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -15,12 +19,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -35,9 +41,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserAdminController {
 
     private final UserManagementService userManagementService;
+    private final SensitiveOperationGuard sensitiveOperationGuard;
 
-    public UserAdminController(UserManagementService userManagementService) {
+    public UserAdminController(
+            UserManagementService userManagementService, SensitiveOperationGuard sensitiveOperationGuard) {
         this.userManagementService = userManagementService;
+        this.sensitiveOperationGuard = sensitiveOperationGuard;
     }
 
     @GetMapping("/users")
@@ -73,18 +82,29 @@ public class UserAdminController {
 
     @PostMapping("/users")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<UserView> createUser(@Valid @RequestBody UserCreateRequest request) {
-        log.info("创建用户，请求参数: {}", request);
-        UserView userView = userManagementService.createUser(request);
+    public ApiResponse<UserView> createUser(
+            @AuthenticationPrincipal ForwardedUser principal,
+            @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
+            @Valid @RequestBody UserCreateRequest request) {
+        sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
+        log.info(
+                "创建用户，请求用户名: {}, 邮箱: {}",
+                request.username(),
+                SensitiveDataMasker.maskEmail(request.email()));
+        UserView userView = userManagementService.createUser(principal, request);
         log.info("创建用户成功，用户ID: {}, 用户名: {}", userView.id(), userView.username());
         return ApiResponse.success(userView);
     }
 
     @PutMapping("/users/{userId}")
     public ApiResponse<UserView> updateUser(
-            @PathVariable Long userId, @Valid @RequestBody UserUpdateRequest request) {
-        log.info("更新用户，用户ID: {}, 请求参数: {}", userId, request);
-        UserView userView = userManagementService.updateUser(userId, request);
+            @AuthenticationPrincipal ForwardedUser principal,
+            @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
+            @PathVariable Long userId,
+            @Valid @RequestBody UserUpdateRequest request) {
+        sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
+        log.info("更新用户，用户ID: {}, 新邮箱: {}", userId, SensitiveDataMasker.maskEmail(request.email()));
+        UserView userView = userManagementService.updateUser(principal, userId, request);
         log.info("更新用户成功，用户ID: {}, 用户名: {}", userView.id(), userView.username());
         return ApiResponse.success(userView);
     }

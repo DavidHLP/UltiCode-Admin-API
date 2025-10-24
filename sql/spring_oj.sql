@@ -42,6 +42,95 @@ INSERT INTO `auth_tokens` VALUES (71, 1, '29efc2bd1c0a44f1965cc4950af33d85d7283d
 INSERT INTO `auth_tokens` VALUES (72, 1, '7ab1a6d4c1d78e5ff62ab3b7c4c685d7b19d9506b477a1f9c3b0c261d5bc4a21', 'refresh', 0, '2025-10-20 10:00:00', '2025-11-19 10:00:00');
 
 -- ----------------------------
+-- Table structure for security_audit_logs
+-- ----------------------------
+DROP TABLE IF EXISTS `security_audit_logs`;
+CREATE TABLE `security_audit_logs`  (
+                                        `id` bigint NOT NULL AUTO_INCREMENT COMMENT '审计日志ID',
+                                        `actor_id` bigint NULL DEFAULT NULL COMMENT '操作者用户ID',
+                                        `actor_username` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作者用户名',
+                                        `action` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作类型',
+                                        `object_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '受影响对象类型',
+                                        `object_id` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '受影响对象标识',
+                                        `description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '描述信息',
+                                        `diff_snapshot` json NULL COMMENT '变更快照',
+                                        `ip_address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '来源IP',
+                                        `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                        PRIMARY KEY (`id`) USING BTREE,
+                                        INDEX `idx_audit_actor`(`actor_id` ASC, `created_at` DESC) USING BTREE,
+                                        INDEX `idx_audit_object`(`object_type` ASC, `object_id` ASC, `created_at` DESC) USING BTREE,
+                                        CONSTRAINT `fk_audit_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of security_audit_logs
+-- ----------------------------
+INSERT INTO `security_audit_logs` (`id`, `actor_id`, `actor_username`, `action`, `object_type`, `object_id`, `description`, `diff_snapshot`, `ip_address`, `created_at`)
+VALUES (1, 1, 'DavidHLP', 'ROLE_PERMISSION_UPDATED', 'role', '3', '调整管理员角色权限集合', JSON_OBJECT('before', JSON_ARRAY('problem.view', 'problem.manage'), 'after', JSON_ARRAY('problem.view', 'problem.manage', 'user.manage')), '127.0.0.1', '2025-10-20 10:05:00');
+
+-- ----------------------------
+-- Table structure for user_security_profiles
+-- ----------------------------
+DROP TABLE IF EXISTS `user_security_profiles`;
+CREATE TABLE `user_security_profiles`  (
+                                           `user_id` bigint NOT NULL COMMENT '用户ID',
+                                           `mfa_secret` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '二次验证密钥',
+                                           `mfa_enabled` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否开启二次验证',
+                                           `sso_binding` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'SSO绑定标识',
+                                           `last_mfa_verified_at` timestamp NULL DEFAULT NULL COMMENT '最近二次验证时间',
+                                           `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                           `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                           PRIMARY KEY (`user_id`) USING BTREE,
+                                           CONSTRAINT `fk_security_profiles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_security_profiles
+-- ----------------------------
+INSERT INTO `user_security_profiles` VALUES (1, NULL, 0, NULL, NULL, '2025-10-15 08:47:45', '2025-10-17 13:13:57');
+
+-- ----------------------------
+-- Table structure for sso_sessions
+-- ----------------------------
+DROP TABLE IF EXISTS `sso_sessions`;
+CREATE TABLE `sso_sessions`  (
+                                 `id` bigint NOT NULL AUTO_INCREMENT COMMENT 'SSO会话ID',
+                                 `user_id` bigint NOT NULL COMMENT '用户ID',
+                                 `client_id` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '接入方ID',
+                                 `session_token` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '会话令牌',
+                                 `state` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '业务状态/重定向态',
+                                 `expires_at` timestamp NOT NULL COMMENT '过期时间',
+                                 `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                 PRIMARY KEY (`id`) USING BTREE,
+                                 UNIQUE INDEX `uk_sso_session_token`(`session_token` ASC) USING BTREE,
+                                 INDEX `idx_sso_user_client`(`user_id` ASC, `client_id` ASC, `expires_at` DESC) USING BTREE,
+                                 CONSTRAINT `fk_sso_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sso_sessions
+-- ----------------------------
+INSERT INTO `sso_sessions` (`id`, `user_id`, `client_id`, `session_token`, `state`, `expires_at`, `created_at`)
+VALUES (1, 1, 'admin-console', '0bb2d4d5aa744913b4050a4f27191d58e92d8fd10f2cbb73c6bd348c21f1a908', 'dashboard', '2025-10-20 12:00:00', '2025-10-20 09:30:00');
+
+-- ----------------------------
+-- Table structure for ip_blacklist
+-- ----------------------------
+DROP TABLE IF EXISTS `ip_blacklist`;
+CREATE TABLE `ip_blacklist`  (
+                                 `ip_address` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '被封禁的IP',
+                                 `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '封禁原因',
+                                 `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                 `expires_at` timestamp NULL DEFAULT NULL COMMENT '到期时间',
+                                 PRIMARY KEY (`ip_address`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of ip_blacklist
+-- ----------------------------
+INSERT INTO `ip_blacklist` VALUES ('203.0.113.10', '疑似撞库', '2025-10-19 20:00:00', '2025-11-19 20:00:00');
+
+-- ----------------------------
 -- Table structure for bookmarks
 -- ----------------------------
 DROP TABLE IF EXISTS `bookmarks`;
@@ -391,6 +480,12 @@ INSERT INTO `permissions` VALUES (2, 'problem.manage', '管理题目', '2025-10-
 INSERT INTO `permissions` VALUES (3, 'contest.view', '查看比赛', '2025-10-14 08:00:00');
 INSERT INTO `permissions` VALUES (4, 'contest.manage', '管理比赛', '2025-10-14 08:00:00');
 INSERT INTO `permissions` VALUES (5, 'user.manage', '管理用户', '2025-10-14 08:00:00');
+INSERT INTO `permissions` VALUES (6, 'user.view', '查看用户', '2025-10-14 08:05:00');
+INSERT INTO `permissions` VALUES (7, 'role.manage', '管理角色', '2025-10-14 08:05:00');
+INSERT INTO `permissions` VALUES (8, 'permission.manage', '管理权限', '2025-10-14 08:05:00');
+INSERT INTO `permissions` VALUES (9, 'token.manage', '管理认证令牌', '2025-10-14 08:05:00');
+INSERT INTO `permissions` VALUES (10, 'audit.view', '查看审计日志', '2025-10-14 08:05:00');
+INSERT INTO `permissions` VALUES (11, 'security.policy.manage', '管理安全策略', '2025-10-14 08:05:00');
 
 -- ----------------------------
 -- Table structure for problem_language_configs
@@ -732,6 +827,21 @@ INSERT INTO `role_permissions` VALUES (3, 2);
 INSERT INTO `role_permissions` VALUES (3, 3);
 INSERT INTO `role_permissions` VALUES (3, 4);
 INSERT INTO `role_permissions` VALUES (3, 5);
+INSERT INTO `role_permissions` VALUES (3, 6);
+INSERT INTO `role_permissions` VALUES (3, 7);
+INSERT INTO `role_permissions` VALUES (3, 9);
+INSERT INTO `role_permissions` VALUES (3, 10);
+INSERT INTO `role_permissions` VALUES (1, 1);
+INSERT INTO `role_permissions` VALUES (1, 2);
+INSERT INTO `role_permissions` VALUES (1, 3);
+INSERT INTO `role_permissions` VALUES (1, 4);
+INSERT INTO `role_permissions` VALUES (1, 5);
+INSERT INTO `role_permissions` VALUES (1, 6);
+INSERT INTO `role_permissions` VALUES (1, 7);
+INSERT INTO `role_permissions` VALUES (1, 8);
+INSERT INTO `role_permissions` VALUES (1, 9);
+INSERT INTO `role_permissions` VALUES (1, 10);
+INSERT INTO `role_permissions` VALUES (1, 11);
 
 -- ----------------------------
 -- Table structure for roles
@@ -751,6 +861,7 @@ CREATE TABLE `roles`  (
 -- ----------------------------
 -- Records of roles
 -- ----------------------------
+INSERT INTO `roles` VALUES (1, 'platform_admin', '平台管理员', '拥有全局账户与权限管理权限', '2025-10-15 08:40:00', '2025-10-17 14:15:41');
 INSERT INTO `roles` VALUES (2, 'user', '普通用户', '默认权限', '2025-10-15 08:47:45', '2025-10-17 14:15:54');
 INSERT INTO `roles` VALUES (3, 'admin', '管理员', '最高管理权限', '2025-10-17 12:28:09', '2025-10-17 14:15:41');
 
@@ -949,6 +1060,7 @@ CREATE TABLE `user_roles`  (
 -- ----------------------------
 INSERT INTO `user_roles` VALUES (1, 2, '2025-10-17 13:13:45');
 INSERT INTO `user_roles` VALUES (1, 3, '2025-10-17 13:13:57');
+INSERT INTO `user_roles` VALUES (1, 1, '2025-10-20 09:30:00');
 
 -- ----------------------------
 -- Table structure for users

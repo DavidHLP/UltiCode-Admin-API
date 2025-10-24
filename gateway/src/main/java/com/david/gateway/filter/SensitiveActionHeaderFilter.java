@@ -1,0 +1,47 @@
+package com.david.gateway.filter;
+
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+@Slf4j
+@Component
+public class SensitiveActionHeaderFilter implements GlobalFilter, Ordered {
+
+    private static final String SENSITIVE_HEADER = "X-Sensitive-Action-Token";
+    private static final Set<HttpMethod> SENSITIVE_METHODS = Set.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE);
+    private static final String SENSITIVE_PATH = "/api/admin/**";
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        HttpMethod method = exchange.getRequest().getMethod();
+        String path = exchange.getRequest().getPath().value();
+        if (method != null
+                && SENSITIVE_METHODS.contains(method)
+                && pathMatcher.match(SENSITIVE_PATH, path)) {
+            String header = exchange.getRequest().getHeaders().getFirst(SENSITIVE_HEADER);
+            if (!StringUtils.hasText(header)) {
+                log.warn("敏感操作缺少校验头，path={} method={}", path, method);
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
+        }
+        return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return -150;
+    }
+}

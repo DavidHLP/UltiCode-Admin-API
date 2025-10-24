@@ -6,14 +6,21 @@ import com.david.auth.dto.PasswordResetRequest;
 import com.david.auth.dto.RefreshTokenRequest;
 import com.david.auth.dto.RegisterRequest;
 import com.david.auth.dto.RegistrationCodeRequest;
+import com.david.auth.dto.SensitiveActionTokenRequest;
+import com.david.auth.dto.SensitiveActionTokenVerifyRequest;
+import com.david.auth.dto.SsoInitiateRequest;
+import com.david.auth.dto.SsoRevokeRequest;
+import com.david.auth.dto.SsoSessionResponse;
 import com.david.auth.dto.TokenIntrospectRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
+import com.david.auth.dto.TwoFactorSetupResponse;
 import com.david.auth.dto.UserProfileDto;
 import com.david.auth.exception.BusinessException;
 import com.david.auth.security.TokenSessionManager;
 import com.david.auth.security.UserPrincipal;
 import com.david.auth.service.AuthService;
 import com.david.common.http.ApiResponse;
+import com.david.common.security.SensitiveDataMasker;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,10 +54,11 @@ public class AuthController {
             @Valid @RequestBody RegisterRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        log.debug("收到邮箱为 {} 的注册请求", request.email());
+        String maskedEmail = SensitiveDataMasker.maskEmail(request.email());
+        log.debug("收到邮箱为 {} 的注册请求", maskedEmail);
         AuthResponse response = authService.register(request, resolveClientIp(httpRequest));
         tokenSessionManager.storeAuthResult(httpRequest, httpResponse, response);
-        log.debug("邮箱为 {} 的注册请求处理成功", request.email());
+        log.debug("邮箱为 {} 的注册请求处理成功", maskedEmail);
         return ApiResponse.success(response);
     }
 
@@ -69,10 +77,11 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        log.debug("收到邮箱或用户名为 {} 的登录请求", request.identifier());
+        String maskedIdentifier = maskIdentifier(request.identifier());
+        log.debug("收到邮箱或用户名为 {} 的登录请求", maskedIdentifier);
         AuthResponse response = authService.login(request, resolveClientIp(httpRequest));
         tokenSessionManager.storeAuthResult(httpRequest, httpResponse, response);
-        log.debug("邮箱或用户名为 {} 的登录请求处理成功", request.identifier());
+        log.debug("邮箱或用户名为 {} 的登录请求处理成功", maskedIdentifier);
         return ApiResponse.success(response);
     }
 
@@ -104,9 +113,10 @@ public class AuthController {
     @PostMapping("/forgot")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ApiResponse<Void> forgot(@Valid @RequestBody PasswordResetRequest request) {
-        log.debug("收到邮箱为 {} 的密码重置请求", request.email());
+        String maskedEmail = SensitiveDataMasker.maskEmail(request.email());
+        log.debug("收到邮箱为 {} 的密码重置请求", maskedEmail);
         authService.requestPasswordReset(request.email());
-        log.debug("邮箱为 {} 的密码重置请求已处理", request.email());
+        log.debug("邮箱为 {} 的密码重置请求已处理", maskedEmail);
         return ApiResponse.success(null);
     }
 
@@ -118,11 +128,78 @@ public class AuthController {
         return ApiResponse.success(profile);
     }
 
+    @PostMapping("/mfa/enable")
+    public ApiResponse<TwoFactorSetupResponse> enableMfa(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        log.debug("用户 {} 请求启用二次验证", principal.id());
+        TwoFactorSetupResponse response = authService.enableTwoFactor(principal.id());
+        return ApiResponse.success(response);
+    }
+
+    @PostMapping("/mfa/disable")
+    public ApiResponse<Void> disableMfa(@AuthenticationPrincipal UserPrincipal principal) {
+        log.debug("用户 {} 请求关闭二次验证", principal.id());
+        authService.disableTwoFactor(principal.id());
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/sso/initiate")
+    public ApiResponse<SsoSessionResponse> initiateSso(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody SsoInitiateRequest request) {
+        log.debug("用户 {} 请求创建SSO会话，clientId={}", principal.id(), request.clientId());
+        long ttl = request.ttlSeconds() == null ? 300 : request.ttlSeconds();
+        SsoSessionResponse response =
+                authService.initiateSso(principal.id(), request.clientId(), request.state(), ttl);
+        return ApiResponse.success(response);
+    }
+
+    @PostMapping("/sso/revoke")
+    public ApiResponse<Void> revokeSso(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestBody(required = false) SsoRevokeRequest request) {
+        String clientId = request == null ? null : request.clientId();
+        log.debug("用户 {} 请求撤销SSO会话，clientId={}", principal.id(), clientId);
+        authService.revokeSsoSessions(principal.id(), clientId);
+        return ApiResponse.success(null);
+    }
+
+    @PostMapping("/sensitive-token")
+    public ApiResponse<String> issueSensitiveToken(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody SensitiveActionTokenRequest request) {
+        log.debug("用户 {} 请求生成敏感操作令牌", principal.id());
+        String token =
+                authService.issueSensitiveActionToken(principal.id(), request.twoFactorCode());
+        return ApiResponse.success(token);
+    }
+
+    @PostMapping("/sensitive-token/verify")
+    public ApiResponse<Boolean> verifySensitiveToken(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody SensitiveActionTokenVerifyRequest request) {
+        boolean result = authService.verifySensitiveActionToken(principal.id(), request.token());
+        return ApiResponse.success(result);
+    }
+
     private String resolveClientIp(HttpServletRequest request) {
         String header = request.getHeader("X-Forwarded-For");
         if (header != null && !header.isBlank()) {
             return header.split(",")[0].trim();
         }
         return request.getRemoteAddr();
+    }
+
+    private String maskIdentifier(String identifier) {
+        if (identifier == null) {
+            return null;
+        }
+        if (identifier.contains("@")) {
+            return SensitiveDataMasker.maskEmail(identifier);
+        }
+        if (identifier.length() <= 2) {
+            return "***";
+        }
+        return identifier.substring(0, 2) + "***";
     }
 }

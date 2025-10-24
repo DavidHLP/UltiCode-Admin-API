@@ -5,6 +5,8 @@ import com.david.auth.dto.LoginRequest;
 import com.david.auth.dto.RegisterRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.UserProfileDto;
+import com.david.auth.dto.TwoFactorSetupResponse;
+import com.david.auth.dto.SsoSessionResponse;
 
 public interface AuthService {
 
@@ -21,4 +23,16 @@ public interface AuthService {
     void requestPasswordReset(String email);
 
     void sendRegistrationVerificationCode(String email);
+
+    TwoFactorSetupResponse enableTwoFactor(Long userId);
+
+    void disableTwoFactor(Long userId);
+
+    SsoSessionResponse initiateSso(Long userId, String clientId, String state, long ttlSeconds);
+
+    void revokeSsoSessions(Long userId, String clientId);
+
+    String issueSensitiveActionToken(Long userId, String twoFactorCode);
+
+    boolean verifySensitiveActionToken(Long userId, String token);
 }

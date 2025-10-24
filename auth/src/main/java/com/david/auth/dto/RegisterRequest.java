@@ -16,4 +16,5 @@ public record RegisterRequest(
         @NotBlank @Size(min = 6, max = 64) String password,
         @NotBlank
                 @Pattern(regexp = "^\\d{6}$", message = "Verification code must be 6 digits")
-                String verificationCode) {}
+                String verificationCode,
+        String captchaToken) {}

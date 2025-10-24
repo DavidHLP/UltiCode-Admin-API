@@ -3,6 +3,7 @@ package com.david.admin.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
 public record RoleCreateRequest(
         @NotBlank(message = "角色编码不能为空")
@@ -14,4 +15,5 @@ public record RoleCreateRequest(
         @NotBlank(message = "角色名称不能为空")
                 @Size(max = 128, message = "角色名称长度不能超过128个字符")
                 String name,
-        @Size(max = 255, message = "备注长度不能超过255个字符") String remark) {}
+        @Size(max = 255, message = "备注长度不能超过255个字符") String remark,
+        List<Long> permissionIds) {}

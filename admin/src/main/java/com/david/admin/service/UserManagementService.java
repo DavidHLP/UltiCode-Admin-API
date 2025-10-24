@@ -16,6 +16,9 @@ import com.david.admin.exception.BusinessException;
 import com.david.admin.mapper.RoleMapper;
 import com.david.admin.mapper.UserMapper;
 import com.david.admin.mapper.UserRoleMapper;
+import com.david.common.forward.ForwardedUser;
+import com.david.common.security.AuditAction;
+import com.david.common.security.SecurityAuditRecord;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,16 +43,19 @@ public class UserManagementService {
     private final RoleMapper roleMapper;
     private final UserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
+    private final AuditTrailService auditTrailService;
 
     public UserManagementService(
             UserMapper userMapper,
             RoleMapper roleMapper,
             UserRoleMapper userRoleMapper,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            AuditTrailService auditTrailService) {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.userRoleMapper = userRoleMapper;
         this.passwordEncoder = passwordEncoder;
+        this.auditTrailService = auditTrailService;
     }
 
     public PageResult<UserView> listUsers(
@@ -100,7 +106,7 @@ public class UserManagementService {
     }
 
     @Transactional
-    public UserView createUser(UserCreateRequest request) {
+    public UserView createUser(ForwardedUser principal, UserCreateRequest request) {
         ensureUniqueUsername(request.username(), null);
         ensureUniqueEmail(request.email(), null);
 
@@ -119,11 +125,12 @@ public class UserManagementService {
         if (!roleIds.isEmpty()) {
             replaceUserRoles(user.getId(), roleIds);
         }
+        recordUserAudit(principal, user.getId(), "创建用户");
         return getUser(user.getId());
     }
 
     @Transactional
-    public UserView updateUser(Long userId, UserUpdateRequest request) {
+    public UserView updateUser(ForwardedUser principal, Long userId, UserUpdateRequest request) {
         User existing = userMapper.selectById(userId);
         if (existing == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "用户不存在");
@@ -162,11 +169,17 @@ public class UserManagementService {
 
         userMapper.update(null, update);
 
+        boolean rolesAdjusted = false;
         if (request.roleIds() != null) {
             List<Long> roleIds = normalizeRoleIds(request.roleIds());
             replaceUserRoles(userId, roleIds);
+            rolesAdjusted = true;
         }
 
+        if (principal != null) {
+            String description = rolesAdjusted ? "调整用户角色" : "更新用户资料";
+            recordUserAudit(principal, userId, description);
+        }
         return getUser(userId);
     }
 
@@ -264,6 +277,21 @@ public class UserManagementService {
             return List.of();
         }
         return relations.stream().map(UserRole::getUserId).distinct().toList();
+    }
+
+    private void recordUserAudit(ForwardedUser principal, Long targetUserId, String description) {
+        if (principal == null) {
+            return;
+        }
+        auditTrailService.record(
+                SecurityAuditRecord.builder()
+                        .actorId(principal.id())
+                        .actorUsername(principal.username())
+                        .action(AuditAction.USER_ROLE_CHANGED)
+                        .objectType("user")
+                        .objectId(String.valueOf(targetUserId))
+                        .description(description)
+                        .build());
     }
 
     private UserView toUserView(User user, List<Role> roles) {

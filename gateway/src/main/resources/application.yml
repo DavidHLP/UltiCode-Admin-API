@@ -30,7 +30,7 @@ spring:
         - id: admin-id
           uri: lb://admin
           predicates:
-            - Path=/api/admin/users/**,/api/admin/roles/**
+            - Path=/api/admin/users/**,/api/admin/roles/**,/api/admin/auth-tokens/**,/api/admin/permissions/**,/api/admin/audit-logs/**
         - id: problem-id
           uri: lb://problem
           predicates:
