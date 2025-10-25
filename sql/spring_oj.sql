@@ -391,6 +391,10 @@ CREATE TABLE `files`  (
 -- ----------------------------
 INSERT INTO `files` VALUES (1, 'submissions/2025/10/17/1.cpp', '0f4b6cba72f787b8581fbc5eac109d3328d01fefbe17f4ad6d4b5d3c7f27e9a1', 'text/x-c++src', 428, 1, '2025-10-17 17:44:00');
 INSERT INTO `files` VALUES (2, 'submissions/2025/10/17/1.log', '31ed948a9920ba63dd1d8c2f954ed7be16ceb2068aec1a51ad8f7c837f0e9b77', 'text/plain', 182, 1, '2025-10-17 17:45:05');
+INSERT INTO `files` VALUES (3, 'submissions/2025/10/18/2.py', 'd755ca5ecd39919a4389d88bc54a8fdae8c09e24bb47e2d086e6c5b1e1f72cfa', 'text/x-python', 312, 1, '2025-10-18 09:10:00');
+INSERT INTO `files` VALUES (4, 'submissions/2025/10/18/2.log', '18b3543ebb7f8c580c54529974a51835e1f3ff5ffc87dc5d5059070f0d1226c3', 'text/plain', 512, 1, '2025-10-18 09:12:15');
+INSERT INTO `files` VALUES (5, 'submissions/2025/10/18/3.java', '0a3d93aee7d6daab6121fdf642e14e8f09db64a28fb7e5f0b8abb1fd997deff0', 'text/x-java-source', 640, 1, '2025-10-18 09:30:00');
+INSERT INTO `files` VALUES (6, 'submissions/2025/10/18/3.log', '5a00be31054cf2bdbc83e92ed3524cd86f55f6aefe646fec4cb1b6f9fedfb511', 'text/plain', 420, 1, '2025-10-18 09:31:10');
 
 -- ----------------------------
 -- Table structure for judge_jobs
@@ -417,6 +421,8 @@ CREATE TABLE `judge_jobs`  (
 -- Records of judge_jobs
 -- ----------------------------
 INSERT INTO `judge_jobs` VALUES (1, 1, 1, 'finished', 0, '2025-10-17 17:46:00', '2025-10-17 17:46:05', '2025-10-17 17:46:07');
+INSERT INTO `judge_jobs` VALUES (2, 2, 2, 'running', 1, '2025-10-18 09:10:05', '2025-10-18 09:10:10', NULL);
+INSERT INTO `judge_jobs` VALUES (3, 3, 3, 'failed', 0, '2025-10-18 09:30:05', '2025-10-18 09:30:07', '2025-10-18 09:30:20');
 
 -- ----------------------------
 -- Table structure for judge_nodes
@@ -437,6 +443,8 @@ CREATE TABLE `judge_nodes`  (
 -- Records of judge_nodes
 -- ----------------------------
 INSERT INTO `judge_nodes` VALUES (1, 'node-1', 'online', '{"cpu":"16c","mem_gb":32,"os":"Ubuntu 24.04"}', '2025-10-17 17:50:00', '2025-10-15 08:00:00');
+INSERT INTO `judge_nodes` VALUES (2, 'node-2', 'busy', '{"cpu":"32c","mem_gb":64,"os":"Debian 12"}', '2025-10-17 17:55:00', '2025-10-15 08:10:00');
+INSERT INTO `judge_nodes` VALUES (3, 'node-3', 'offline', '{"cpu":"8c","mem_gb":16,"os":"Ubuntu 22.04"}', '2025-10-17 16:10:00', '2025-10-16 09:00:00');
 
 -- ----------------------------
 -- Table structure for languages
@@ -886,6 +894,8 @@ CREATE TABLE `submission_artifacts`  (
 -- Records of submission_artifacts
 -- ----------------------------
 INSERT INTO `submission_artifacts` VALUES (1, 1, 'compile_log', 2, '2025-10-17 17:45:05');
+INSERT INTO `submission_artifacts` VALUES (2, 2, 'stderr', 4, '2025-10-18 09:12:15');
+INSERT INTO `submission_artifacts` VALUES (3, 3, 'compile_log', 6, '2025-10-18 09:31:10');
 
 -- ----------------------------
 -- Table structure for submission_tests
@@ -917,6 +927,10 @@ INSERT INTO `submission_tests` VALUES (1, 1, 1, 1, 'AC', 5, 1024, 10, NULL);
 INSERT INTO `submission_tests` VALUES (2, 1, 2, 1, 'AC', 6, 1100, 10, NULL);
 INSERT INTO `submission_tests` VALUES (3, 1, 3, 2, 'AC', 7, 1152, 10, NULL);
 INSERT INTO `submission_tests` VALUES (4, 1, 4, 2, 'AC', 8, 1200, 10, NULL);
+INSERT INTO `submission_tests` VALUES (5, 2, 1, 1, 'AC', 6, 1024, 10, NULL);
+INSERT INTO `submission_tests` VALUES (6, 2, 2, 1, 'WA', 7, 1100, 0, '输出与期望不一致');
+INSERT INTO `submission_tests` VALUES (7, 2, 3, 2, 'SKIP', NULL, NULL, 0, '依赖前置用例失败');
+INSERT INTO `submission_tests` VALUES (8, 2, 4, 2, 'SKIP', NULL, NULL, 0, '依赖前置用例失败');
 
 -- ----------------------------
 -- Table structure for submissions
@@ -957,6 +971,8 @@ CREATE TABLE `submissions`  (
 -- Records of submissions
 -- ----------------------------
 INSERT INTO `submissions` VALUES (1, 1, 1, 1, 1, 1, 428, 'AC', 100, 12, 4096, '所有测试用例通过', '127.0.0.1', 1, '2025-10-17 17:45:00');
+INSERT INTO `submissions` VALUES (2, 1, 1, 1, 2, 3, 312, 'WA', 40, 68, 8192, '样例 2 输出不符', '127.0.0.1', NULL, '2025-10-18 09:10:00');
+INSERT INTO `submissions` VALUES (3, 1, 2, 1, 3, 5, 640, 'PD', NULL, NULL, NULL, NULL, '127.0.0.1', NULL, '2025-10-18 09:30:00');
 
 -- ----------------------------
 -- Table structure for tags
