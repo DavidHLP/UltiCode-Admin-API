@@ -19,7 +19,8 @@ public class AuditLogQueryService {
         this.securityAuditLogMapper = securityAuditLogMapper;
     }
 
-    public PageResult<AuditLogView> pageAuditLogs(int page, int size, String action, String keyword) {
+    public PageResult<AuditLogView> pageAuditLogs(
+            int page, int size, String action, String keyword) {
         Page<SecurityAuditLog> pager = new Page<>(page, size);
         LambdaQueryWrapper<SecurityAuditLog> query = Wrappers.lambdaQuery(SecurityAuditLog.class);
         if (action != null && !action.isBlank()) {
@@ -39,7 +40,8 @@ public class AuditLogQueryService {
         Page<SecurityAuditLog> result = securityAuditLogMapper.selectPage(pager, query);
         List<SecurityAuditLog> records = result.getRecords();
         if (records == null || records.isEmpty()) {
-            return new PageResult<>(List.of(), result.getTotal(), result.getCurrent(), result.getSize());
+            return new PageResult<>(
+                    List.of(), result.getTotal(), result.getCurrent(), result.getSize());
         }
         List<AuditLogView> items = records.stream().map(this::toView).toList();
         return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());

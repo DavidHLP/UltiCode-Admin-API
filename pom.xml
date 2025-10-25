@@ -22,6 +22,7 @@
         <module>problem</module>
         <module>interaction</module>
         <module>contest</module>
+        <module>judge</module>
     </modules>
 
     <properties>

@@ -1,0 +1,26 @@
+server:
+  port: 9096
+
+spring:
+  application:
+    name: judge
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848 #配置Nacos地址
+        username: nacos
+        password: "#Alone117"
+    sentinel:
+      transport:
+        dashboard: 127.0.0.1:9090
+        port: 8719
+      web-context-unify: false # 关闭上下文整合，启用链路模式
+  profiles:
+    active: datasource
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
+    org.springframework.web.reactive: DEBUG
+    com.david: DEBUG
