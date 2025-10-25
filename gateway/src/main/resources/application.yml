@@ -43,6 +43,10 @@ spring:
           uri: lb://contests
           predicates:
             - Path=/api/admin/contests/**
+        - id: judge-id
+          uri: lb://judge
+          predicates:
+            - Path=/api/judge/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
