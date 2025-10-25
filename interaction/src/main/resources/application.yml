@@ -24,3 +24,5 @@ logging:
     reactor.netty.http.client: DEBUG
     org.springframework.web.reactive: DEBUG
     com.david: DEBUG
+    org.apache.ibatis: DEBUG
+    org.springframework.web: DEBUG
