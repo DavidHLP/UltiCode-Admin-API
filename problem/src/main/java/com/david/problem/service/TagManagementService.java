@@ -10,7 +10,7 @@ import com.david.problem.dto.TagView;
 import com.david.problem.dto.PageResult;
 import com.david.problem.entity.ProblemTag;
 import com.david.problem.entity.Tag;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.problem.mapper.ProblemTagMapper;
 import com.david.problem.mapper.TagMapper;
 import jakarta.annotation.Nullable;
@@ -39,19 +39,17 @@ public class TagManagementService {
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             query.and(
-                    wrapper ->
-                            wrapper.like(Tag::getSlug, trimmed)
-                                    .or()
-                                    .like(Tag::getName, trimmed));
+                    wrapper -> wrapper.like(Tag::getSlug, trimmed)
+                            .or()
+                            .like(Tag::getName, trimmed));
         }
         query.orderByDesc(Tag::getUpdatedAt).orderByAsc(Tag::getSlug);
         Page<Tag> pager = new Page<>(page, size);
         Page<Tag> result = tagMapper.selectPage(pager, query);
         List<Tag> tags = result.getRecords();
-        List<TagView> items =
-                tags == null || tags.isEmpty()
-                        ? List.of()
-                        : tags.stream().map(this::toView).toList();
+        List<TagView> items = tags == null || tags.isEmpty()
+                ? List.of()
+                : tags.stream().map(this::toView).toList();
         return new PageResult<>(
                 items, result.getTotal(), result.getCurrent(), result.getSize());
     }
@@ -107,8 +105,7 @@ public class TagManagementService {
             return toView(existing);
         }
         existing.setUpdatedAt(LocalDateTime.now());
-        LambdaUpdateWrapper<Tag> update =
-                Wrappers.lambdaUpdate(Tag.class).eq(Tag::getId, tagId);
+        LambdaUpdateWrapper<Tag> update = Wrappers.lambdaUpdate(Tag.class).eq(Tag::getId, tagId);
         update.set(Tag::getSlug, existing.getSlug());
         update.set(Tag::getName, existing.getName());
         update.set(Tag::getUpdatedAt, existing.getUpdatedAt());
@@ -122,9 +119,8 @@ public class TagManagementService {
         if (existing == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "标签不存在");
         }
-        Long relationCount =
-                problemTagMapper.selectCount(
-                        Wrappers.lambdaQuery(ProblemTag.class).eq(ProblemTag::getTagId, tagId));
+        Long relationCount = problemTagMapper.selectCount(
+                Wrappers.lambdaQuery(ProblemTag.class).eq(ProblemTag::getTagId, tagId));
         if (relationCount != null && relationCount > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "仍有题目关联该标签，无法删除");
         }

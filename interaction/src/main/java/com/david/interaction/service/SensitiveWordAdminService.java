@@ -8,7 +8,7 @@ import com.david.interaction.dto.SensitiveWordQuery;
 import com.david.interaction.dto.SensitiveWordUpsertRequest;
 import com.david.interaction.dto.SensitiveWordView;
 import com.david.interaction.entity.SensitiveWord;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.interaction.mapper.SensitiveWordMapper;
 import com.david.interaction.service.model.SensitiveWordAnalysisResult;
 import java.time.LocalDateTime;
@@ -47,10 +47,9 @@ public class SensitiveWordAdminService {
         if (StringUtils.hasText(query.keyword())) {
             String keyword = query.keyword().trim();
             wrapper.and(
-                    w ->
-                            w.like(SensitiveWord::getWord, keyword)
-                                    .or()
-                                    .like(SensitiveWord::getDescription, keyword));
+                    w -> w.like(SensitiveWord::getWord, keyword)
+                            .or()
+                            .like(SensitiveWord::getDescription, keyword));
         }
         if (StringUtils.hasText(query.category())) {
             wrapper.eq(SensitiveWord::getCategory, query.category().trim());
@@ -64,8 +63,7 @@ public class SensitiveWordAdminService {
         wrapper.orderByDesc(SensitiveWord::getUpdatedAt);
 
         Page<SensitiveWord> result = sensitiveWordMapper.selectPage(pager, wrapper);
-        List<SensitiveWordView> items =
-                result.getRecords().stream().map(this::toView).toList();
+        List<SensitiveWordView> items = result.getRecords().stream().map(this::toView).toList();
 
         return new PageResult<>(
                 items, result.getTotal(), result.getCurrent(), result.getSize());
@@ -143,10 +141,9 @@ public class SensitiveWordAdminService {
             if (now - activeWordCacheLoadedAt < ACTIVE_WORD_CACHE_TTL_MILLIS) {
                 return cachedActiveWords;
             }
-            List<SensitiveWord> latest =
-                    sensitiveWordMapper.selectList(
-                            Wrappers.lambdaQuery(SensitiveWord.class)
-                                    .eq(SensitiveWord::getActive, Boolean.TRUE));
+            List<SensitiveWord> latest = sensitiveWordMapper.selectList(
+                    Wrappers.lambdaQuery(SensitiveWord.class)
+                            .eq(SensitiveWord::getActive, Boolean.TRUE));
             cachedActiveWords = latest == null || latest.isEmpty() ? List.of() : List.copyOf(latest);
             activeWordCacheLoadedAt = now;
             return cachedActiveWords;
@@ -162,24 +159,20 @@ public class SensitiveWordAdminService {
             return SensitiveWordAnalysisResult.empty();
         }
         String normalizedContent = content.toLowerCase(Locale.ROOT);
-        List<SensitiveWord> matched =
-                activeWords.stream()
-                        .filter(word -> containsWord(normalizedContent, word.getWord()))
-                        .toList();
+        List<SensitiveWord> matched = activeWords.stream()
+                .filter(word -> containsWord(normalizedContent, word.getWord()))
+                .toList();
         if (matched.isEmpty()) {
             return SensitiveWordAnalysisResult.empty();
         }
 
-        Map<String, SensitiveWord> wordIndex =
-                matched.stream()
-                        .collect(
-                                Collectors.toMap(
-                                        SensitiveWord::getWord, Function.identity(), (a, b) -> a));
+        Map<String, SensitiveWord> wordIndex = matched.stream()
+                .collect(
+                        Collectors.toMap(
+                                SensitiveWord::getWord, Function.identity(), (a, b) -> a));
         List<String> hits = new ArrayList<>(wordIndex.keySet());
-        boolean blocked =
-                matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "block"));
-        boolean needReview =
-                matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "review"));
+        boolean blocked = matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "block"));
+        boolean needReview = matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "review"));
         String riskLevel;
         if (blocked) {
             riskLevel = "high";
@@ -203,8 +196,8 @@ public class SensitiveWordAdminService {
         if (!StringUtils.hasText(word)) {
             return;
         }
-        LambdaQueryWrapper<SensitiveWord> wrapper =
-                Wrappers.lambdaQuery(SensitiveWord.class).eq(SensitiveWord::getWord, word.trim());
+        LambdaQueryWrapper<SensitiveWord> wrapper = Wrappers.lambdaQuery(SensitiveWord.class).eq(SensitiveWord::getWord,
+                word.trim());
         if (excludeId != null) {
             wrapper.ne(SensitiveWord::getId, excludeId);
         }

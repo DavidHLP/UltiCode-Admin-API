@@ -2,7 +2,7 @@ package com.david.auth.service.impl;
 
 import com.david.auth.config.AppProperties;
 import com.david.auth.entity.User;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.auth.service.PasswordResetService;
 
 import java.nio.charset.StandardCharsets;
@@ -86,8 +86,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         String htmlContent = String.format(template, resetUrl, ttlMinutes);
 
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper =
-                new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
+        MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                StandardCharsets.UTF_8.name());
         if (StringUtils.hasText(defaultFromAddress)) {
             helper.setFrom(defaultFromAddress);
         }

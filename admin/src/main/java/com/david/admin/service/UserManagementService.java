@@ -12,13 +12,13 @@ import com.david.admin.dto.UserView;
 import com.david.admin.entity.Role;
 import com.david.admin.entity.User;
 import com.david.admin.entity.UserRole;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.admin.mapper.RoleMapper;
 import com.david.admin.mapper.UserMapper;
 import com.david.admin.mapper.UserRoleMapper;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.security.AuditAction;
-import com.david.common.security.SecurityAuditRecord;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.security.AuditAction;
+import com.david.core.security.SecurityAuditRecord;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,10 +65,9 @@ public class UserManagementService {
         LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class);
         if (keyword != null && !keyword.isBlank()) {
             query.and(
-                    wrapper ->
-                            wrapper.like(User::getUsername, keyword)
-                                    .or()
-                                    .like(User::getEmail, keyword));
+                    wrapper -> wrapper.like(User::getUsername, keyword)
+                            .or()
+                            .like(User::getEmail, keyword));
         }
         if (status != null) {
             query.eq(User::getStatus, status);
@@ -87,12 +86,10 @@ public class UserManagementService {
         if (records == null || records.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), result.getTotal(), page, size);
         }
-        Map<Long, List<Role>> roles =
-                loadRolesByUserIds(records.stream().map(User::getId).toList());
-        List<UserView> items =
-                records.stream()
-                        .map(user -> toUserView(user, roles.getOrDefault(user.getId(), List.of())))
-                        .toList();
+        Map<Long, List<Role>> roles = loadRolesByUserIds(records.stream().map(User::getId).toList());
+        List<UserView> items = records.stream()
+                .map(user -> toUserView(user, roles.getOrDefault(user.getId(), List.of())))
+                .toList();
         return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
@@ -144,8 +141,7 @@ public class UserManagementService {
             ensureUniqueEmail(request.email(), userId);
         }
 
-        LambdaUpdateWrapper<User> update =
-                Wrappers.lambdaUpdate(User.class).eq(User::getId, userId);
+        LambdaUpdateWrapper<User> update = Wrappers.lambdaUpdate(User.class).eq(User::getId, userId);
 
         if (request.username() != null) {
             update.set(User::getUsername, request.username());
@@ -187,8 +183,7 @@ public class UserManagementService {
         if (username == null || username.isBlank()) {
             return;
         }
-        LambdaQueryWrapper<User> query =
-                Wrappers.lambdaQuery(User.class).eq(User::getUsername, username);
+        LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class).eq(User::getUsername, username);
         if (excludeUserId != null) {
             query.ne(User::getId, excludeUserId);
         }
@@ -216,9 +211,8 @@ public class UserManagementService {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<UserRole> relations =
-                userRoleMapper.selectList(
-                        Wrappers.lambdaQuery(UserRole.class).in(UserRole::getUserId, userIds));
+        List<UserRole> relations = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRole.class).in(UserRole::getUserId, userIds));
         if (relations == null || relations.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -227,10 +221,9 @@ public class UserManagementService {
             return Collections.emptyMap();
         }
         List<Role> roles = roleMapper.selectByIds(roleIds);
-        Map<Long, Role> roleMap =
-                roles == null
-                        ? Collections.emptyMap()
-                        : roles.stream().collect(Collectors.toMap(Role::getId, role -> role));
+        Map<Long, Role> roleMap = roles == null
+                ? Collections.emptyMap()
+                : roles.stream().collect(Collectors.toMap(Role::getId, role -> role));
 
         Map<Long, List<Role>> result = new HashMap<>();
         for (UserRole relation : relations) {
@@ -270,9 +263,8 @@ public class UserManagementService {
     }
 
     private List<Long> findUserIdsByRole(Long roleId) {
-        List<UserRole> relations =
-                userRoleMapper.selectList(
-                        Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
+        List<UserRole> relations = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
         if (relations == null || relations.isEmpty()) {
             return List.of();
         }
@@ -295,8 +287,7 @@ public class UserManagementService {
     }
 
     private UserView toUserView(User user, List<Role> roles) {
-        List<RoleDto> roleDtos =
-                roles == null ? List.of() : roles.stream().map(this::toRoleDto).toList();
+        List<RoleDto> roleDtos = roles == null ? List.of() : roles.stream().map(this::toRoleDto).toList();
         return new UserView(
                 user.getId(),
                 user.getUsername(),

@@ -8,9 +8,9 @@ import com.david.admin.dto.RoleView;
 import com.david.admin.service.PermissionManagementService;
 import com.david.admin.service.RoleManagementService;
 import com.david.admin.service.SensitiveOperationGuard;
-import com.david.common.forward.CurrentForwardedUser;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.http.ApiResponse;
+import com.david.core.security.CurrentForwardedUser;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.http.ApiResponse;
 
 import jakarta.validation.Valid;
 

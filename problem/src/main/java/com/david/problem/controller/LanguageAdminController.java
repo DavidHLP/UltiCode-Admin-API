@@ -1,6 +1,6 @@
 package com.david.problem.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.problem.dto.LanguageCreateRequest;
 import com.david.problem.dto.LanguageUpdateRequest;
 import com.david.problem.dto.LanguageView;

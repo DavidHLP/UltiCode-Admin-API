@@ -13,7 +13,7 @@ import com.david.problem.entity.Dataset;
 import com.david.problem.entity.Problem;
 import com.david.problem.entity.Testcase;
 import com.david.problem.entity.TestcaseGroup;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.problem.mapper.DatasetMapper;
 import com.david.problem.mapper.ProblemMapper;
 import com.david.problem.mapper.TestcaseGroupMapper;
@@ -70,56 +70,50 @@ public class DatasetManagementService {
     public List<DatasetDetailView> listProblemDatasets(Long problemId) {
         ensureProblemExists(problemId);
 
-        List<Dataset> datasets =
-                datasetMapper.selectList(
-                        Wrappers.lambdaQuery(Dataset.class)
-                                .eq(Dataset::getProblemId, problemId)
-                                .orderByDesc(Dataset::getIsActive)
-                                .orderByAsc(Dataset::getId));
+        List<Dataset> datasets = datasetMapper.selectList(
+                Wrappers.lambdaQuery(Dataset.class)
+                        .eq(Dataset::getProblemId, problemId)
+                        .orderByDesc(Dataset::getIsActive)
+                        .orderByAsc(Dataset::getId));
         if (CollectionUtils.isEmpty(datasets)) {
             return List.of();
         }
         List<Long> datasetIds = datasets.stream().map(Dataset::getId).toList();
 
-        List<TestcaseGroup> groups =
-                testcaseGroupMapper.selectList(
-                        Wrappers.lambdaQuery(TestcaseGroup.class)
-                                .in(TestcaseGroup::getDatasetId, datasetIds)
-                                .orderByDesc(TestcaseGroup::getIsSample)
-                                .orderByAsc(TestcaseGroup::getWeight)
-                                .orderByAsc(TestcaseGroup::getId));
+        List<TestcaseGroup> groups = testcaseGroupMapper.selectList(
+                Wrappers.lambdaQuery(TestcaseGroup.class)
+                        .in(TestcaseGroup::getDatasetId, datasetIds)
+                        .orderByDesc(TestcaseGroup::getIsSample)
+                        .orderByAsc(TestcaseGroup::getWeight)
+                        .orderByAsc(TestcaseGroup::getId));
 
-        Map<Long, List<TestcaseGroup>> groupsByDataset =
-                groups.stream().collect(Collectors.groupingBy(TestcaseGroup::getDatasetId));
+        Map<Long, List<TestcaseGroup>> groupsByDataset = groups.stream()
+                .collect(Collectors.groupingBy(TestcaseGroup::getDatasetId));
         List<Long> groupIds = groups.stream().map(TestcaseGroup::getId).toList();
 
         Map<Long, List<Testcase>> testcasesByGroup = Map.of();
         if (!groupIds.isEmpty()) {
-            List<Testcase> testcases =
-                    testcaseMapper.selectList(
-                            Wrappers.lambdaQuery(Testcase.class)
-                                    .in(Testcase::getGroupId, groupIds)
-                                    .orderByAsc(Testcase::getOrderIndex)
-                                    .orderByAsc(Testcase::getId));
-            testcasesByGroup =
-                    testcases.stream().collect(Collectors.groupingBy(Testcase::getGroupId));
+            List<Testcase> testcases = testcaseMapper.selectList(
+                    Wrappers.lambdaQuery(Testcase.class)
+                            .in(Testcase::getGroupId, groupIds)
+                            .orderByAsc(Testcase::getOrderIndex)
+                            .orderByAsc(Testcase::getId));
+            testcasesByGroup = testcases.stream().collect(Collectors.groupingBy(Testcase::getGroupId));
         }
         Map<Long, List<Testcase>> finalTestcasesByGroup = testcasesByGroup;
 
         return datasets.stream()
                 .map(
                         dataset -> {
-                            List<TestcaseGroup> datasetGroups =
-                                    groupsByDataset.getOrDefault(dataset.getId(), List.of());
-                            List<TestcaseGroupView> groupViews =
-                                    datasetGroups.stream()
-                                            .map(
-                                                    group ->
-                                                            toGroupView(
-                                                                    group,
-                                                                    finalTestcasesByGroup.getOrDefault(
-                                                                            group.getId(), List.of())))
-                                            .toList();
+                            List<TestcaseGroup> datasetGroups = groupsByDataset.getOrDefault(dataset.getId(),
+                                    List.of());
+                            List<TestcaseGroupView> groupViews = datasetGroups.stream()
+                                    .map(
+                                            group -> toGroupView(
+                                                    group,
+                                                    finalTestcasesByGroup.getOrDefault(
+                                                            group.getId(), List.of())))
+                                    .toList();
                             return toDatasetDetailView(dataset, groupViews);
                         })
                 .toList();
@@ -131,35 +125,31 @@ public class DatasetManagementService {
         if (!Objects.equals(dataset.getProblemId(), problemId)) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "数据集不存在");
         }
-        List<TestcaseGroup> groups =
-                testcaseGroupMapper.selectList(
-                        Wrappers.lambdaQuery(TestcaseGroup.class)
-                                .eq(TestcaseGroup::getDatasetId, datasetId)
-                                .orderByDesc(TestcaseGroup::getIsSample)
-                                .orderByAsc(TestcaseGroup::getWeight)
-                                .orderByAsc(TestcaseGroup::getId));
+        List<TestcaseGroup> groups = testcaseGroupMapper.selectList(
+                Wrappers.lambdaQuery(TestcaseGroup.class)
+                        .eq(TestcaseGroup::getDatasetId, datasetId)
+                        .orderByDesc(TestcaseGroup::getIsSample)
+                        .orderByAsc(TestcaseGroup::getWeight)
+                        .orderByAsc(TestcaseGroup::getId));
         List<Long> groupIds = groups.stream().map(TestcaseGroup::getId).toList();
 
         Map<Long, List<Testcase>> testcaseMap = new LinkedHashMap<>();
         if (!groupIds.isEmpty()) {
-            List<Testcase> testcases =
-                    testcaseMapper.selectList(
-                            Wrappers.lambdaQuery(Testcase.class)
-                                    .in(Testcase::getGroupId, groupIds)
-                                    .orderByAsc(Testcase::getOrderIndex)
-                                    .orderByAsc(Testcase::getId));
+            List<Testcase> testcases = testcaseMapper.selectList(
+                    Wrappers.lambdaQuery(Testcase.class)
+                            .in(Testcase::getGroupId, groupIds)
+                            .orderByAsc(Testcase::getOrderIndex)
+                            .orderByAsc(Testcase::getId));
             testcaseMap = testcases.stream().collect(Collectors.groupingBy(Testcase::getGroupId));
         }
 
         Map<Long, List<Testcase>> finalTestcaseMap = testcaseMap;
-        List<TestcaseGroupView> groupViews =
-                groups.stream()
-                        .map(
-                                group ->
-                                        toGroupView(
-                                                group,
-                                                finalTestcaseMap.getOrDefault(group.getId(), List.of())))
-                        .toList();
+        List<TestcaseGroupView> groupViews = groups.stream()
+                .map(
+                        group -> toGroupView(
+                                group,
+                                finalTestcaseMap.getOrDefault(group.getId(), List.of())))
+                .toList();
         return toDatasetDetailView(dataset, groupViews);
     }
 
@@ -231,13 +221,12 @@ public class DatasetManagementService {
     @Transactional(readOnly = true)
     public List<TestcaseGroupView> listGroups(Long datasetId, boolean includeTestcases) {
         Dataset dataset = getDatasetOrThrow(datasetId);
-        List<TestcaseGroup> groups =
-                testcaseGroupMapper.selectList(
-                        Wrappers.lambdaQuery(TestcaseGroup.class)
-                                .eq(TestcaseGroup::getDatasetId, dataset.getId())
-                                .orderByDesc(TestcaseGroup::getIsSample)
-                                .orderByAsc(TestcaseGroup::getWeight)
-                                .orderByAsc(TestcaseGroup::getId));
+        List<TestcaseGroup> groups = testcaseGroupMapper.selectList(
+                Wrappers.lambdaQuery(TestcaseGroup.class)
+                        .eq(TestcaseGroup::getDatasetId, dataset.getId())
+                        .orderByDesc(TestcaseGroup::getIsSample)
+                        .orderByAsc(TestcaseGroup::getWeight)
+                        .orderByAsc(TestcaseGroup::getId));
         if (CollectionUtils.isEmpty(groups)) {
             return List.of();
         }
@@ -245,25 +234,22 @@ public class DatasetManagementService {
         if (includeTestcases) {
             List<Long> groupIds = groups.stream().map(TestcaseGroup::getId).toList();
             if (!groupIds.isEmpty()) {
-                List<Testcase> testcases =
-                        testcaseMapper.selectList(
-                                Wrappers.lambdaQuery(Testcase.class)
-                                        .in(Testcase::getGroupId, groupIds)
-                                        .orderByAsc(Testcase::getOrderIndex)
-                                        .orderByAsc(Testcase::getId));
-                testcaseMap =
-                        testcases.stream().collect(Collectors.groupingBy(Testcase::getGroupId));
+                List<Testcase> testcases = testcaseMapper.selectList(
+                        Wrappers.lambdaQuery(Testcase.class)
+                                .in(Testcase::getGroupId, groupIds)
+                                .orderByAsc(Testcase::getOrderIndex)
+                                .orderByAsc(Testcase::getId));
+                testcaseMap = testcases.stream().collect(Collectors.groupingBy(Testcase::getGroupId));
             }
         }
         Map<Long, List<Testcase>> finalTestcaseMap = testcaseMap;
         return groups.stream()
                 .map(
-                        group ->
-                                toGroupView(
-                                        group,
-                                        includeTestcases
-                                                ? finalTestcaseMap.getOrDefault(group.getId(), List.of())
-                                                : List.of()))
+                        group -> toGroupView(
+                                group,
+                                includeTestcases
+                                        ? finalTestcaseMap.getOrDefault(group.getId(), List.of())
+                                        : List.of()))
                 .toList();
     }
 
@@ -275,12 +261,11 @@ public class DatasetManagementService {
         }
         List<Testcase> testcases = List.of();
         if (includeTestcases) {
-            testcases =
-                    testcaseMapper.selectList(
-                            Wrappers.lambdaQuery(Testcase.class)
-                                    .eq(Testcase::getGroupId, groupId)
-                                    .orderByAsc(Testcase::getOrderIndex)
-                                    .orderByAsc(Testcase::getId));
+            testcases = testcaseMapper.selectList(
+                    Wrappers.lambdaQuery(Testcase.class)
+                            .eq(Testcase::getGroupId, groupId)
+                            .orderByAsc(Testcase::getOrderIndex)
+                            .orderByAsc(Testcase::getId));
         }
         return toGroupView(group, testcases);
     }
@@ -328,12 +313,11 @@ public class DatasetManagementService {
     @Transactional(readOnly = true)
     public List<TestcaseView> listTestcases(Long groupId) {
         TestcaseGroup group = getGroupOrThrow(groupId);
-        List<Testcase> testcases =
-                testcaseMapper.selectList(
-                        Wrappers.lambdaQuery(Testcase.class)
-                                .eq(Testcase::getGroupId, group.getId())
-                                .orderByAsc(Testcase::getOrderIndex)
-                                .orderByAsc(Testcase::getId));
+        List<Testcase> testcases = testcaseMapper.selectList(
+                Wrappers.lambdaQuery(Testcase.class)
+                        .eq(Testcase::getGroupId, group.getId())
+                        .orderByAsc(Testcase::getOrderIndex)
+                        .orderByAsc(Testcase::getId));
         if (CollectionUtils.isEmpty(testcases)) {
             return List.of();
         }
@@ -413,10 +397,9 @@ public class DatasetManagementService {
     }
 
     private void ensureDatasetNameUnique(Long problemId, String name, @Nullable Long excludeId) {
-        LambdaQueryWrapper<Dataset> query =
-                Wrappers.lambdaQuery(Dataset.class)
-                        .eq(Dataset::getProblemId, problemId)
-                        .eq(Dataset::getName, name);
+        LambdaQueryWrapper<Dataset> query = Wrappers.lambdaQuery(Dataset.class)
+                .eq(Dataset::getProblemId, problemId)
+                .eq(Dataset::getName, name);
         if (excludeId != null) {
             query.ne(Dataset::getId, excludeId);
         }
@@ -508,11 +491,10 @@ public class DatasetManagementService {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "已归档题目无法激活数据集");
         }
 
-        LambdaUpdateWrapper<Dataset> deactivateOthers =
-                Wrappers.lambdaUpdate(Dataset.class)
-                        .eq(Dataset::getProblemId, problemId)
-                        .ne(Dataset::getId, datasetId)
-                        .set(Dataset::getIsActive, 0);
+        LambdaUpdateWrapper<Dataset> deactivateOthers = Wrappers.lambdaUpdate(Dataset.class)
+                .eq(Dataset::getProblemId, problemId)
+                .ne(Dataset::getId, datasetId)
+                .set(Dataset::getIsActive, 0);
         datasetMapper.update(null, deactivateOthers);
 
         Dataset target = datasetMapper.selectById(datasetId);
@@ -550,8 +532,7 @@ public class DatasetManagementService {
     }
 
     private DatasetDetailView toDatasetDetailView(Dataset dataset, List<TestcaseGroupView> groups) {
-        List<TestcaseGroupView> safeGroups =
-                groups == null ? List.of() : List.copyOf(groups);
+        List<TestcaseGroupView> safeGroups = groups == null ? List.of() : List.copyOf(groups);
         return new DatasetDetailView(
                 dataset.getId(),
                 dataset.getProblemId(),
@@ -568,10 +549,9 @@ public class DatasetManagementService {
     }
 
     private TestcaseGroupView toGroupView(TestcaseGroup group, @Nullable List<Testcase> testcases) {
-        List<TestcaseView> testcaseViews =
-                testcases == null
-                        ? List.of()
-                        : testcases.stream().map(this::toTestcaseView).toList();
+        List<TestcaseView> testcaseViews = testcases == null
+                ? List.of()
+                : testcases.stream().map(this::toTestcaseView).toList();
         return new TestcaseGroupView(
                 group.getId(),
                 group.getDatasetId(),

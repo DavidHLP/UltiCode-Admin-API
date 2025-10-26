@@ -3,7 +3,7 @@ package com.david.interaction.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.common.forward.ForwardedUser;
+import com.david.core.forward.ForwardedUser;
 import com.david.interaction.dto.ModerationActionView;
 import com.david.interaction.dto.ModerationAssignRequest;
 import com.david.interaction.dto.ModerationDecisionRequest;
@@ -14,7 +14,7 @@ import com.david.interaction.dto.PageResult;
 import com.david.interaction.entity.Comment;
 import com.david.interaction.entity.ModerationAction;
 import com.david.interaction.entity.ModerationTask;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.interaction.mapper.CommentMapper;
 import com.david.interaction.mapper.ModerationTaskMapper;
 import java.time.LocalDateTime;
@@ -69,8 +69,7 @@ public class ModerationAdminService {
         wrapper.orderByDesc(ModerationTask::getCreatedAt);
 
         Page<ModerationTask> result = moderationTaskMapper.selectPage(pager, wrapper);
-        List<ModerationTaskSummaryView> items =
-                result.getRecords().stream().map(this::toSummary).toList();
+        List<ModerationTaskSummaryView> items = result.getRecords().stream().map(this::toSummary).toList();
         return new PageResult<>(
                 items, result.getTotal(), result.getCurrent(), result.getSize());
     }
@@ -78,21 +77,18 @@ public class ModerationAdminService {
     public ModerationTaskDetailView getTaskDetail(Long taskId) {
         ModerationTask task = moderationWorkflowService.loadTaskOrThrow(taskId);
         var commentDetail = commentAdminService.getCommentDetail(task.getEntityId());
-        List<ModerationAction> actions =
-                moderationWorkflowService.listActionsByTaskId(taskId);
-        List<ModerationActionView> actionViews =
-                actions.stream()
-                        .map(
-                                action ->
-                                        new ModerationActionView(
-                                                action.getId(),
-                                                action.getTaskId(),
-                                                action.getAction(),
-                                                action.getOperatorId(),
-                                                action.getRemarks(),
-                                                moderationWorkflowService.parseContext(action.getContext()),
-                                                action.getCreatedAt()))
-                        .toList();
+        List<ModerationAction> actions = moderationWorkflowService.listActionsByTaskId(taskId);
+        List<ModerationActionView> actionViews = actions.stream()
+                .map(
+                        action -> new ModerationActionView(
+                                action.getId(),
+                                action.getTaskId(),
+                                action.getAction(),
+                                action.getOperatorId(),
+                                action.getRemarks(),
+                                moderationWorkflowService.parseContext(action.getContext()),
+                                action.getCreatedAt()))
+                .toList();
         return new ModerationTaskDetailView(toSummary(task), commentDetail, actionViews);
     }
 
@@ -100,10 +96,9 @@ public class ModerationAdminService {
     public ModerationTaskDetailView assignTask(
             Long taskId, ModerationAssignRequest request, ForwardedUser operator) {
         ModerationTask task = moderationWorkflowService.loadTaskOrThrow(taskId);
-        Long reviewerId =
-                request != null && request.reviewerId() != null
-                        ? request.reviewerId()
-                        : operator != null ? operator.id() : null;
+        Long reviewerId = request != null && request.reviewerId() != null
+                ? request.reviewerId()
+                : operator != null ? operator.id() : null;
         task.setReviewerId(reviewerId);
         task.setStatus("in_review");
         if (request != null && StringUtils.hasText(request.notes())) {
@@ -155,10 +150,9 @@ public class ModerationAdminService {
         }
         commentMapper.updateById(comment);
 
-        Long reviewerId =
-                task.getReviewerId() != null
-                        ? task.getReviewerId()
-                        : operator != null ? operator.id() : null;
+        Long reviewerId = task.getReviewerId() != null
+                ? task.getReviewerId()
+                : operator != null ? operator.id() : null;
         moderationWorkflowService.updateTaskStatus(
                 taskId,
                 taskStatus,

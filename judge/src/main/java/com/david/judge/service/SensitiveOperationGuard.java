@@ -1,6 +1,6 @@
 package com.david.judge.service;
 
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;

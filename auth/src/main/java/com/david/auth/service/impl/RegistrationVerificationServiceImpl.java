@@ -1,7 +1,7 @@
 package com.david.auth.service.impl;
 
 import com.david.auth.config.AppProperties;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.auth.service.RegistrationVerificationService;
 
 import java.nio.charset.StandardCharsets;
@@ -55,8 +55,8 @@ public class RegistrationVerificationServiceImpl implements RegistrationVerifica
         }
 
         String lockKey = buildLockKey(email);
-        boolean acquiredLock =
-                Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(lockKey, "1", RESEND_LOCK_TTL));
+        boolean acquiredLock = Boolean.TRUE
+                .equals(redisTemplate.opsForValue().setIfAbsent(lockKey, "1", RESEND_LOCK_TTL));
         if (!acquiredLock) {
             throw new BusinessException(
                     HttpStatus.TOO_MANY_REQUESTS, "Verification code requested too frequently");
@@ -114,8 +114,8 @@ public class RegistrationVerificationServiceImpl implements RegistrationVerifica
         String htmlContent = String.format(template, code, ttlMinutes);
 
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper =
-                new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
+        MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                StandardCharsets.UTF_8.name());
         if (StringUtils.hasText(defaultFromAddress)) {
             helper.setFrom(defaultFromAddress);
         }

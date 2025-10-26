@@ -1,6 +1,6 @@
 package com.david.judge.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.judge.dto.JudgeNodeView;
 import com.david.judge.service.JudgeNodeService;
 import java.util.List;

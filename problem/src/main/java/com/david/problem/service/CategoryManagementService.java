@@ -10,7 +10,7 @@ import com.david.problem.dto.CategoryView;
 import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Category;
 import com.david.problem.entity.Problem;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.problem.mapper.CategoryMapper;
 import com.david.problem.mapper.ProblemMapper;
 import jakarta.annotation.Nullable;
@@ -39,19 +39,17 @@ public class CategoryManagementService {
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             query.and(
-                    wrapper ->
-                            wrapper.like(Category::getCode, trimmed)
-                                    .or()
-                                    .like(Category::getName, trimmed));
+                    wrapper -> wrapper.like(Category::getCode, trimmed)
+                            .or()
+                            .like(Category::getName, trimmed));
         }
         query.orderByAsc(Category::getName);
         Page<Category> pager = new Page<>(page, size);
         Page<Category> result = categoryMapper.selectPage(pager, query);
         List<Category> categories = result.getRecords();
-        List<CategoryView> items =
-                categories == null || categories.isEmpty()
-                        ? List.of()
-                        : categories.stream().map(this::toView).toList();
+        List<CategoryView> items = categories == null || categories.isEmpty()
+                ? List.of()
+                : categories.stream().map(this::toView).toList();
         return new PageResult<>(
                 items, result.getTotal(), result.getCurrent(), result.getSize());
     }
@@ -103,8 +101,7 @@ public class CategoryManagementService {
         if (!changed) {
             return toView(existing);
         }
-        LambdaUpdateWrapper<Category> update =
-                Wrappers.lambdaUpdate(Category.class).eq(Category::getId, categoryId);
+        LambdaUpdateWrapper<Category> update = Wrappers.lambdaUpdate(Category.class).eq(Category::getId, categoryId);
         update.set(Category::getCode, existing.getCode());
         update.set(Category::getName, existing.getName());
         categoryMapper.update(null, update);
@@ -117,9 +114,8 @@ public class CategoryManagementService {
         if (existing == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "分类不存在");
         }
-        Long count =
-                problemMapper.selectCount(
-                        Wrappers.lambdaQuery(Problem.class).eq(Problem::getCategoryId, categoryId));
+        Long count = problemMapper.selectCount(
+                Wrappers.lambdaQuery(Problem.class).eq(Problem::getCategoryId, categoryId));
         if (count != null && count > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "仍有题目关联该分类，无法删除");
         }
@@ -127,8 +123,7 @@ public class CategoryManagementService {
     }
 
     private void ensureCodeUnique(String code, @Nullable Integer excludeCategoryId) {
-        LambdaQueryWrapper<Category> query =
-                Wrappers.lambdaQuery(Category.class).eq(Category::getCode, code);
+        LambdaQueryWrapper<Category> query = Wrappers.lambdaQuery(Category.class).eq(Category::getCode, code);
         if (excludeCategoryId != null) {
             query.ne(Category::getId, excludeCategoryId);
         }

@@ -2,9 +2,9 @@ package com.david.auth.service;
 
 import com.david.auth.entity.SecurityAuditLog;
 import com.david.auth.mapper.SecurityAuditLogMapper;
-import com.david.common.security.AuditAction;
-import com.david.common.security.SecurityAuditRecord;
-import com.david.common.security.SensitiveDataMasker;
+import com.david.core.security.AuditAction;
+import com.david.core.security.SecurityAuditRecord;
+import com.david.core.security.SensitiveDataMasker;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;

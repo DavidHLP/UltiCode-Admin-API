@@ -2,8 +2,8 @@ package com.david.auth.service;
 
 import com.david.auth.config.AppProperties;
 import com.david.auth.entity.User;
-import com.david.common.http.exception.BusinessException;
-import com.david.common.security.SensitiveDataMasker;
+import com.david.core.exception.BusinessException;
+import com.david.core.security.SensitiveDataMasker;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
@@ -56,8 +56,8 @@ public class SensitiveActionVerificationService {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "请先绑定邮箱");
         }
         String lockKey = LOCK_KEY_PATTERN.formatted(user.getId());
-        boolean acquiredLock =
-                Boolean.TRUE.equals(redisTemplate.opsForValue().setIfAbsent(lockKey, "1", RESEND_LOCK_TTL));
+        boolean acquiredLock = Boolean.TRUE
+                .equals(redisTemplate.opsForValue().setIfAbsent(lockKey, "1", RESEND_LOCK_TTL));
         if (!acquiredLock) {
             throw new BusinessException(HttpStatus.TOO_MANY_REQUESTS, "验证码请求过于频繁");
         }
@@ -98,13 +98,11 @@ public class SensitiveActionVerificationService {
     private void sendHtmlEmail(String email, String code, Duration ttl)
             throws MessagingException {
         long ttlMinutes = Math.max(1, ttl.toMinutes());
-        String htmlContent =
-                String.format(appProperties.getMail().getSensitiveActionTemplate(), code, ttlMinutes);
+        String htmlContent = String.format(appProperties.getMail().getSensitiveActionTemplate(), code, ttlMinutes);
 
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper =
-                new MimeMessageHelper(
-                        message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
+        MimeMessageHelper helper = new MimeMessageHelper(
+                message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED, StandardCharsets.UTF_8.name());
         if (StringUtils.hasText(defaultFromAddress)) {
             helper.setFrom(defaultFromAddress);
         }

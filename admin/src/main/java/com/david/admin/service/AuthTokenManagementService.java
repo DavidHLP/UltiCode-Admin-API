@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.david.admin.dto.AuthTokenView;
 import com.david.admin.entity.AuthToken;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.admin.mapper.AuthTokenMapper;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.security.AuditAction;
-import com.david.common.security.SecurityAuditRecord;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.security.AuditAction;
+import com.david.core.security.SecurityAuditRecord;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -51,10 +51,9 @@ public class AuthTokenManagementService {
         if (token == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "令牌不存在");
         }
-        LambdaUpdateWrapper<AuthToken> update =
-                Wrappers.lambdaUpdate(AuthToken.class)
-                        .eq(AuthToken::getId, tokenId)
-                        .set(AuthToken::getRevoked, true);
+        LambdaUpdateWrapper<AuthToken> update = Wrappers.lambdaUpdate(AuthToken.class)
+                .eq(AuthToken::getId, tokenId)
+                .set(AuthToken::getRevoked, true);
         authTokenMapper.update(null, update);
         if (principal != null) {
             auditTrailService.record(

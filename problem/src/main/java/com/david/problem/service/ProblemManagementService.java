@@ -27,7 +27,7 @@ import com.david.problem.entity.ProblemLanguageConfig;
 import com.david.problem.entity.ProblemStatement;
 import com.david.problem.entity.ProblemTag;
 import com.david.problem.entity.Tag;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.problem.mapper.CategoryMapper;
 import com.david.problem.mapper.DatasetMapper;
 import com.david.problem.mapper.DifficultyMapper;
@@ -64,9 +64,10 @@ import org.springframework.util.StringUtils;
 @Service
 public class ProblemManagementService {
 
-    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {};
-    private static final List<String> SUPPORTED_PROBLEM_TYPES =
-            List.of("coding", "sql", "shell", "concurrency", "interactive", "output-only");
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
+    };
+    private static final List<String> SUPPORTED_PROBLEM_TYPES = List.of("coding", "sql", "shell", "concurrency",
+            "interactive", "output-only");
 
     private static final String STATUS_DRAFT = "draft";
     private static final String STATUS_IN_REVIEW = "in_review";
@@ -79,16 +80,14 @@ public class ProblemManagementService {
     private static final String REVIEW_APPROVED = "approved";
     private static final String REVIEW_REJECTED = "rejected";
 
-    private static final Set<String> LIFECYCLE_STATUSES =
-            Set.of(
-                    STATUS_DRAFT,
-                    STATUS_IN_REVIEW,
-                    STATUS_APPROVED,
-                    STATUS_READY,
-                    STATUS_PUBLISHED,
-                    STATUS_ARCHIVED);
-    private static final Set<String> REVIEW_STATUSES =
-            Set.of(REVIEW_PENDING, REVIEW_APPROVED, REVIEW_REJECTED);
+    private static final Set<String> LIFECYCLE_STATUSES = Set.of(
+            STATUS_DRAFT,
+            STATUS_IN_REVIEW,
+            STATUS_APPROVED,
+            STATUS_READY,
+            STATUS_PUBLISHED,
+            STATUS_ARCHIVED);
+    private static final Set<String> REVIEW_STATUSES = Set.of(REVIEW_PENDING, REVIEW_APPROVED, REVIEW_REJECTED);
 
     private final ProblemMapper problemMapper;
     private final ProblemStatementMapper problemStatementMapper;
@@ -177,20 +176,17 @@ public class ProblemManagementService {
         }
 
         List<Long> problemIds = records.stream().map(Problem::getId).toList();
-        Map<Long, ProblemStatement> statementMap =
-                loadPreferredStatements(problemIds, preferredLangCode);
-        Map<Integer, Difficulty> difficultyMap =
-                loadDifficulties(
-                        records.stream()
-                                .map(Problem::getDifficultyId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet()));
-        Map<Integer, Category> categoryMap =
-                loadCategories(
-                        records.stream()
-                                .map(Problem::getCategoryId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet()));
+        Map<Long, ProblemStatement> statementMap = loadPreferredStatements(problemIds, preferredLangCode);
+        Map<Integer, Difficulty> difficultyMap = loadDifficulties(
+                records.stream()
+                        .map(Problem::getDifficultyId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()));
+        Map<Integer, Category> categoryMap = loadCategories(
+                records.stream()
+                        .map(Problem::getCategoryId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()));
         TagsGrouping tagsGrouping = loadTags(problemIds);
 
         List<ProblemSummaryView> items = new ArrayList<>(records.size());
@@ -198,15 +194,13 @@ public class ProblemManagementService {
             ProblemStatement statement = statementMap.get(problem.getId());
             Difficulty difficulty = difficultyMap.get(problem.getDifficultyId());
             Category category = categoryMap.get(problem.getCategoryId());
-            List<ProblemTagDto> tagDtos =
-                    tagsGrouping.tagsByProblem().getOrDefault(problem.getId(), List.of()).stream()
-                            .map(tagsGrouping.tagsById()::get)
-                            .filter(Objects::nonNull)
-                            .map(
-                                    tag ->
-                                            new ProblemTagDto(
-                                                    tag.getId(), tag.getSlug(), tag.getName()))
-                            .toList();
+            List<ProblemTagDto> tagDtos = tagsGrouping.tagsByProblem().getOrDefault(problem.getId(), List.of()).stream()
+                    .map(tagsGrouping.tagsById()::get)
+                    .filter(Objects::nonNull)
+                    .map(
+                            tag -> new ProblemTagDto(
+                                    tag.getId(), tag.getSlug(), tag.getName()))
+                    .toList();
 
             items.add(
                     new ProblemSummaryView(
@@ -250,59 +244,52 @@ public class ProblemManagementService {
             category = categoryMapper.selectById(problem.getCategoryId());
         }
 
-        List<ProblemStatement> statements =
-                problemStatementMapper.selectList(
-                        Wrappers.lambdaQuery(ProblemStatement.class)
-                                .eq(ProblemStatement::getProblemId, problemId));
-        List<ProblemStatementView> statementViews =
-                statements.stream()
-                        .map(
-                                s ->
-                                        new ProblemStatementView(
-                                                s.getId(),
-                                                s.getLangCode(),
-                                                s.getTitle(),
-                                                s.getDescriptionMd(),
-                                                s.getConstraintsMd(),
-                                                s.getExamplesMd()))
-                        .toList();
+        List<ProblemStatement> statements = problemStatementMapper.selectList(
+                Wrappers.lambdaQuery(ProblemStatement.class)
+                        .eq(ProblemStatement::getProblemId, problemId));
+        List<ProblemStatementView> statementViews = statements.stream()
+                .map(
+                        s -> new ProblemStatementView(
+                                s.getId(),
+                                s.getLangCode(),
+                                s.getTitle(),
+                                s.getDescriptionMd(),
+                                s.getConstraintsMd(),
+                                s.getExamplesMd()))
+                .toList();
 
-        List<ProblemLanguageConfig> configs =
-                problemLanguageConfigMapper.selectList(
-                        Wrappers.lambdaQuery(ProblemLanguageConfig.class)
-                                .eq(ProblemLanguageConfig::getProblemId, problemId));
-        Map<Integer, Language> languages =
-                configs.isEmpty()
-                        ? Map.of()
-                        : languageMapper
-                                .selectBatchIds(
-                                        configs.stream()
-                                                .map(ProblemLanguageConfig::getLanguageId)
-                                                .collect(Collectors.toSet()))
-                                .stream()
-                                .collect(Collectors.toMap(Language::getId, l -> l));
-        List<ProblemLanguageConfigView> languageViews =
-                configs.stream()
-                        .map(
-                                cfg -> {
-                                    Language lang = languages.get(cfg.getLanguageId());
-                                    return new ProblemLanguageConfigView(
-                                            cfg.getId(),
-                                            cfg.getLanguageId(),
-                                            lang != null ? lang.getCode() : null,
-                                            lang != null ? lang.getDisplayName() : null,
-                                            cfg.getFunctionName(),
-                                            cfg.getStarterCode());
-                                })
-                        .toList();
+        List<ProblemLanguageConfig> configs = problemLanguageConfigMapper.selectList(
+                Wrappers.lambdaQuery(ProblemLanguageConfig.class)
+                        .eq(ProblemLanguageConfig::getProblemId, problemId));
+        Map<Integer, Language> languages = configs.isEmpty()
+                ? Map.of()
+                : languageMapper
+                        .selectBatchIds(
+                                configs.stream()
+                                        .map(ProblemLanguageConfig::getLanguageId)
+                                        .collect(Collectors.toSet()))
+                        .stream()
+                        .collect(Collectors.toMap(Language::getId, l -> l));
+        List<ProblemLanguageConfigView> languageViews = configs.stream()
+                .map(
+                        cfg -> {
+                            Language lang = languages.get(cfg.getLanguageId());
+                            return new ProblemLanguageConfigView(
+                                    cfg.getId(),
+                                    cfg.getLanguageId(),
+                                    lang != null ? lang.getCode() : null,
+                                    lang != null ? lang.getDisplayName() : null,
+                                    cfg.getFunctionName(),
+                                    cfg.getStarterCode());
+                        })
+                .toList();
 
         TagsGrouping tagsGrouping = loadTags(List.of(problemId));
-        List<ProblemTagDto> tagDtos =
-                tagsGrouping.tagsByProblem().getOrDefault(problemId, List.of()).stream()
-                        .map(tagsGrouping.tagsById()::get)
-                        .filter(Objects::nonNull)
-                        .map(tag -> new ProblemTagDto(tag.getId(), tag.getSlug(), tag.getName()))
-                        .toList();
+        List<ProblemTagDto> tagDtos = tagsGrouping.tagsByProblem().getOrDefault(problemId, List.of()).stream()
+                .map(tagsGrouping.tagsById()::get)
+                .filter(Objects::nonNull)
+                .map(tag -> new ProblemTagDto(tag.getId(), tag.getSlug(), tag.getName()))
+                .toList();
 
         return new ProblemDetailView(
                 problem.getId(),
@@ -499,45 +486,40 @@ public class ProblemManagementService {
     }
 
     public ProblemOptionsResponse loadOptions() {
-        List<DictionaryOption> difficulties =
-                difficultyMapper
-                        .selectList(
-                                Wrappers.lambdaQuery(Difficulty.class)
-                                        .orderByAsc(Difficulty::getSortKey))
-                        .stream()
-                        .map(d -> new DictionaryOption(d.getId(), d.getCode(), d.getCode()))
-                        .toList();
+        List<DictionaryOption> difficulties = difficultyMapper
+                .selectList(
+                        Wrappers.lambdaQuery(Difficulty.class)
+                                .orderByAsc(Difficulty::getSortKey))
+                .stream()
+                .map(d -> new DictionaryOption(d.getId(), d.getCode(), d.getCode()))
+                .toList();
 
-        List<DictionaryOption> categories =
-                categoryMapper
-                        .selectList(
-                                Wrappers.lambdaQuery(Category.class).orderByAsc(Category::getName))
-                        .stream()
-                        .map(c -> new DictionaryOption(c.getId(), c.getCode(), c.getName()))
-                        .toList();
+        List<DictionaryOption> categories = categoryMapper
+                .selectList(
+                        Wrappers.lambdaQuery(Category.class).orderByAsc(Category::getName))
+                .stream()
+                .map(c -> new DictionaryOption(c.getId(), c.getCode(), c.getName()))
+                .toList();
 
-        List<TagOption> tags =
-                tagMapper
-                        .selectList(Wrappers.lambdaQuery(Tag.class).orderByAsc(Tag::getName))
-                        .stream()
-                        .map(tag -> new TagOption(tag.getId(), tag.getSlug(), tag.getName()))
-                        .toList();
+        List<TagOption> tags = tagMapper
+                .selectList(Wrappers.lambdaQuery(Tag.class).orderByAsc(Tag::getName))
+                .stream()
+                .map(tag -> new TagOption(tag.getId(), tag.getSlug(), tag.getName()))
+                .toList();
 
-        List<LanguageOption> languages =
-                languageMapper
-                        .selectList(
-                                Wrappers.lambdaQuery(Language.class).orderByAsc(Language::getId))
-                        .stream()
-                        .map(
-                                lang ->
-                                        new LanguageOption(
-                                                lang.getId(),
-                                                lang.getCode(),
-                                                lang.getDisplayName(),
-                                                lang.getIsActive() == null
-                                                        ? null
-                                                        : lang.getIsActive() == 1))
-                        .toList();
+        List<LanguageOption> languages = languageMapper
+                .selectList(
+                        Wrappers.lambdaQuery(Language.class).orderByAsc(Language::getId))
+                .stream()
+                .map(
+                        lang -> new LanguageOption(
+                                lang.getId(),
+                                lang.getCode(),
+                                lang.getDisplayName(),
+                                lang.getIsActive() == null
+                                        ? null
+                                        : lang.getIsActive() == 1))
+                .toList();
 
         return new ProblemOptionsResponse(
                 difficulties, categories, tags, languages, SUPPORTED_PROBLEM_TYPES);
@@ -638,8 +620,7 @@ public class ProblemManagementService {
         if (!StringUtils.hasText(slug)) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "题目别名不能为空");
         }
-        LambdaQueryWrapper<Problem> query =
-                Wrappers.lambdaQuery(Problem.class).eq(Problem::getSlug, slug.trim());
+        LambdaQueryWrapper<Problem> query = Wrappers.lambdaQuery(Problem.class).eq(Problem::getSlug, slug.trim());
         if (excludeProblemId != null) {
             query.ne(Problem::getId, excludeProblemId);
         }
@@ -674,11 +655,10 @@ public class ProblemManagementService {
         if (CollectionUtils.isEmpty(configs)) {
             return;
         }
-        Set<Integer> languageIds =
-                configs.stream()
-                        .map(ProblemLanguageConfigPayload::languageId)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet());
+        Set<Integer> languageIds = configs.stream()
+                .map(ProblemLanguageConfigPayload::languageId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
         if (languageIds.isEmpty()) {
             return;
         }
@@ -704,10 +684,9 @@ public class ProblemManagementService {
         if (problemIds.isEmpty()) {
             return Map.of();
         }
-        List<ProblemStatement> statements =
-                problemStatementMapper.selectList(
-                        Wrappers.lambdaQuery(ProblemStatement.class)
-                                .in(ProblemStatement::getProblemId, problemIds));
+        List<ProblemStatement> statements = problemStatementMapper.selectList(
+                Wrappers.lambdaQuery(ProblemStatement.class)
+                        .in(ProblemStatement::getProblemId, problemIds));
         if (statements.isEmpty()) {
             return Map.of();
         }
@@ -744,10 +723,9 @@ public class ProblemManagementService {
         if (problemIds.isEmpty()) {
             return new TagsGrouping(Map.of(), Map.of());
         }
-        List<ProblemTag> relations =
-                problemTagMapper.selectList(
-                        Wrappers.lambdaQuery(ProblemTag.class)
-                                .in(ProblemTag::getProblemId, problemIds));
+        List<ProblemTag> relations = problemTagMapper.selectList(
+                Wrappers.lambdaQuery(ProblemTag.class)
+                        .in(ProblemTag::getProblemId, problemIds));
         if (relations.isEmpty()) {
             return new TagsGrouping(Map.of(), Map.of());
         }
@@ -759,9 +737,8 @@ public class ProblemManagementService {
                     .add(relation.getTagId());
             tagIds.add(relation.getTagId());
         }
-        Map<Long, Tag> tagsById =
-                tagMapper.selectBatchIds(tagIds).stream()
-                        .collect(Collectors.toMap(Tag::getId, tag -> tag));
+        Map<Long, Tag> tagsById = tagMapper.selectBatchIds(tagIds).stream()
+                .collect(Collectors.toMap(Tag::getId, tag -> tag));
         return new TagsGrouping(tagsById, tagIdsByProblem);
     }
 
@@ -772,10 +749,9 @@ public class ProblemManagementService {
             query.eq(ProblemStatement::getLangCode, preferredLangCode);
         }
         query.and(
-                wrapper ->
-                        wrapper.like(ProblemStatement::getTitle, keyword)
-                                .or()
-                                .like(ProblemStatement::getDescriptionMd, keyword));
+                wrapper -> wrapper.like(ProblemStatement::getTitle, keyword)
+                        .or()
+                        .like(ProblemStatement::getDescriptionMd, keyword));
         return problemStatementMapper.selectList(query).stream()
                 .map(ProblemStatement::getProblemId)
                 .toList();
@@ -857,5 +833,6 @@ public class ProblemManagementService {
         }
     }
 
-    private record TagsGrouping(Map<Long, Tag> tagsById, Map<Long, List<Long>> tagsByProblem) {}
+    private record TagsGrouping(Map<Long, Tag> tagsById, Map<Long, List<Long>> tagsByProblem) {
+    }
 }

@@ -12,14 +12,14 @@ import com.david.admin.entity.Permission;
 import com.david.admin.entity.Role;
 import com.david.admin.entity.RolePermission;
 import com.david.admin.entity.UserRole;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.admin.mapper.PermissionMapper;
 import com.david.admin.mapper.RoleMapper;
 import com.david.admin.mapper.RolePermissionMapper;
 import com.david.admin.mapper.UserRoleMapper;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.security.AuditAction;
-import com.david.common.security.SecurityAuditRecord;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.security.AuditAction;
+import com.david.core.security.SecurityAuditRecord;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -64,26 +64,23 @@ public class RoleManagementService {
         if (keyword != null && !keyword.isBlank()) {
             String trimmed = keyword.trim();
             query.and(
-                    wrapper ->
-                            wrapper.like(Role::getCode, trimmed)
-                                    .or()
-                                    .like(Role::getName, trimmed));
+                    wrapper -> wrapper.like(Role::getCode, trimmed)
+                            .or()
+                            .like(Role::getName, trimmed));
         }
         query.orderByDesc(Role::getCreatedAt);
         List<Role> roles = roleMapper.selectList(query);
         if (roles == null || roles.isEmpty()) {
             return List.of();
         }
-        Map<Long, List<Permission>> permissionsMap =
-                loadPermissionsByRoleIds(roles.stream().map(Role::getId).toList());
+        Map<Long, List<Permission>> permissionsMap = loadPermissionsByRoleIds(roles.stream().map(Role::getId).toList());
         return roles.stream()
                 .map(role -> toRoleView(role, permissionsMap.getOrDefault(role.getId(), List.of())))
                 .toList();
     }
 
     public List<RoleDto> listRoleOptions() {
-        LambdaQueryWrapper<Role> query =
-                Wrappers.lambdaQuery(Role.class).orderByAsc(Role::getId);
+        LambdaQueryWrapper<Role> query = Wrappers.lambdaQuery(Role.class).orderByAsc(Role::getId);
         List<Role> roles = roleMapper.selectList(query);
         if (roles == null || roles.isEmpty()) {
             return List.of();
@@ -168,8 +165,7 @@ public class RoleManagementService {
         }
 
         existing.setUpdatedAt(LocalDateTime.now());
-        LambdaUpdateWrapper<Role> update =
-                Wrappers.lambdaUpdate(Role.class).eq(Role::getId, roleId);
+        LambdaUpdateWrapper<Role> update = Wrappers.lambdaUpdate(Role.class).eq(Role::getId, roleId);
         update.set(Role::getCode, existing.getCode());
         update.set(Role::getName, existing.getName());
         update.set(Role::getRemark, existing.getRemark());
@@ -190,9 +186,8 @@ public class RoleManagementService {
         if (existing == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "角色不存在");
         }
-        Long relationCount =
-                userRoleMapper.selectCount(
-                        Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
+        Long relationCount = userRoleMapper.selectCount(
+                Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
         if (relationCount != null && relationCount > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "仍有用户关联该角色，无法删除");
         }
@@ -204,8 +199,7 @@ public class RoleManagementService {
     }
 
     private void ensureCodeUnique(String code, Long excludeRoleId) {
-        LambdaQueryWrapper<Role> query =
-                Wrappers.lambdaQuery(Role.class).eq(Role::getCode, code);
+        LambdaQueryWrapper<Role> query = Wrappers.lambdaQuery(Role.class).eq(Role::getCode, code);
         if (excludeRoleId != null) {
             query.ne(Role::getId, excludeRoleId);
         }
@@ -246,12 +240,11 @@ public class RoleManagementService {
     }
 
     private RoleView toRoleView(Role role, List<Permission> permissions) {
-        List<PermissionDto> permissionDtos =
-                permissions == null
-                        ? List.of()
-                        : permissions.stream()
-                                .map(p -> new PermissionDto(p.getId(), p.getCode(), p.getName()))
-                                .toList();
+        List<PermissionDto> permissionDtos = permissions == null
+                ? List.of()
+                : permissions.stream()
+                        .map(p -> new PermissionDto(p.getId(), p.getCode(), p.getName()))
+                        .toList();
         return new RoleView(
                 role.getId(),
                 role.getCode(),
@@ -295,23 +288,20 @@ public class RoleManagementService {
         if (roleIds == null || roleIds.isEmpty()) {
             return Map.of();
         }
-        List<RolePermission> relations =
-                rolePermissionMapper.selectList(
-                        Wrappers.lambdaQuery(RolePermission.class).in(RolePermission::getRoleId, roleIds));
+        List<RolePermission> relations = rolePermissionMapper.selectList(
+                Wrappers.lambdaQuery(RolePermission.class).in(RolePermission::getRoleId, roleIds));
         if (relations == null || relations.isEmpty()) {
             return Map.of();
         }
-        Set<Long> permissionIds =
-                relations.stream().map(RolePermission::getPermissionId).collect(Collectors.toSet());
+        Set<Long> permissionIds = relations.stream().map(RolePermission::getPermissionId).collect(Collectors.toSet());
         if (permissionIds.isEmpty()) {
             return Map.of();
         }
         List<Permission> permissions = permissionMapper.selectBatchIds(permissionIds);
-        Map<Long, Permission> permissionMap =
-                permissions == null
-                        ? Map.of()
-                        : permissions.stream()
-                                .collect(Collectors.toMap(Permission::getId, permission -> permission));
+        Map<Long, Permission> permissionMap = permissions == null
+                ? Map.of()
+                : permissions.stream()
+                        .collect(Collectors.toMap(Permission::getId, permission -> permission));
         Map<Long, List<Permission>> result = new HashMap<>();
         for (RolePermission relation : relations) {
             Permission permission = permissionMap.get(relation.getPermissionId());

@@ -7,7 +7,7 @@ import com.david.auth.dto.RegisterRequest;
 import com.david.auth.entity.Role;
 import com.david.auth.entity.User;
 import com.david.auth.entity.UserRole;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.auth.mapper.RoleMapper;
 import com.david.auth.mapper.UserMapper;
 import com.david.auth.mapper.UserRoleMapper;
@@ -68,11 +68,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Optional<User> findByUsernameOrEmail(String identifier) {
-        LambdaQueryWrapper<User> query =
-                Wrappers.lambdaQuery(User.class)
-                        .eq(User::getUsername, identifier)
-                        .or()
-                        .eq(User::getEmail, identifier);
+        LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class)
+                .eq(User::getUsername, identifier)
+                .or()
+                .eq(User::getEmail, identifier);
         return Optional.ofNullable(userMapper.selectOne(query));
     }
 
@@ -88,8 +87,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<String> findRoleCodes(Long userId) {
-        LambdaQueryWrapper<UserRole> userRoleQuery =
-                Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getUserId, userId);
+        LambdaQueryWrapper<UserRole> userRoleQuery = Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getUserId,
+                userId);
         List<UserRole> userRoles = userRoleMapper.selectList(userRoleQuery);
         if (userRoles == null || userRoles.isEmpty()) {
             return Collections.emptyList();
@@ -108,11 +107,10 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void updateLoginMetadata(Long userId, String ipAddress) {
-        LambdaUpdateWrapper<User> update =
-                Wrappers.lambdaUpdate(User.class)
-                        .eq(User::getId, userId)
-                        .set(User::getLastLoginAt, LocalDateTime.now())
-                        .set(User::getLastLoginIp, ipAddress);
+        LambdaUpdateWrapper<User> update = Wrappers.lambdaUpdate(User.class)
+                .eq(User::getId, userId)
+                .set(User::getLastLoginAt, LocalDateTime.now())
+                .set(User::getLastLoginIp, ipAddress);
         userMapper.update(null, update);
     }
 
@@ -122,23 +120,20 @@ public class UserServiceImpl implements UserService {
     }
 
     private void validateUniqueness(String username, String email) {
-        Long usernameCount =
-                userMapper.selectCount(
-                        Wrappers.lambdaQuery(User.class).eq(User::getUsername, username));
+        Long usernameCount = userMapper.selectCount(
+                Wrappers.lambdaQuery(User.class).eq(User::getUsername, username));
         if (usernameCount != null && usernameCount > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "Username already exists");
         }
-        Long emailCount =
-                userMapper.selectCount(Wrappers.lambdaQuery(User.class).eq(User::getEmail, email));
+        Long emailCount = userMapper.selectCount(Wrappers.lambdaQuery(User.class).eq(User::getEmail, email));
         if (emailCount != null && emailCount > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "Email already exists");
         }
     }
 
     private Role ensureDefaultRole() {
-        Role role =
-                roleMapper.selectOne(
-                        Wrappers.lambdaQuery(Role.class).eq(Role::getCode, DEFAULT_ROLE_CODE));
+        Role role = roleMapper.selectOne(
+                Wrappers.lambdaQuery(Role.class).eq(Role::getCode, DEFAULT_ROLE_CODE));
         if (role != null) {
             return role;
         }

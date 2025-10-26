@@ -1,7 +1,7 @@
 package com.david.gateway.support;
 
-import com.david.common.http.ApiError;
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiError;
+import com.david.core.http.ApiResponse;
 
 import lombok.extern.slf4j.Slf4j;
 

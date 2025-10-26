@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.david.interaction.entity.ModerationAction;
 import com.david.interaction.entity.ModerationTask;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.interaction.mapper.ModerationActionMapper;
 import com.david.interaction.mapper.ModerationTaskMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -91,9 +91,9 @@ public class ModerationWorkflowService {
         Map<String, Object> metadata = new HashMap<>();
         if (StringUtils.hasText(existingMetadata)) {
             try {
-                metadata =
-                        objectMapper.readValue(
-                                existingMetadata, objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
+                metadata = objectMapper.readValue(
+                        existingMetadata,
+                        objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
             } catch (JsonProcessingException e) {
                 log.warn("解析审核任务原始metadata失败: {}", existingMetadata, e);
             }
@@ -122,12 +122,11 @@ public class ModerationWorkflowService {
     }
 
     public ModerationTask findLatestTaskByCommentId(Long commentId) {
-        LambdaQueryWrapper<ModerationTask> wrapper =
-                Wrappers.lambdaQuery(ModerationTask.class)
-                        .eq(ModerationTask::getEntityType, "comment")
-                        .eq(ModerationTask::getEntityId, commentId)
-                        .orderByDesc(ModerationTask::getCreatedAt)
-                        .last("LIMIT 1");
+        LambdaQueryWrapper<ModerationTask> wrapper = Wrappers.lambdaQuery(ModerationTask.class)
+                .eq(ModerationTask::getEntityType, "comment")
+                .eq(ModerationTask::getEntityId, commentId)
+                .orderByDesc(ModerationTask::getCreatedAt)
+                .last("LIMIT 1");
         return moderationTaskMapper.selectOne(wrapper);
     }
 
@@ -135,12 +134,11 @@ public class ModerationWorkflowService {
         if (CollectionUtils.isEmpty(commentIds)) {
             return Collections.emptyMap();
         }
-        List<ModerationTask> tasks =
-                moderationTaskMapper.selectList(
-                        Wrappers.lambdaQuery(ModerationTask.class)
-                                .eq(ModerationTask::getEntityType, "comment")
-                                .in(ModerationTask::getEntityId, commentIds)
-                                .orderByDesc(ModerationTask::getCreatedAt));
+        List<ModerationTask> tasks = moderationTaskMapper.selectList(
+                Wrappers.lambdaQuery(ModerationTask.class)
+                        .eq(ModerationTask::getEntityType, "comment")
+                        .in(ModerationTask::getEntityId, commentIds)
+                        .orderByDesc(ModerationTask::getCreatedAt));
         Map<Long, ModerationTask> result = new HashMap<>();
         for (ModerationTask task : tasks) {
             result.putIfAbsent(task.getEntityId(), task);

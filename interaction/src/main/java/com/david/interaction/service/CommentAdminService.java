@@ -3,7 +3,7 @@ package com.david.interaction.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.david.common.forward.ForwardedUser;
+import com.david.core.forward.ForwardedUser;
 import com.david.interaction.dto.CommentDetailView;
 import com.david.interaction.dto.CommentQuery;
 import com.david.interaction.dto.CommentStatusUpdateRequest;
@@ -13,7 +13,7 @@ import com.david.interaction.dto.ModerationTaskSummaryView;
 import com.david.interaction.dto.PageResult;
 import com.david.interaction.entity.Comment;
 import com.david.interaction.entity.ModerationTask;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.interaction.mapper.CommentMapper;
 import com.david.interaction.mapper.ReactionMapper;
 import com.david.interaction.mapper.result.ReactionAggregationRow;
@@ -79,10 +79,9 @@ public class CommentAdminService {
         if (StringUtils.hasText(query.keyword())) {
             String keyword = query.keyword().trim();
             wrapper.and(
-                    w ->
-                            w.like(Comment::getContentMd, keyword)
-                                    .or()
-                                    .like(Comment::getModerationNotes, keyword));
+                    w -> w.like(Comment::getContentMd, keyword)
+                            .or()
+                            .like(Comment::getModerationNotes, keyword));
         }
         if (StringUtils.hasText(query.moderationLevel())) {
             wrapper.eq(Comment::getModerationLevel, query.moderationLevel().trim());
@@ -97,18 +96,15 @@ public class CommentAdminService {
 
         List<Long> commentIds = records.stream().map(Comment::getId).toList();
         Map<Long, Map<String, Long>> reactionSummary = loadReactionSummary(commentIds);
-        Map<Long, ModerationTask> taskMap =
-                moderationWorkflowService.findLatestTasksByCommentIds(commentIds);
+        Map<Long, ModerationTask> taskMap = moderationWorkflowService.findLatestTasksByCommentIds(commentIds);
 
-        List<CommentSummaryView> views =
-                records.stream()
-                        .map(
-                                comment ->
-                                        toSummaryView(
-                                                comment,
-                                                reactionSummary.getOrDefault(comment.getId(), Map.of()),
-                                                taskMap.get(comment.getId())))
-                        .toList();
+        List<CommentSummaryView> views = records.stream()
+                .map(
+                        comment -> toSummaryView(
+                                comment,
+                                reactionSummary.getOrDefault(comment.getId(), Map.of()),
+                                taskMap.get(comment.getId())))
+                .toList();
         return new PageResult<>(
                 views, result.getTotal(), result.getCurrent(), result.getSize());
     }
@@ -118,8 +114,7 @@ public class CommentAdminService {
         if (comment == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "评论不存在");
         }
-        Map<Long, Map<String, Long>> reactionSummary =
-                loadReactionSummary(List.of(commentId));
+        Map<Long, Map<String, Long>> reactionSummary = loadReactionSummary(List.of(commentId));
         ModerationTask task = moderationWorkflowService.findLatestTaskByCommentId(commentId);
         return toDetailView(
                 comment,
@@ -144,19 +139,17 @@ public class CommentAdminService {
         }
         comment.setUpdatedAt(LocalDateTime.now());
 
-        SensitiveWordAnalysisResult analysis =
-                sensitiveWordAdminService.analyzeContent(comment.getContentMd());
+        SensitiveWordAnalysisResult analysis = sensitiveWordAdminService.analyzeContent(comment.getContentMd());
         applyAnalysis(comment, analysis);
         commentMapper.updateById(comment);
 
         if (analysis.blocked() || analysis.needReview()) {
-            ModerationTask task =
-                    moderationWorkflowService.ensurePendingTaskForComment(
-                            commentId,
-                            analysis.riskLevel(),
-                            "auto",
-                            "内容更新触发审核",
-                            analysis.hits());
+            ModerationTask task = moderationWorkflowService.ensurePendingTaskForComment(
+                    commentId,
+                    analysis.riskLevel(),
+                    "auto",
+                    "内容更新触发审核",
+                    analysis.hits());
             moderationWorkflowService.logAction(
                     task.getId(),
                     "created",
@@ -192,8 +185,7 @@ public class CommentAdminService {
         }
         commentMapper.updateById(comment);
 
-        ModerationTask task =
-                moderationWorkflowService.findLatestTaskByCommentId(commentId);
+        ModerationTask task = moderationWorkflowService.findLatestTaskByCommentId(commentId);
         if (task != null) {
             String taskStatus = mapTaskStatus(normalizedStatus);
             moderationWorkflowService.updateTaskStatus(
@@ -209,13 +201,12 @@ public class CommentAdminService {
                     request.moderationNotes(),
                     Map.of("commentStatus", normalizedStatus));
         } else if ("pending".equals(normalizedStatus)) {
-            ModerationTask newTask =
-                    moderationWorkflowService.ensurePendingTaskForComment(
-                            commentId,
-                            comment.getModerationLevel(),
-                            "manual",
-                            request.moderationNotes(),
-                            readHits(comment.getSensitiveHits()));
+            ModerationTask newTask = moderationWorkflowService.ensurePendingTaskForComment(
+                    commentId,
+                    comment.getModerationLevel(),
+                    "manual",
+                    request.moderationNotes(),
+                    readHits(comment.getSensitiveHits()));
             moderationWorkflowService.logAction(
                     newTask.getId(),
                     "created",
@@ -251,8 +242,7 @@ public class CommentAdminService {
         if (CollectionUtils.isEmpty(commentIds)) {
             return Map.of();
         }
-        List<ReactionAggregationRow> rows =
-                reactionMapper.aggregateByEntity("comment", commentIds);
+        List<ReactionAggregationRow> rows = reactionMapper.aggregateByEntity("comment", commentIds);
         Map<Long, Map<String, Long>> summary = new HashMap<>();
         for (ReactionAggregationRow row : rows) {
             summary.computeIfAbsent(row.getEntityId(), id -> new HashMap<>())

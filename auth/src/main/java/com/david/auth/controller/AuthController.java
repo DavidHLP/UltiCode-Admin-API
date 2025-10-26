@@ -15,12 +15,12 @@ import com.david.auth.dto.TokenIntrospectRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.TwoFactorSetupResponse;
 import com.david.auth.dto.UserProfileDto;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.auth.security.TokenSessionManager;
 import com.david.auth.security.UserPrincipal;
 import com.david.auth.service.AuthService;
-import com.david.common.http.ApiResponse;
-import com.david.common.security.SensitiveDataMasker;
+import com.david.core.http.ApiResponse;
+import com.david.core.security.SensitiveDataMasker;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -149,8 +149,7 @@ public class AuthController {
             @Valid @RequestBody SsoInitiateRequest request) {
         log.debug("用户 {} 请求创建SSO会话，clientId={}", principal.id(), request.clientId());
         long ttl = request.ttlSeconds() == null ? 300 : request.ttlSeconds();
-        SsoSessionResponse response =
-                authService.initiateSso(principal.id(), request.clientId(), request.state(), ttl);
+        SsoSessionResponse response = authService.initiateSso(principal.id(), request.clientId(), request.state(), ttl);
         return ApiResponse.success(response);
     }
 
@@ -178,8 +177,7 @@ public class AuthController {
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody SensitiveActionTokenRequest request) {
         log.debug("用户 {} 请求生成敏感操作令牌", principal.id());
-        String token =
-                authService.issueSensitiveActionToken(principal.id(), request.verificationCode());
+        String token = authService.issueSensitiveActionToken(principal.id(), request.verificationCode());
         return ApiResponse.success(token);
     }
 

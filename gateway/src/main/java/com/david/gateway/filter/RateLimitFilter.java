@@ -1,13 +1,8 @@
 package com.david.gateway.filter;
 
-import java.net.InetSocketAddress;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -17,7 +12,15 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
+
 import reactor.core.publisher.Mono;
+
+import java.net.InetSocketAddress;
+import java.time.Instant;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Component
@@ -69,8 +72,8 @@ public class RateLimitFilter implements GlobalFilter, Ordered {
     }
 
     private static final class RateBucket {
-        private volatile long windowStart = Instant.now().toEpochMilli();
         private final AtomicInteger counter = new AtomicInteger(0);
+        private volatile long windowStart = Instant.now().toEpochMilli();
 
         boolean incrementAndCheck(int limit) {
             long now = Instant.now().toEpochMilli();

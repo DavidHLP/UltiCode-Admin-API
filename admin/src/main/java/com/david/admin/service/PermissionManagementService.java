@@ -7,11 +7,11 @@ import com.david.admin.dto.PermissionDto;
 import com.david.admin.dto.PermissionUpdateRequest;
 import com.david.admin.dto.PermissionView;
 import com.david.admin.entity.Permission;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.admin.mapper.PermissionMapper;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.security.AuditAction;
-import com.david.common.security.SecurityAuditRecord;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.security.AuditAction;
+import com.david.core.security.SecurityAuditRecord;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -114,8 +114,7 @@ public class PermissionManagementService {
     }
 
     private void ensureCodeUnique(String code, Long excludeId) {
-        LambdaQueryWrapper<Permission> query =
-                Wrappers.lambdaQuery(Permission.class).eq(Permission::getCode, code);
+        LambdaQueryWrapper<Permission> query = Wrappers.lambdaQuery(Permission.class).eq(Permission::getCode, code);
         if (excludeId != null) {
             query.ne(Permission::getId, excludeId);
         }

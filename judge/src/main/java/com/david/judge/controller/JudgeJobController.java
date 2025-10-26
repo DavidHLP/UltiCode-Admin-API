@@ -1,8 +1,8 @@
 package com.david.judge.controller;
 
-import com.david.common.forward.CurrentForwardedUser;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.http.ApiResponse;
+import com.david.core.security.CurrentForwardedUser;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.http.ApiResponse;
 import com.david.judge.dto.JudgeJobDetailView;
 import com.david.judge.dto.JudgeJobQuery;
 import com.david.judge.dto.JudgeJobView;

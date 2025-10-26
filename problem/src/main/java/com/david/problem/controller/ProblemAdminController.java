@@ -1,6 +1,6 @@
 package com.david.problem.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.problem.dto.PageResult;
 import com.david.problem.dto.ProblemDetailView;
 import com.david.problem.dto.ProblemOptionsResponse;

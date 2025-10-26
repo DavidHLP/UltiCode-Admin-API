@@ -1,6 +1,5 @@
 package com.david.gateway.config;
 
-import com.david.common.forward.AppProperties;
 import java.time.Duration;
 import java.util.List;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;

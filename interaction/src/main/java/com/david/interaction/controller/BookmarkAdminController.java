@@ -1,6 +1,6 @@
 package com.david.interaction.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.interaction.dto.BookmarkDeleteRequest;
 import com.david.interaction.dto.BookmarkQuery;
 import com.david.interaction.dto.BookmarkView;

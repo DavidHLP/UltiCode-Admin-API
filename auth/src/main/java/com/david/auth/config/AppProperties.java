@@ -1,5 +1,7 @@
 package com.david.auth.config;
 
+import com.david.core.forward.AppConvention;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -15,60 +17,13 @@ import java.util.List;
 @Getter
 @Validated
 @ConfigurationProperties(prefix = "app")
-public class AppProperties {
+public class AppProperties extends AppConvention {
 
     private final Security security = new Security();
     private final Mail mail = new Mail();
 
-    private final List<String> whiteListPaths =
-            List.of(
-                    "/api/auth/register",
-                    "/api/auth/login",
-                    "/api/auth/refresh",
-                    "/api/auth/forgot",
-                    "/api/auth/introspect",
-                    "/actuator/**");
-
-    @Getter
-    @Validated
-    public static class Security {
-        private final Jwt jwt = new Jwt();
-        private final Cookies cookies = new Cookies();
-        private List<String> corsAllowedOrigins = List.of("http://localhost:5173");
-
-        @Getter
-        @Setter
-        @Validated
-        public static class Cookies {
-            private String refreshTokenName = "cf_refresh_token";
-            private String accessTokenName = "cf_access_token";
-            private String path = "/";
-            private String domain;
-            private boolean secure = false;
-            private String sameSite = "Lax";
-        }
-
-        public void setCorsAllowedOrigins(List<String> corsAllowedOrigins) {
-            this.corsAllowedOrigins =
-                    corsAllowedOrigins == null || corsAllowedOrigins.isEmpty()
-                            ? List.of("http://localhost:5173")
-                            : corsAllowedOrigins;
-        }
-
-        @Getter
-        @Setter
-        @Validated
-        public static class Jwt {
-            /** 用于签名JWT的HMAC密钥，请妥善保管。 */
-            @NotBlank private String secret;
-
-            @NotBlank private String issuer = "codeforge-auth";
-
-            @NotNull private Duration accessTokenTtl = Duration.ofMinutes(15);
-
-            @NotNull private Duration refreshTokenTtl = Duration.ofDays(7);
-        }
-    }
+    /** 仍然放在根级，名称不变，避免破坏配置兼容性 */
+    private final List<String> whiteListPaths = DEFAULT_WHITE_LIST_PATHS;
 
     @Getter
     @Setter
@@ -138,5 +93,45 @@ public class AppProperties {
                 "https://codeforge.example.com/reset-password?token=%s";
 
         @NotNull private Duration passwordResetTokenTtl = Duration.ofMinutes(30);
+    }
+
+    @Getter
+    @Validated
+    public class Security {
+        private final Jwt jwt = new Jwt();
+        private final Cookies cookies = new Cookies();
+
+        /** 此类把 CORS 放在 security 层级，因此字段名不同但默认值仍复用父类常量 */
+        private List<String> corsAllowedOrigins = DEFAULT_ALLOWED_ORIGINS;
+
+        public void setCorsAllowedOrigins(List<String> corsAllowedOrigins) {
+            this.corsAllowedOrigins = normalizeList(corsAllowedOrigins);
+        }
+
+        @Getter
+        @Setter
+        @Validated
+        public static class Cookies {
+            private String refreshTokenName = "cf_refresh_token";
+            private String accessTokenName = "cf_access_token";
+            private String path = "/";
+            private String domain;
+            private boolean secure = false;
+            private String sameSite = "Lax";
+        }
+
+        @Getter
+        @Setter
+        @Validated
+        public static class Jwt {
+            /** 用于签名JWT的HMAC密钥，请妥善保管。 */
+            @NotBlank private String secret;
+
+            @NotBlank private String issuer = "codeforge-auth";
+
+            @NotNull private Duration accessTokenTtl = Duration.ofMinutes(15);
+
+            @NotNull private Duration refreshTokenTtl = Duration.ofDays(7);
+        }
     }
 }

@@ -1,6 +1,6 @@
 package com.david.contest.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.contest.dto.ContestScoreboardView;
 import com.david.contest.dto.ContestSubmissionView;
 import com.david.contest.dto.PageResult;

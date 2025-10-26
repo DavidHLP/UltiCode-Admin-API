@@ -1,7 +1,7 @@
 package com.david.auth.security;
 
-import com.david.common.http.ApiError;
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiError;
+import com.david.core.http.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;

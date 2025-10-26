@@ -3,7 +3,7 @@ package com.david.admin.controller;
 import com.david.admin.dto.AuditLogView;
 import com.david.admin.dto.PageResult;
 import com.david.admin.service.AuditLogQueryService;
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;

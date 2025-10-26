@@ -1,6 +1,6 @@
 package com.david.problem.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.problem.dto.DifficultyCreateRequest;
 import com.david.problem.dto.DifficultyUpdateRequest;
 import com.david.problem.dto.DifficultyView;

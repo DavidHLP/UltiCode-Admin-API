@@ -6,11 +6,10 @@ import com.david.admin.dto.UserUpdateRequest;
 import com.david.admin.dto.UserView;
 import com.david.admin.service.SensitiveOperationGuard;
 import com.david.admin.service.UserManagementService;
-import com.david.common.forward.CurrentForwardedUser;
-import com.david.common.forward.ForwardedUser;
-import com.david.common.http.ApiResponse;
-import com.david.common.security.SensitiveDataMasker;
-import com.david.common.security.SensitiveDataMasker;
+import com.david.core.security.CurrentForwardedUser;
+import com.david.core.forward.ForwardedUser;
+import com.david.core.http.ApiResponse;
+import com.david.core.security.SensitiveDataMasker;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;

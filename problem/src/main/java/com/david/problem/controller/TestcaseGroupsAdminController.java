@@ -1,6 +1,6 @@
 package com.david.problem.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.problem.dto.TestcaseGroupUpsertRequest;
 import com.david.problem.dto.TestcaseGroupView;
 import com.david.problem.service.DatasetManagementService;

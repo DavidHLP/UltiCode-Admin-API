@@ -11,7 +11,7 @@ import com.david.auth.dto.TwoFactorSetupResponse;
 import com.david.auth.entity.TokenKind;
 import com.david.auth.entity.SsoSession;
 import com.david.auth.entity.User;
-import com.david.common.http.exception.BusinessException;
+import com.david.core.exception.BusinessException;
 import com.david.auth.security.JwtService;
 import com.david.auth.service.AuthService;
 import com.david.auth.service.AuditLogService;
@@ -27,9 +27,9 @@ import com.david.auth.service.UserService;
 import com.david.auth.service.TwoFactorService;
 import com.david.auth.support.JwtToken;
 import com.david.auth.entity.UserSecurityProfile;
-import com.david.common.security.AuditAction;
-import com.david.common.security.SecurityAuditRecord;
-import com.david.common.security.SensitiveDataMasker;
+import com.david.core.security.AuditAction;
+import com.david.core.security.SecurityAuditRecord;
+import com.david.core.security.SensitiveDataMasker;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -130,8 +130,7 @@ public class AuthServiceImpl implements AuthService {
         securityPolicyService.registerLoginAttempt(ipAddress);
         captchaService.verify(request.captchaToken());
 
-        User user =
-                userService.findByUsernameOrEmail(request.identifier()).orElse(null);
+        User user = userService.findByUsernameOrEmail(request.identifier()).orElse(null);
 
         if (user == null) {
             log.warn("登录失败，账号不存在: {}", maskedIdentifier);
@@ -174,8 +173,7 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid username/email or password");
         }
 
-        UserSecurityProfile profile =
-                twoFactorService.findProfile(user.getId()).orElse(null);
+        UserSecurityProfile profile = twoFactorService.findProfile(user.getId()).orElse(null);
         if (profile != null && Boolean.TRUE.equals(profile.getMfaEnabled())) {
             if (!StringUtils.hasText(request.twoFactorCode())
                     || !twoFactorService.verifyCode(profile.getMfaSecret(), request.twoFactorCode())) {
@@ -311,11 +309,10 @@ public class AuthServiceImpl implements AuthService {
     public TwoFactorSetupResponse enableTwoFactor(Long userId) {
         User user = userService.getActiveUser(userId);
         UserSecurityProfile profile = twoFactorService.enableMfa(userId);
-        String provisioningUri =
-                twoFactorService.generateProvisioningUri(
-                        appProperties.getSecurity().getJwt().getIssuer(),
-                        user.getUsername(),
-                        profile.getMfaSecret());
+        String provisioningUri = twoFactorService.generateProvisioningUri(
+                appProperties.getSecurity().getJwt().getIssuer(),
+                user.getUsername(),
+                profile.getMfaSecret());
         auditLogService.record(
                 SecurityAuditRecord.builder()
                         .actorId(user.getId())
@@ -419,18 +416,15 @@ public class AuthServiceImpl implements AuthService {
 
     private AuthResponse issueTokens(User user, List<String> roles) {
         log.debug("为用户生成访问和刷新令牌，用户ID: {}", user.getId());
-        JwtToken access =
-                jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.ACCESS);
-        JwtToken refresh =
-                jwtService.generateToken(
-                        user.getId(), user.getUsername(), roles, TokenKind.REFRESH);
+        JwtToken access = jwtService.generateToken(user.getId(), user.getUsername(), roles, TokenKind.ACCESS);
+        JwtToken refresh = jwtService.generateToken(
+                user.getId(), user.getUsername(), roles, TokenKind.REFRESH);
 
         tokenService.storeToken(user.getId(), TokenKind.ACCESS, access);
         tokenService.storeToken(user.getId(), TokenKind.REFRESH, refresh);
 
         long accessExpiresIn = appProperties.getSecurity().getJwt().getAccessTokenTtl().toSeconds();
-        long refreshExpiresIn =
-                appProperties.getSecurity().getJwt().getRefreshTokenTtl().toSeconds();
+        long refreshExpiresIn = appProperties.getSecurity().getJwt().getRefreshTokenTtl().toSeconds();
 
         log.info(
                 "令牌颁发完成，用户ID: {}, 访问令牌过期时间: {}秒, 刷新令牌过期时间: {}秒",

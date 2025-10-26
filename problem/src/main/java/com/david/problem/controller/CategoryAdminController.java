@@ -1,6 +1,6 @@
 package com.david.problem.controller;
 
-import com.david.common.http.ApiResponse;
+import com.david.core.http.ApiResponse;
 import com.david.problem.dto.CategoryCreateRequest;
 import com.david.problem.dto.CategoryUpdateRequest;
 import com.david.problem.dto.CategoryView;
