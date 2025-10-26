@@ -6,6 +6,7 @@ import com.david.admin.dto.UserUpdateRequest;
 import com.david.admin.dto.UserView;
 import com.david.admin.service.SensitiveOperationGuard;
 import com.david.admin.service.UserManagementService;
+import com.david.common.forward.CurrentForwardedUser;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.http.ApiResponse;
 import com.david.common.security.SensitiveDataMasker;
@@ -19,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,7 +83,7 @@ public class UserAdminController {
     @PostMapping("/users")
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<UserView> createUser(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @Valid @RequestBody UserCreateRequest request) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
@@ -98,7 +98,7 @@ public class UserAdminController {
 
     @PutMapping("/users/{userId}")
     public ApiResponse<UserView> updateUser(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long userId,
             @Valid @RequestBody UserUpdateRequest request) {

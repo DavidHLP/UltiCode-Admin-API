@@ -1,5 +1,6 @@
 package com.david.judge.controller;
 
+import com.david.common.forward.CurrentForwardedUser;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.http.ApiResponse;
 import com.david.judge.dto.JudgeJobDetailView;
@@ -12,7 +13,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -54,7 +54,7 @@ public class JudgeJobController {
 
     @PostMapping("/{jobId}/retry")
     public ApiResponse<Void> retryJob(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long jobId) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);

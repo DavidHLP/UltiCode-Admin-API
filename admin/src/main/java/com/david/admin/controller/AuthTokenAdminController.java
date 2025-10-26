@@ -3,13 +3,13 @@ package com.david.admin.controller;
 import com.david.admin.dto.AuthTokenView;
 import com.david.admin.service.AuthTokenManagementService;
 import com.david.admin.service.SensitiveOperationGuard;
+import com.david.common.forward.CurrentForwardedUser;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.http.ApiResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,7 +41,7 @@ public class AuthTokenAdminController {
 
     @DeleteMapping("/{tokenId}")
     public ApiResponse<Void> revokeToken(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long tokenId) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);

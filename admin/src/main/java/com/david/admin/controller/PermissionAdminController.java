@@ -5,6 +5,7 @@ import com.david.admin.dto.PermissionUpdateRequest;
 import com.david.admin.dto.PermissionView;
 import com.david.admin.service.PermissionManagementService;
 import com.david.admin.service.SensitiveOperationGuard;
+import com.david.common.forward.CurrentForwardedUser;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.http.ApiResponse;
 import jakarta.validation.Valid;
@@ -12,7 +13,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +44,7 @@ public class PermissionAdminController {
 
     @PostMapping
     public ApiResponse<PermissionView> createPermission(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @Valid @RequestBody PermissionCreateRequest request) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
@@ -55,7 +55,7 @@ public class PermissionAdminController {
 
     @PutMapping("/{permissionId}")
     public ApiResponse<PermissionView> updatePermission(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long permissionId,
             @Valid @RequestBody PermissionUpdateRequest request) {
@@ -67,7 +67,7 @@ public class PermissionAdminController {
 
     @DeleteMapping("/{permissionId}")
     public ApiResponse<Void> deletePermission(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long permissionId) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);

@@ -8,6 +8,7 @@ import com.david.admin.dto.RoleView;
 import com.david.admin.service.PermissionManagementService;
 import com.david.admin.service.RoleManagementService;
 import com.david.admin.service.SensitiveOperationGuard;
+import com.david.common.forward.CurrentForwardedUser;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.http.ApiResponse;
 
@@ -17,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -90,7 +90,7 @@ public class RoleAdminController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<RoleView> createRole(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @Valid @RequestBody RoleCreateRequest request) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
@@ -102,7 +102,7 @@ public class RoleAdminController {
 
     @PutMapping("/{roleId}")
     public ApiResponse<RoleView> updateRole(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long roleId,
             @Valid @RequestBody RoleUpdateRequest request) {
@@ -115,7 +115,7 @@ public class RoleAdminController {
 
     @DeleteMapping("/{roleId}")
     public ApiResponse<Void> deleteRole(
-            @AuthenticationPrincipal ForwardedUser principal,
+            @CurrentForwardedUser ForwardedUser principal,
             @RequestHeader("X-Sensitive-Action-Token") String sensitiveToken,
             @PathVariable Long roleId) {
         sensitiveOperationGuard.ensureValid(principal.id(), sensitiveToken);
