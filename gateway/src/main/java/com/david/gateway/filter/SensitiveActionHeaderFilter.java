@@ -23,7 +23,7 @@ public class SensitiveActionHeaderFilter implements GlobalFilter, Ordered {
     private static final String SENSITIVE_HEADER = "X-Sensitive-Action-Token";
     private static final Set<HttpMethod> SENSITIVE_METHODS =
             Set.of(HttpMethod.POST, HttpMethod.PUT, HttpMethod.DELETE, HttpMethod.PATCH);
-    private static final String SENSITIVE_PATH = "/api/admin/**";
+    private static final String[] SENSITIVE_PATHS = {"/api/admin/**", "/api/judge/**"};
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
@@ -31,7 +31,7 @@ public class SensitiveActionHeaderFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         HttpMethod method = exchange.getRequest().getMethod();
         String path = exchange.getRequest().getPath().value();
-        if (SENSITIVE_METHODS.contains(method) && pathMatcher.match(SENSITIVE_PATH, path)) {
+        if (requiresSensitiveHeader(method, path)) {
             String header = exchange.getRequest().getHeaders().getFirst(SENSITIVE_HEADER);
             if (!StringUtils.hasText(header)) {
                 log.warn("敏感操作缺少校验头，path={} method={}", path, method);
@@ -40,6 +40,21 @@ public class SensitiveActionHeaderFilter implements GlobalFilter, Ordered {
             }
         }
         return chain.filter(exchange);
+    }
+
+    private boolean requiresSensitiveHeader(HttpMethod method, String path) {
+        if (method == null || path == null) {
+            return false;
+        }
+        if (!SENSITIVE_METHODS.contains(method)) {
+            return false;
+        }
+        for (String pattern : SENSITIVE_PATHS) {
+            if (pathMatcher.match(pattern, path)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
