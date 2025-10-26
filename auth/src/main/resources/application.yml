@@ -32,3 +32,5 @@ app:
       issuer: auth
       access-token-ttl: PT15M
       refresh-token-ttl: P7D
+    forwarded:
+      enabled: false

@@ -62,5 +62,10 @@ management:
 
 app:
   white-list-paths:
-    - /api/auth/**
+    - /api/auth/register
+    - /api/auth/register/code
+    - /api/auth/login
+    - /api/auth/refresh
+    - /api/auth/forgot
+    - /api/auth/introspect
     - /actuator/**

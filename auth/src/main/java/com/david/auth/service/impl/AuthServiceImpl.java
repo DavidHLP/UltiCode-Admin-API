@@ -20,6 +20,7 @@ import com.david.auth.service.PasswordResetService;
 import com.david.auth.service.RegistrationVerificationService;
 import com.david.auth.service.SecurityPolicyService;
 import com.david.auth.service.SensitiveActionTokenService;
+import com.david.auth.service.SensitiveActionVerificationService;
 import com.david.auth.service.SsoService;
 import com.david.auth.service.TokenService;
 import com.david.auth.service.UserService;
@@ -61,6 +62,7 @@ public class AuthServiceImpl implements AuthService {
     private final CaptchaService captchaService;
     private final SsoService ssoService;
     private final SensitiveActionTokenService sensitiveActionTokenService;
+    private final SensitiveActionVerificationService sensitiveActionVerificationService;
 
     public AuthServiceImpl(
             UserService userService,
@@ -75,7 +77,8 @@ public class AuthServiceImpl implements AuthService {
             SecurityPolicyService securityPolicyService,
             CaptchaService captchaService,
             SsoService ssoService,
-            SensitiveActionTokenService sensitiveActionTokenService) {
+            SensitiveActionTokenService sensitiveActionTokenService,
+            SensitiveActionVerificationService sensitiveActionVerificationService) {
         this.userService = userService;
         this.tokenService = tokenService;
         this.jwtService = jwtService;
@@ -89,6 +92,7 @@ public class AuthServiceImpl implements AuthService {
         this.captchaService = captchaService;
         this.ssoService = ssoService;
         this.sensitiveActionTokenService = sensitiveActionTokenService;
+        this.sensitiveActionVerificationService = sensitiveActionVerificationService;
     }
 
     @Override
@@ -385,16 +389,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public String issueSensitiveActionToken(Long userId, String twoFactorCode) {
+    public void sendSensitiveActionCode(Long userId) {
+        log.debug("用户 {} 请求发送敏感操作验证码", userId);
         User user = userService.getActiveUser(userId);
-        UserSecurityProfile profile =
-                twoFactorService.findProfile(userId).orElse(null);
-        if (profile == null || !Boolean.TRUE.equals(profile.getMfaEnabled())) {
-            throw new BusinessException(HttpStatus.BAD_REQUEST, "请先开启二次验证");
-        }
-        if (!twoFactorService.verifyCode(profile.getMfaSecret(), twoFactorCode)) {
-            throw new BusinessException(HttpStatus.UNAUTHORIZED, "二次验证失败");
-        }
+        sensitiveActionVerificationService.sendVerificationCode(user);
+    }
+
+    @Override
+    public String issueSensitiveActionToken(Long userId, String verificationCode) {
+        User user = userService.getActiveUser(userId);
+        sensitiveActionVerificationService.verifyCode(userId, verificationCode);
         String token = sensitiveActionTokenService.issueToken(userId);
         auditLogService.record(
                 SecurityAuditRecord.builder()

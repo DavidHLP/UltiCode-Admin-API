@@ -93,6 +93,25 @@ public class AppProperties {
 
         @NotNull private Duration verificationCodeTtl = Duration.ofMinutes(10);
 
+        @NotBlank private String sensitiveActionSubject = "Sensitive Action Verification";
+
+        @NotBlank
+        private String sensitiveActionTemplate =
+                """
+                <html>
+                  <body style="font-family: Arial, sans-serif; color: #333333;">
+                    <h2 style="color: #2c7be5;">Security Verification</h2>
+                    <p>We detected a sensitive operation request for your CodeForge account.</p>
+                    <p>Your verification code is <strong style="font-size: 20px; letter-spacing: 2px;">%s</strong>.</p>
+                    <p>The code is valid for <strong>%d</strong> minutes. If this was not initiated by you, please secure your account.</p>
+                    <hr style="border:none; border-top:1px solid #e0e0e0; margin: 24px 0;">
+                    <p style="font-size: 12px; color: #999999;">This email was sent automatically. Please do not reply.</p>
+                  </body>
+                </html>
+                """;
+
+        @NotNull private Duration sensitiveActionCodeTtl = Duration.ofMinutes(5);
+
         @NotBlank private String passwordResetSubject = "Password Reset Request";
 
         @NotBlank

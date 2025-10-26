@@ -164,13 +164,22 @@ public class AuthController {
         return ApiResponse.success(null);
     }
 
+    @PostMapping("/sensitive-token/code")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ApiResponse<Void> sendSensitiveTokenCode(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        log.debug("用户 {} 请求发送敏感操作验证码", principal.id());
+        authService.sendSensitiveActionCode(principal.id());
+        return ApiResponse.success(null);
+    }
+
     @PostMapping("/sensitive-token")
     public ApiResponse<String> issueSensitiveToken(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody SensitiveActionTokenRequest request) {
         log.debug("用户 {} 请求生成敏感操作令牌", principal.id());
         String token =
-                authService.issueSensitiveActionToken(principal.id(), request.twoFactorCode());
+                authService.issueSensitiveActionToken(principal.id(), request.verificationCode());
         return ApiResponse.success(token);
     }
 

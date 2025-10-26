@@ -32,7 +32,9 @@ public interface AuthService {
 
     void revokeSsoSessions(Long userId, String clientId);
 
-    String issueSensitiveActionToken(Long userId, String twoFactorCode);
+    void sendSensitiveActionCode(Long userId);
+
+    String issueSensitiveActionToken(Long userId, String verificationCode);
 
     boolean verifySensitiveActionToken(Long userId, String token);
 }
