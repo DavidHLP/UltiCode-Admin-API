@@ -2,7 +2,7 @@ package com.david.auth.service;
 
 import com.david.auth.config.AppProperties;
 import com.david.auth.entity.User;
-import com.david.auth.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.common.security.SensitiveDataMasker;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;

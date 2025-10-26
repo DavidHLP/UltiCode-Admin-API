@@ -18,7 +18,7 @@ import com.david.contest.dto.PageResult;
 import com.david.contest.dto.ProblemSummaryOption;
 import com.david.contest.dto.UserSummaryOption;
 import com.david.contest.enums.ContestRegistrationStatus;
-import com.david.contest.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.contest.service.ContestPlanningService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;

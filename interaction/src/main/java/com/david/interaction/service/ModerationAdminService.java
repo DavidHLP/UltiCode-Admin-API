@@ -14,7 +14,7 @@ import com.david.interaction.dto.PageResult;
 import com.david.interaction.entity.Comment;
 import com.david.interaction.entity.ModerationAction;
 import com.david.interaction.entity.ModerationTask;
-import com.david.interaction.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.interaction.mapper.CommentMapper;
 import com.david.interaction.mapper.ModerationTaskMapper;
 import java.time.LocalDateTime;

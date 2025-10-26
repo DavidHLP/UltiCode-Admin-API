@@ -7,7 +7,7 @@ import com.david.auth.dto.RegisterRequest;
 import com.david.auth.entity.Role;
 import com.david.auth.entity.User;
 import com.david.auth.entity.UserRole;
-import com.david.auth.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.auth.mapper.RoleMapper;
 import com.david.auth.mapper.UserMapper;
 import com.david.auth.mapper.UserRoleMapper;

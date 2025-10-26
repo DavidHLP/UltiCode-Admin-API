@@ -31,7 +31,7 @@ import com.david.contest.enums.ContestRegistrationMode;
 import com.david.contest.enums.ContestRegistrationSource;
 import com.david.contest.enums.ContestRegistrationStatus;
 import com.david.contest.enums.ContestStatus;
-import com.david.contest.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.contest.mapper.ContestMapper;
 import com.david.contest.mapper.ContestParticipantMapper;
 import com.david.contest.mapper.ContestProblemMapper;

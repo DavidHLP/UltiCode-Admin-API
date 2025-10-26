@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.david.admin.dto.AuthTokenView;
 import com.david.admin.entity.AuthToken;
-import com.david.admin.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.admin.mapper.AuthTokenMapper;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.security.AuditAction;

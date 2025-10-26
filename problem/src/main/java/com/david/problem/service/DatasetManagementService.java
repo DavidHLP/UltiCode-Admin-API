@@ -13,7 +13,7 @@ import com.david.problem.entity.Dataset;
 import com.david.problem.entity.Problem;
 import com.david.problem.entity.Testcase;
 import com.david.problem.entity.TestcaseGroup;
-import com.david.problem.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.problem.mapper.DatasetMapper;
 import com.david.problem.mapper.ProblemMapper;
 import com.david.problem.mapper.TestcaseGroupMapper;

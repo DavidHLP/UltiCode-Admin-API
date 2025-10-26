@@ -1,7 +1,7 @@
 package com.david.auth.service.impl;
 
 import com.david.auth.config.AppProperties;
-import com.david.auth.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.auth.service.RegistrationVerificationService;
 
 import java.nio.charset.StandardCharsets;

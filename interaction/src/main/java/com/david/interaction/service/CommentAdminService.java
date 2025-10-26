@@ -13,7 +13,7 @@ import com.david.interaction.dto.ModerationTaskSummaryView;
 import com.david.interaction.dto.PageResult;
 import com.david.interaction.entity.Comment;
 import com.david.interaction.entity.ModerationTask;
-import com.david.interaction.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.interaction.mapper.CommentMapper;
 import com.david.interaction.mapper.ReactionMapper;
 import com.david.interaction.mapper.result.ReactionAggregationRow;

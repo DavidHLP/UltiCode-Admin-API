@@ -1,6 +1,6 @@
 package com.david.admin.service;
 
-import com.david.admin.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 

@@ -27,7 +27,7 @@ import com.david.problem.entity.ProblemLanguageConfig;
 import com.david.problem.entity.ProblemStatement;
 import com.david.problem.entity.ProblemTag;
 import com.david.problem.entity.Tag;
-import com.david.problem.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.problem.mapper.CategoryMapper;
 import com.david.problem.mapper.DatasetMapper;
 import com.david.problem.mapper.DifficultyMapper;

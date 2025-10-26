@@ -10,7 +10,7 @@ import com.david.problem.dto.DifficultyView;
 import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Difficulty;
 import com.david.problem.entity.Problem;
-import com.david.problem.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.problem.mapper.DifficultyMapper;
 import com.david.problem.mapper.ProblemMapper;
 import jakarta.annotation.Nullable;

@@ -18,7 +18,7 @@ import com.david.contest.entity.ContestProblem;
 import com.david.contest.entity.Submission;
 import com.david.contest.entity.UserProblemBestView;
 import com.david.contest.enums.ContestKind;
-import com.david.contest.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.contest.mapper.ContestMapper;
 import com.david.contest.mapper.ContestProblemMapper;
 import com.david.contest.mapper.SubmissionMapper;

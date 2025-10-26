@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.david.interaction.entity.ModerationAction;
 import com.david.interaction.entity.ModerationTask;
-import com.david.interaction.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.interaction.mapper.ModerationActionMapper;
 import com.david.interaction.mapper.ModerationTaskMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;

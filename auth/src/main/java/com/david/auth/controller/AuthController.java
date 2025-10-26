@@ -15,7 +15,7 @@ import com.david.auth.dto.TokenIntrospectRequest;
 import com.david.auth.dto.TokenIntrospectResponse;
 import com.david.auth.dto.TwoFactorSetupResponse;
 import com.david.auth.dto.UserProfileDto;
-import com.david.auth.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.auth.security.TokenSessionManager;
 import com.david.auth.security.UserPrincipal;
 import com.david.auth.service.AuthService;

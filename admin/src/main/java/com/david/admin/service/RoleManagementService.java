@@ -12,7 +12,7 @@ import com.david.admin.entity.Permission;
 import com.david.admin.entity.Role;
 import com.david.admin.entity.RolePermission;
 import com.david.admin.entity.UserRole;
-import com.david.admin.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.admin.mapper.PermissionMapper;
 import com.david.admin.mapper.RoleMapper;
 import com.david.admin.mapper.RolePermissionMapper;

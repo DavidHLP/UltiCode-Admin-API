@@ -11,7 +11,7 @@ import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Language;
 import com.david.problem.entity.ProblemLanguageConfig;
 import com.david.problem.entity.ProblemStatement;
-import com.david.problem.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.problem.mapper.LanguageMapper;
 import com.david.problem.mapper.ProblemLanguageConfigMapper;
 import com.david.problem.mapper.ProblemStatementMapper;

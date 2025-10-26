@@ -11,7 +11,7 @@ import com.david.auth.dto.TwoFactorSetupResponse;
 import com.david.auth.entity.TokenKind;
 import com.david.auth.entity.SsoSession;
 import com.david.auth.entity.User;
-import com.david.auth.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.auth.security.JwtService;
 import com.david.auth.service.AuthService;
 import com.david.auth.service.AuditLogService;

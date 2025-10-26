@@ -7,7 +7,7 @@ import com.david.admin.dto.PermissionDto;
 import com.david.admin.dto.PermissionUpdateRequest;
 import com.david.admin.dto.PermissionView;
 import com.david.admin.entity.Permission;
-import com.david.admin.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.admin.mapper.PermissionMapper;
 import com.david.common.forward.ForwardedUser;
 import com.david.common.security.AuditAction;

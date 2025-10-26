@@ -8,7 +8,7 @@ import com.david.interaction.dto.SensitiveWordQuery;
 import com.david.interaction.dto.SensitiveWordUpsertRequest;
 import com.david.interaction.dto.SensitiveWordView;
 import com.david.interaction.entity.SensitiveWord;
-import com.david.interaction.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.interaction.mapper.SensitiveWordMapper;
 import com.david.interaction.service.model.SensitiveWordAnalysisResult;
 import java.time.LocalDateTime;

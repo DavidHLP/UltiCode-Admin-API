@@ -10,7 +10,7 @@ import com.david.problem.dto.TagView;
 import com.david.problem.dto.PageResult;
 import com.david.problem.entity.ProblemTag;
 import com.david.problem.entity.Tag;
-import com.david.problem.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.problem.mapper.ProblemTagMapper;
 import com.david.problem.mapper.TagMapper;
 import jakarta.annotation.Nullable;

@@ -28,7 +28,7 @@ import com.david.judge.entity.SubmissionTest;
 import com.david.judge.entity.Testcase;
 import com.david.judge.entity.TestcaseGroup;
 import com.david.judge.entity.User;
-import com.david.judge.exception.BusinessException;
+import com.david.common.http.exception.BusinessException;
 import com.david.judge.mapper.FileRecordMapper;
 import com.david.judge.mapper.JudgeJobMapper;
 import com.david.judge.mapper.JudgeNodeMapper;
