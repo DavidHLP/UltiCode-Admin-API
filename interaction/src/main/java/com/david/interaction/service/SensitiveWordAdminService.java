@@ -3,14 +3,20 @@ package com.david.interaction.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.core.exception.BusinessException;
 import com.david.interaction.dto.PageResult;
 import com.david.interaction.dto.SensitiveWordQuery;
 import com.david.interaction.dto.SensitiveWordUpsertRequest;
 import com.david.interaction.dto.SensitiveWordView;
 import com.david.interaction.entity.SensitiveWord;
-import com.david.core.exception.BusinessException;
 import com.david.interaction.mapper.SensitiveWordMapper;
 import com.david.interaction.service.model.SensitiveWordAnalysisResult;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,10 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Service
 public class SensitiveWordAdminService {
@@ -47,9 +49,10 @@ public class SensitiveWordAdminService {
         if (StringUtils.hasText(query.keyword())) {
             String keyword = query.keyword().trim();
             wrapper.and(
-                    w -> w.like(SensitiveWord::getWord, keyword)
-                            .or()
-                            .like(SensitiveWord::getDescription, keyword));
+                    w ->
+                            w.like(SensitiveWord::getWord, keyword)
+                                    .or()
+                                    .like(SensitiveWord::getDescription, keyword));
         }
         if (StringUtils.hasText(query.category())) {
             wrapper.eq(SensitiveWord::getCategory, query.category().trim());
@@ -65,8 +68,7 @@ public class SensitiveWordAdminService {
         Page<SensitiveWord> result = sensitiveWordMapper.selectPage(pager, wrapper);
         List<SensitiveWordView> items = result.getRecords().stream().map(this::toView).toList();
 
-        return new PageResult<>(
-                items, result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Transactional
@@ -74,6 +76,16 @@ public class SensitiveWordAdminService {
         ensureWordUnique(request.word(), null);
 
         SensitiveWord entity = new SensitiveWord();
+        setSensitiveWord(request, entity);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        sensitiveWordMapper.insert(entity);
+        invalidateActiveWordCache();
+        return toView(entity);
+    }
+
+    private void setSensitiveWord(SensitiveWordUpsertRequest request, SensitiveWord entity) {
         entity.setWord(request.word().trim());
         entity.setCategory(
                 StringUtils.hasText(request.category()) ? request.category().trim() : null);
@@ -83,12 +95,6 @@ public class SensitiveWordAdminService {
         entity.setDescription(
                 StringUtils.hasText(request.description()) ? request.description().trim() : null);
         entity.setActive(request.active() == null ? Boolean.TRUE : request.active());
-        entity.setCreatedAt(LocalDateTime.now());
-        entity.setUpdatedAt(LocalDateTime.now());
-
-        sensitiveWordMapper.insert(entity);
-        invalidateActiveWordCache();
-        return toView(entity);
     }
 
     @Transactional
@@ -99,15 +105,7 @@ public class SensitiveWordAdminService {
         }
         ensureWordUnique(request.word(), id);
 
-        existing.setWord(request.word().trim());
-        existing.setCategory(
-                StringUtils.hasText(request.category()) ? request.category().trim() : null);
-        existing.setLevel(request.level().trim().toLowerCase(Locale.ROOT));
-        existing.setReplacement(
-                StringUtils.hasText(request.replacement()) ? request.replacement().trim() : null);
-        existing.setDescription(
-                StringUtils.hasText(request.description()) ? request.description().trim() : null);
-        existing.setActive(request.active() == null ? Boolean.TRUE : request.active());
+        setSensitiveWord(request, existing);
         existing.setUpdatedAt(LocalDateTime.now());
 
         sensitiveWordMapper.updateById(existing);
@@ -141,10 +139,12 @@ public class SensitiveWordAdminService {
             if (now - activeWordCacheLoadedAt < ACTIVE_WORD_CACHE_TTL_MILLIS) {
                 return cachedActiveWords;
             }
-            List<SensitiveWord> latest = sensitiveWordMapper.selectList(
-                    Wrappers.lambdaQuery(SensitiveWord.class)
-                            .eq(SensitiveWord::getActive, Boolean.TRUE));
-            cachedActiveWords = latest == null || latest.isEmpty() ? List.of() : List.copyOf(latest);
+            List<SensitiveWord> latest =
+                    sensitiveWordMapper.selectList(
+                            Wrappers.lambdaQuery(SensitiveWord.class)
+                                    .eq(SensitiveWord::getActive, Boolean.TRUE));
+            cachedActiveWords =
+                    latest == null || latest.isEmpty() ? List.of() : List.copyOf(latest);
             activeWordCacheLoadedAt = now;
             return cachedActiveWords;
         }
@@ -159,20 +159,24 @@ public class SensitiveWordAdminService {
             return SensitiveWordAnalysisResult.empty();
         }
         String normalizedContent = content.toLowerCase(Locale.ROOT);
-        List<SensitiveWord> matched = activeWords.stream()
-                .filter(word -> containsWord(normalizedContent, word.getWord()))
-                .toList();
+        List<SensitiveWord> matched =
+                activeWords.stream()
+                        .filter(word -> containsWord(normalizedContent, word.getWord()))
+                        .toList();
         if (matched.isEmpty()) {
             return SensitiveWordAnalysisResult.empty();
         }
 
-        Map<String, SensitiveWord> wordIndex = matched.stream()
-                .collect(
-                        Collectors.toMap(
-                                SensitiveWord::getWord, Function.identity(), (a, b) -> a));
+        Map<String, SensitiveWord> wordIndex =
+                matched.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        SensitiveWord::getWord, Function.identity(), (a, b) -> a));
         List<String> hits = new ArrayList<>(wordIndex.keySet());
-        boolean blocked = matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "block"));
-        boolean needReview = matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "review"));
+        boolean blocked =
+                matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "block"));
+        boolean needReview =
+                matched.stream().anyMatch(word -> Objects.equals(word.getLevel(), "review"));
         String riskLevel;
         if (blocked) {
             riskLevel = "high";
@@ -196,8 +200,8 @@ public class SensitiveWordAdminService {
         if (!StringUtils.hasText(word)) {
             return;
         }
-        LambdaQueryWrapper<SensitiveWord> wrapper = Wrappers.lambdaQuery(SensitiveWord.class).eq(SensitiveWord::getWord,
-                word.trim());
+        LambdaQueryWrapper<SensitiveWord> wrapper =
+                Wrappers.lambdaQuery(SensitiveWord.class).eq(SensitiveWord::getWord, word.trim());
         if (excludeId != null) {
             wrapper.ne(SensitiveWord::getId, excludeId);
         }

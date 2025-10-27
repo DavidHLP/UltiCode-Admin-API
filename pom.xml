@@ -174,6 +174,51 @@
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jwt.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.password</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.forward</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.http</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.exception</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.mybatis</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>service-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.email</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.david</groupId>
+                <artifactId>commons.core.specifications</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

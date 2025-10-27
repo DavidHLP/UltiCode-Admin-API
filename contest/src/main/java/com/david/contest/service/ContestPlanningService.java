@@ -18,6 +18,8 @@ import com.david.contest.dto.ContestRegistrationView;
 import com.david.contest.dto.ContestSummaryView;
 import com.david.contest.dto.ContestUpsertRequest;
 import com.david.contest.dto.PageResult;
+import com.david.contest.dto.ProblemSummaryOption;
+import com.david.contest.dto.UserSummaryOption;
 import com.david.contest.entity.Contest;
 import com.david.contest.entity.ContestParticipant;
 import com.david.contest.entity.ContestProblem;
@@ -31,7 +33,6 @@ import com.david.contest.enums.ContestRegistrationMode;
 import com.david.contest.enums.ContestRegistrationSource;
 import com.david.contest.enums.ContestRegistrationStatus;
 import com.david.contest.enums.ContestStatus;
-import com.david.core.exception.BusinessException;
 import com.david.contest.mapper.ContestMapper;
 import com.david.contest.mapper.ContestParticipantMapper;
 import com.david.contest.mapper.ContestProblemMapper;
@@ -41,20 +42,10 @@ import com.david.contest.mapper.ProblemStatementMapper;
 import com.david.contest.mapper.ProblemStatsViewMapper;
 import com.david.contest.mapper.SubmissionMapper;
 import com.david.contest.mapper.UserMapper;
-import com.david.contest.dto.ProblemSummaryOption;
-import com.david.contest.dto.UserSummaryOption;
+import com.david.core.exception.BusinessException;
+
 import jakarta.validation.Valid;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.EnumSet;
-import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -62,6 +53,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -145,7 +140,8 @@ public class ContestPlanningService {
         Page<Contest> result = contestMapper.selectPage(pager, query);
         List<Contest> records = result.getRecords();
         if (CollectionUtils.isEmpty(records)) {
-            return new PageResult<>(List.of(), result.getTotal(), result.getCurrent(), result.getSize());
+            return new PageResult<>(
+                    List.of(), result.getTotal(), result.getCurrent(), result.getSize());
         }
 
         List<Long> contestIds = records.stream().map(Contest::getId).toList();
@@ -194,17 +190,22 @@ public class ContestPlanningService {
         validateContestTime(request.startTime(), request.endTime());
         ContestKind kind = ContestKind.fromCode(request.kind());
         Contest contest = new Contest();
+        setContest(request, kind, contest);
+        contest.setCreatedBy(request.createdBy());
+        applyContestConfig(contest, request);
+        contestMapper.insert(contest);
+        log.info("创建比赛成功，ID={}", contest.getId());
+        return getContest(contest.getId());
+    }
+
+    private void setContest(
+            @Valid ContestUpsertRequest request, ContestKind kind, Contest contest) {
         contest.setTitle(request.title().trim());
         contest.setDescriptionMd(request.descriptionMd());
         contest.setKind(kind.getCode());
         contest.setStartTime(request.startTime());
         contest.setEndTime(request.endTime());
         contest.setIsVisible(Boolean.TRUE.equals(request.visible()) ? 1 : 0);
-        contest.setCreatedBy(request.createdBy());
-        applyContestConfig(contest, request);
-        contestMapper.insert(contest);
-        log.info("创建比赛成功，ID={}", contest.getId());
-        return getContest(contest.getId());
     }
 
     public ContestDetailView updateContest(Long contestId, @Valid ContestUpsertRequest request) {
@@ -215,12 +216,7 @@ public class ContestPlanningService {
         validateContestTime(request.startTime(), request.endTime());
         ContestKind kind = ContestKind.fromCode(request.kind());
 
-        contest.setTitle(request.title().trim());
-        contest.setDescriptionMd(request.descriptionMd());
-        contest.setKind(kind.getCode());
-        contest.setStartTime(request.startTime());
-        contest.setEndTime(request.endTime());
-        contest.setIsVisible(Boolean.TRUE.equals(request.visible()) ? 1 : 0);
+        setContest(request, kind, contest);
         if (request.createdBy() != null) {
             contest.setCreatedBy(request.createdBy());
         }
@@ -237,12 +233,14 @@ public class ContestPlanningService {
         }
         contestMapper.deleteById(contestId);
 
-        LambdaQueryWrapper<ContestProblem> deleteProblems = Wrappers.lambdaQuery(ContestProblem.class)
-                .eq(ContestProblem::getContestId, contestId);
+        LambdaQueryWrapper<ContestProblem> deleteProblems =
+                Wrappers.lambdaQuery(ContestProblem.class)
+                        .eq(ContestProblem::getContestId, contestId);
         contestProblemMapper.delete(deleteProblems);
 
-        LambdaQueryWrapper<ContestParticipant> deleteParticipants = Wrappers.lambdaQuery(ContestParticipant.class)
-                .eq(ContestParticipant::getContestId, contestId);
+        LambdaQueryWrapper<ContestParticipant> deleteParticipants =
+                Wrappers.lambdaQuery(ContestParticipant.class)
+                        .eq(ContestParticipant::getContestId, contestId);
         contestParticipantMapper.delete(deleteParticipants);
         log.info("删除比赛成功，ID={}", contestId);
     }
@@ -251,13 +249,15 @@ public class ContestPlanningService {
             Long contestId, ContestProblemsUpsertRequest request) {
         requireContest(contestId);
         List<ContestProblemUpsertRequest> problems = request.problems();
-        List<Long> problemIds = problems.stream().map(ContestProblemUpsertRequest::problemId).toList();
+        List<Long> problemIds =
+                problems.stream().map(ContestProblemUpsertRequest::problemId).toList();
         if (hasDuplicate(problemIds)) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "题目不能重复添加");
         }
 
-        LambdaQueryWrapper<ContestProblem> deleteExisting = Wrappers.lambdaQuery(ContestProblem.class)
-                .eq(ContestProblem::getContestId, contestId);
+        LambdaQueryWrapper<ContestProblem> deleteExisting =
+                Wrappers.lambdaQuery(ContestProblem.class)
+                        .eq(ContestProblem::getContestId, contestId);
         contestProblemMapper.delete(deleteExisting);
 
         for (ContestProblemUpsertRequest item : problems) {
@@ -275,9 +275,10 @@ public class ContestPlanningService {
 
     public void removeContestProblem(Long contestId, Long problemId) {
         requireContest(contestId);
-        LambdaQueryWrapper<ContestProblem> delete = Wrappers.lambdaQuery(ContestProblem.class)
-                .eq(ContestProblem::getContestId, contestId)
-                .eq(ContestProblem::getProblemId, problemId);
+        LambdaQueryWrapper<ContestProblem> delete =
+                Wrappers.lambdaQuery(ContestProblem.class)
+                        .eq(ContestProblem::getContestId, contestId)
+                        .eq(ContestProblem::getProblemId, problemId);
         contestProblemMapper.delete(delete);
         log.info("移除比赛题目，contestId={}, problemId={}", contestId, problemId);
     }
@@ -290,22 +291,25 @@ public class ContestPlanningService {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "参赛者列表存在重复用户");
         }
 
-        List<ContestParticipant> existing = contestParticipantMapper.selectList(
-                Wrappers.lambdaQuery(ContestParticipant.class)
-                        .eq(ContestParticipant::getContestId, contestId)
-                        .in(ContestParticipant::getUserId, userIds));
-        Set<Long> existingUserIds = existing.stream().map(ContestParticipant::getUserId).collect(Collectors.toSet());
+        List<ContestParticipant> existing =
+                contestParticipantMapper.selectList(
+                        Wrappers.lambdaQuery(ContestParticipant.class)
+                                .eq(ContestParticipant::getContestId, contestId)
+                                .in(ContestParticipant::getUserId, userIds));
+        Set<Long> existingUserIds =
+                existing.stream().map(ContestParticipant::getUserId).collect(Collectors.toSet());
 
         int incoming = (int) userIds.stream().filter(id -> !existingUserIds.contains(id)).count();
         assertParticipantCapacity(contest, incoming);
 
-        Map<Long, ContestRegistration> registrationMap = contestRegistrationMapper
-                .selectList(
-                        Wrappers.lambdaQuery(ContestRegistration.class)
-                                .eq(ContestRegistration::getContestId, contestId)
-                                .in(ContestRegistration::getUserId, userIds))
-                .stream()
-                .collect(Collectors.toMap(ContestRegistration::getUserId, reg -> reg));
+        Map<Long, ContestRegistration> registrationMap =
+                contestRegistrationMapper
+                        .selectList(
+                                Wrappers.lambdaQuery(ContestRegistration.class)
+                                        .eq(ContestRegistration::getContestId, contestId)
+                                        .in(ContestRegistration::getUserId, userIds))
+                        .stream()
+                        .collect(Collectors.toMap(ContestRegistration::getUserId, reg -> reg));
 
         LocalDateTime now = LocalDateTime.now();
         for (Long userId : userIds) {
@@ -318,8 +322,7 @@ public class ContestPlanningService {
             participant.setRegisteredAt(now);
             contestParticipantMapper.insert(participant);
 
-            upsertApprovedRegistration(
-                    contestId, userId, operatorId, registrationMap.get(userId), "后台加赛", false);
+            upsertApprovedRegistration(contestId, userId, operatorId, registrationMap.get(userId));
         }
         log.info("批量新增参赛者，contestId={}, size={}", contestId, userIds.size());
         return loadContestParticipants(contestId);
@@ -327,14 +330,16 @@ public class ContestPlanningService {
 
     public void removeParticipant(Long contestId, Long userId, Long operatorId) {
         requireContest(contestId);
-        LambdaQueryWrapper<ContestParticipant> delete = Wrappers.lambdaQuery(ContestParticipant.class)
-                .eq(ContestParticipant::getContestId, contestId)
-                .eq(ContestParticipant::getUserId, userId);
+        LambdaQueryWrapper<ContestParticipant> delete =
+                Wrappers.lambdaQuery(ContestParticipant.class)
+                        .eq(ContestParticipant::getContestId, contestId)
+                        .eq(ContestParticipant::getUserId, userId);
         contestParticipantMapper.delete(delete);
-        ContestRegistration registration = contestRegistrationMapper.selectOne(
-                Wrappers.lambdaQuery(ContestRegistration.class)
-                        .eq(ContestRegistration::getContestId, contestId)
-                        .eq(ContestRegistration::getUserId, userId));
+        ContestRegistration registration =
+                contestRegistrationMapper.selectOne(
+                        Wrappers.lambdaQuery(ContestRegistration.class)
+                                .eq(ContestRegistration::getContestId, contestId)
+                                .eq(ContestRegistration::getUserId, userId));
         if (registration != null
                 && !ContestRegistrationStatus.CANCELLED
                         .getCode()
@@ -353,51 +358,60 @@ public class ContestPlanningService {
             Long contestId, ContestRegistrationStatus status, int page, int size) {
         requireContest(contestId);
         Page<ContestRegistration> pager = new Page<>(page, size);
-        LambdaQueryWrapper<ContestRegistration> query = Wrappers.lambdaQuery(ContestRegistration.class)
-                .eq(ContestRegistration::getContestId, contestId)
-                .orderByDesc(ContestRegistration::getCreatedAt)
-                .orderByDesc(ContestRegistration::getId);
+        LambdaQueryWrapper<ContestRegistration> query =
+                Wrappers.lambdaQuery(ContestRegistration.class)
+                        .eq(ContestRegistration::getContestId, contestId)
+                        .orderByDesc(ContestRegistration::getCreatedAt)
+                        .orderByDesc(ContestRegistration::getId);
         if (status != null) {
             query.eq(ContestRegistration::getStatus, status.getCode());
         }
         Page<ContestRegistration> result = contestRegistrationMapper.selectPage(pager, query);
         if (CollectionUtils.isEmpty(result.getRecords())) {
-            return new PageResult<>(List.of(), result.getTotal(), result.getCurrent(), result.getSize());
+            return new PageResult<>(
+                    List.of(), result.getTotal(), result.getCurrent(), result.getSize());
         }
-        Set<Long> userIds = result.getRecords().stream().map(ContestRegistration::getUserId)
-                .collect(Collectors.toSet());
-        Map<Long, User> userMap = userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(User::getId, user -> user));
-
-        Set<Long> reviewerIds = result.getRecords().stream()
-                .map(ContestRegistration::getReviewedBy)
-                .filter(id -> id != null && id > 0)
-                .collect(Collectors.toSet());
-        Map<Long, User> reviewerMap = reviewerIds.isEmpty()
-                ? Map.of()
-                : userMapper.selectBatchIds(reviewerIds).stream()
+        Set<Long> userIds =
+                result.getRecords().stream()
+                        .map(ContestRegistration::getUserId)
+                        .collect(Collectors.toSet());
+        Map<Long, User> userMap =
+                userMapper.selectByIds(userIds).stream()
                         .collect(Collectors.toMap(User::getId, user -> user));
 
-        List<ContestRegistrationView> items = result.getRecords().stream()
-                .map(
-                        registration -> {
-                            User user = userMap.get(registration.getUserId());
-                            User reviewer = reviewerMap.get(registration.getReviewedBy());
-                            return new ContestRegistrationView(
-                                    registration.getId(),
-                                    registration.getContestId(),
-                                    registration.getUserId(),
-                                    user != null ? user.getUsername() : null,
-                                    user != null ? user.getBio() : null,
-                                    ContestRegistrationStatus.fromCode(registration.getStatus()),
-                                    registration.getSource(),
-                                    registration.getNote(),
-                                    registration.getReviewedBy(),
-                                    reviewer != null ? reviewer.getUsername() : null,
-                                    registration.getReviewedAt(),
-                                    registration.getCreatedAt());
-                        })
-                .toList();
+        Set<Long> reviewerIds =
+                result.getRecords().stream()
+                        .map(ContestRegistration::getReviewedBy)
+                        .filter(id -> id != null && id > 0)
+                        .collect(Collectors.toSet());
+        Map<Long, User> reviewerMap =
+                reviewerIds.isEmpty()
+                        ? Map.of()
+                        : userMapper.selectByIds(reviewerIds).stream()
+                                .collect(Collectors.toMap(User::getId, user -> user));
+
+        List<ContestRegistrationView> items =
+                result.getRecords().stream()
+                        .map(
+                                registration -> {
+                                    User user = userMap.get(registration.getUserId());
+                                    User reviewer = reviewerMap.get(registration.getReviewedBy());
+                                    return new ContestRegistrationView(
+                                            registration.getId(),
+                                            registration.getContestId(),
+                                            registration.getUserId(),
+                                            user != null ? user.getUsername() : null,
+                                            user != null ? user.getBio() : null,
+                                            ContestRegistrationStatus.fromCode(
+                                                    registration.getStatus()),
+                                            registration.getSource(),
+                                            registration.getNote(),
+                                            registration.getReviewedBy(),
+                                            reviewer != null ? reviewer.getUsername() : null,
+                                            registration.getReviewedAt(),
+                                            registration.getCreatedAt());
+                                })
+                        .toList();
         return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
@@ -413,29 +427,29 @@ public class ContestPlanningService {
                 && now.isAfter(contest.getRegistrationEndTime())) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "报名已结束");
         }
-        ContestRegistrationSource source = request.source() == null ? ContestRegistrationSource.SELF : request.source();
-        ContestRegistrationMode mode = ContestRegistrationMode.fromCode(contest.getRegistrationMode());
+        ContestRegistrationSource source =
+                request.source() == null ? ContestRegistrationSource.SELF : request.source();
+        ContestRegistrationMode mode =
+                ContestRegistrationMode.fromCode(contest.getRegistrationMode());
         if (mode == ContestRegistrationMode.INVITE_ONLY
                 && source == ContestRegistrationSource.SELF) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "当前仅支持邀请报名");
         }
 
-        ContestRegistration existing = contestRegistrationMapper.selectOne(
-                Wrappers.lambdaQuery(ContestRegistration.class)
-                        .eq(ContestRegistration::getContestId, contestId)
-                        .eq(ContestRegistration::getUserId, request.userId()));
+        ContestRegistration existing =
+                contestRegistrationMapper.selectOne(
+                        Wrappers.lambdaQuery(ContestRegistration.class)
+                                .eq(ContestRegistration::getContestId, contestId)
+                                .eq(ContestRegistration::getUserId, request.userId()));
 
-        ContestRegistrationStatus targetStatus = switch (mode) {
-            case OPEN -> ContestRegistrationStatus.APPROVED;
-            case APPROVAL ->
-                source == ContestRegistrationSource.ADMIN
-                        ? ContestRegistrationStatus.APPROVED
-                        : ContestRegistrationStatus.PENDING;
-            case INVITE_ONLY ->
-                source == ContestRegistrationSource.ADMIN
-                        ? ContestRegistrationStatus.APPROVED
-                        : ContestRegistrationStatus.PENDING;
-        };
+        ContestRegistrationStatus targetStatus =
+                switch (mode) {
+                    case OPEN -> ContestRegistrationStatus.APPROVED;
+                    case APPROVAL, INVITE_ONLY ->
+                            source == ContestRegistrationSource.ADMIN
+                                    ? ContestRegistrationStatus.APPROVED
+                                    : ContestRegistrationStatus.PENDING;
+                };
 
         if (existing == null) {
             ContestRegistration toCreate = new ContestRegistration();
@@ -457,7 +471,8 @@ public class ContestPlanningService {
             return toRegistrationView(persisted != null ? persisted : toCreate, contestId);
         }
 
-        ContestRegistrationStatus currentStatus = ContestRegistrationStatus.fromCode(existing.getStatus());
+        ContestRegistrationStatus currentStatus =
+                ContestRegistrationStatus.fromCode(existing.getStatus());
         if (currentStatus == ContestRegistrationStatus.APPROVED) {
             return toRegistrationView(existing, contestId);
         }
@@ -483,14 +498,17 @@ public class ContestPlanningService {
     public List<ContestRegistrationView> decideRegistrations(
             Long contestId, ContestRegistrationDecisionRequest request, Long operatorId) {
         Contest contest = requireContest(contestId);
-        ContestRegistrationStatus target = request.targetStatus() == null ? ContestRegistrationStatus.APPROVED
-                : request.targetStatus();
+        ContestRegistrationStatus target =
+                request.targetStatus() == null
+                        ? ContestRegistrationStatus.APPROVED
+                        : request.targetStatus();
         if (!EnumSet.of(ContestRegistrationStatus.APPROVED, ContestRegistrationStatus.REJECTED)
                 .contains(target)) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "仅支持审批或驳回操作");
         }
 
-        List<ContestRegistration> registrations = contestRegistrationMapper.selectBatchIds(request.registrationIds());
+        List<ContestRegistration> registrations =
+                contestRegistrationMapper.selectByIds(request.registrationIds());
         if (registrations.isEmpty()) {
             return List.of();
         }
@@ -500,11 +518,14 @@ public class ContestPlanningService {
         List<ContestRegistration> toUpdate = new ArrayList<>();
 
         if (target == ContestRegistrationStatus.APPROVED) {
-            long countNeedApprove = registrations.stream()
-                    .filter(reg -> !ContestRegistrationStatus.APPROVED
-                            .getCode()
-                            .equalsIgnoreCase(reg.getStatus()))
-                    .count();
+            long countNeedApprove =
+                    registrations.stream()
+                            .filter(
+                                    reg ->
+                                            !ContestRegistrationStatus.APPROVED
+                                                    .getCode()
+                                                    .equalsIgnoreCase(reg.getStatus()))
+                            .count();
             assertParticipantCapacity(contest, (int) countNeedApprove);
         }
 
@@ -512,7 +533,8 @@ public class ContestPlanningService {
             if (!contestId.equals(registration.getContestId())) {
                 continue;
             }
-            ContestRegistrationStatus current = ContestRegistrationStatus.fromCode(registration.getStatus());
+            ContestRegistrationStatus current =
+                    ContestRegistrationStatus.fromCode(registration.getStatus());
             if (current == target) {
                 updated.add(toRegistrationView(registration, contestId));
                 continue;
@@ -523,7 +545,8 @@ public class ContestPlanningService {
                 continue;
             }
             registration.setStatus(target.getCode());
-            registration.setNote(StringUtils.hasText(request.note()) ? request.note() : registration.getNote());
+            registration.setNote(
+                    StringUtils.hasText(request.note()) ? request.note() : registration.getNote());
             registration.setReviewedBy(operatorId);
             registration.setReviewedAt(now);
             toUpdate.add(registration);
@@ -544,15 +567,21 @@ public class ContestPlanningService {
         }
         if (!toUpdate.isEmpty()) {
             List<Long> refreshIds = toUpdate.stream().map(ContestRegistration::getId).toList();
-            List<ContestRegistration> refreshed = contestRegistrationMapper.selectBatchIds(refreshIds);
-            Map<Long, ContestRegistration> refreshedMap = refreshed.stream()
-                    .collect(Collectors.toMap(ContestRegistration::getId, reg -> reg));
-            updated = updated.stream()
-                    .map(view -> {
-                        ContestRegistration refreshedEntity = refreshedMap.get(view.id());
-                        return refreshedEntity != null ? toRegistrationView(refreshedEntity, contestId) : view;
-                    })
-                    .toList();
+            List<ContestRegistration> refreshed = contestRegistrationMapper.selectByIds(refreshIds);
+            Map<Long, ContestRegistration> refreshedMap =
+                    refreshed.stream()
+                            .collect(Collectors.toMap(ContestRegistration::getId, reg -> reg));
+            updated =
+                    updated.stream()
+                            .map(
+                                    view -> {
+                                        ContestRegistration refreshedEntity =
+                                                refreshedMap.get(view.id());
+                                        return refreshedEntity != null
+                                                ? toRegistrationView(refreshedEntity, contestId)
+                                                : view;
+                                    })
+                            .toList();
         }
         return updated;
     }
@@ -563,18 +592,23 @@ public class ContestPlanningService {
             return List.of();
         }
         int fetchSize = Math.max(limit, 1);
-        List<ProblemStatement> statements = problemStatementMapper.selectList(
-                Wrappers.lambdaQuery(ProblemStatement.class)
-                        .eq(ProblemStatement::getLangCode, DEFAULT_STATEMENT_LANG)
-                        .like(ProblemStatement::getTitle, keyword)
-                        .last("LIMIT " + fetchSize));
+        List<ProblemStatement> statements =
+                problemStatementMapper.selectList(
+                        Wrappers.lambdaQuery(ProblemStatement.class)
+                                .eq(ProblemStatement::getLangCode, DEFAULT_STATEMENT_LANG)
+                                .like(ProblemStatement::getTitle, keyword)
+                                .last("LIMIT " + fetchSize));
         if (statements.isEmpty()) {
             return List.of();
         }
-        Map<Long, Problem> problemMap = problemMapper.selectBatchIds(
-                statements.stream().map(ProblemStatement::getProblemId).collect(Collectors.toSet()))
-                .stream()
-                .collect(Collectors.toMap(Problem::getId, problem -> problem));
+        Map<Long, Problem> problemMap =
+                problemMapper
+                        .selectByIds(
+                                statements.stream()
+                                        .map(ProblemStatement::getProblemId)
+                                        .collect(Collectors.toSet()))
+                        .stream()
+                        .collect(Collectors.toMap(Problem::getId, problem -> problem));
         return statements.stream()
                 .map(
                         statement -> {
@@ -593,32 +627,48 @@ public class ContestPlanningService {
         if (!StringUtils.hasText(keyword)) {
             return List.of();
         }
-        LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class)
-                .like(User::getUsername, keyword)
-                .or(q -> q.like(User::getEmail, keyword))
-                .last("LIMIT " + Math.max(limit, 1));
+        LambdaQueryWrapper<User> query =
+                Wrappers.lambdaQuery(User.class)
+                        .like(User::getUsername, keyword)
+                        .or(q -> q.like(User::getEmail, keyword))
+                        .last("LIMIT " + Math.max(limit, 1));
         return userMapper.selectList(query).stream()
-                .map(user -> new UserSummaryOption(user.getId(), user.getUsername(), user.getBio(), user.getEmail()))
+                .map(
+                        user ->
+                                new UserSummaryOption(
+                                        user.getId(),
+                                        user.getUsername(),
+                                        user.getBio(),
+                                        user.getEmail()))
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public ContestOptionsResponse loadOptions() {
-        List<ContestKindOption> kindOptions = List.of(
-                new ContestKindOption(ContestKind.ICPC.getCode(), ContestKind.ICPC.getDisplayName()),
-                new ContestKindOption(ContestKind.OI.getCode(), ContestKind.OI.getDisplayName()),
-                new ContestKindOption(ContestKind.IOI.getCode(), ContestKind.IOI.getDisplayName()),
-                new ContestKindOption(ContestKind.CF.getCode(), ContestKind.CF.getDisplayName()),
-                new ContestKindOption(ContestKind.ACM.getCode(), ContestKind.ACM.getDisplayName()),
-                new ContestKindOption(ContestKind.CUSTOM.getCode(), ContestKind.CUSTOM.getDisplayName()));
-        List<String> statuses = List.of(
-                ContestStatus.UPCOMING.name(),
-                ContestStatus.RUNNING.name(),
-                ContestStatus.ENDED.name());
-        List<String> registrationModes = List.of(
-                ContestRegistrationMode.OPEN.getCode(),
-                ContestRegistrationMode.APPROVAL.getCode(),
-                ContestRegistrationMode.INVITE_ONLY.getCode());
+        List<ContestKindOption> kindOptions =
+                List.of(
+                        new ContestKindOption(
+                                ContestKind.ICPC.getCode(), ContestKind.ICPC.getDisplayName()),
+                        new ContestKindOption(
+                                ContestKind.OI.getCode(), ContestKind.OI.getDisplayName()),
+                        new ContestKindOption(
+                                ContestKind.IOI.getCode(), ContestKind.IOI.getDisplayName()),
+                        new ContestKindOption(
+                                ContestKind.CF.getCode(), ContestKind.CF.getDisplayName()),
+                        new ContestKindOption(
+                                ContestKind.ACM.getCode(), ContestKind.ACM.getDisplayName()),
+                        new ContestKindOption(
+                                ContestKind.CUSTOM.getCode(), ContestKind.CUSTOM.getDisplayName()));
+        List<String> statuses =
+                List.of(
+                        ContestStatus.UPCOMING.name(),
+                        ContestStatus.RUNNING.name(),
+                        ContestStatus.ENDED.name());
+        List<String> registrationModes =
+                List.of(
+                        ContestRegistrationMode.OPEN.getCode(),
+                        ContestRegistrationMode.APPROVAL.getCode(),
+                        ContestRegistrationMode.INVITE_ONLY.getCode());
         return new ContestOptionsResponse(kindOptions, statuses, registrationModes);
     }
 
@@ -626,11 +676,15 @@ public class ContestPlanningService {
         ContestStatus status = inferStatus(contest, LocalDateTime.now());
         List<ContestProblemView> problems = loadContestProblems(contest.getId());
         List<ContestParticipantView> participants = loadContestParticipants(contest.getId());
-        int pendingRegistrations = contestRegistrationMapper.selectCount(
-                Wrappers.lambdaQuery(ContestRegistration.class)
-                        .eq(ContestRegistration::getContestId, contest.getId())
-                        .eq(ContestRegistration::getStatus, ContestRegistrationStatus.PENDING.getCode()))
-                .intValue();
+        int pendingRegistrations =
+                contestRegistrationMapper
+                        .selectCount(
+                                Wrappers.lambdaQuery(ContestRegistration.class)
+                                        .eq(ContestRegistration::getContestId, contest.getId())
+                                        .eq(
+                                                ContestRegistration::getStatus,
+                                                ContestRegistrationStatus.PENDING.getCode()))
+                        .intValue();
         return new ContestDetailView(
                 contest.getId(),
                 contest.getTitle(),
@@ -646,7 +700,8 @@ public class ContestPlanningService {
                 contest.getMaxParticipants(),
                 contest.getPenaltyPerWrong(),
                 contest.getScoreboardFreezeMinutes(),
-                contest.getHideScoreDuringFreeze() != null && contest.getHideScoreDuringFreeze() == 1,
+                contest.getHideScoreDuringFreeze() != null
+                        && contest.getHideScoreDuringFreeze() == 1,
                 contest.getCreatedBy(),
                 contest.getCreatedAt(),
                 contest.getUpdatedAt(),
@@ -666,30 +721,34 @@ public class ContestPlanningService {
         contest.setRegistrationStartTime(request.registrationStartTime());
         contest.setRegistrationEndTime(request.registrationEndTime());
         contest.setMaxParticipants(request.maxParticipants());
-        int penalty = request.penaltyPerWrong() != null && request.penaltyPerWrong() > 0
-                ? request.penaltyPerWrong()
-                : 20;
+        int penalty =
+                request.penaltyPerWrong() != null && request.penaltyPerWrong() > 0
+                        ? request.penaltyPerWrong()
+                        : 20;
         contest.setPenaltyPerWrong(penalty);
-        int freezeMinutes = request.scoreboardFreezeMinutes() != null && request.scoreboardFreezeMinutes() >= 0
-                ? request.scoreboardFreezeMinutes()
-                : 0;
+        int freezeMinutes =
+                request.scoreboardFreezeMinutes() != null && request.scoreboardFreezeMinutes() >= 0
+                        ? request.scoreboardFreezeMinutes()
+                        : 0;
         contest.setScoreboardFreezeMinutes(freezeMinutes);
-        contest.setHideScoreDuringFreeze(Boolean.TRUE.equals(request.hideScoreDuringFreeze()) ? 1 : 0);
+        contest.setHideScoreDuringFreeze(
+                Boolean.TRUE.equals(request.hideScoreDuringFreeze()) ? 1 : 0);
     }
 
     private List<ContestProblemView> loadContestProblems(Long contestId) {
-        List<ContestProblem> relations = contestProblemMapper.selectList(
-                Wrappers.lambdaQuery(ContestProblem.class)
-                        .eq(ContestProblem::getContestId, contestId)
-                        .orderByAsc(ContestProblem::getOrderNo, ContestProblem::getProblemId));
+        List<ContestProblem> relations =
+                contestProblemMapper.selectList(
+                        Wrappers.lambdaQuery(ContestProblem.class)
+                                .eq(ContestProblem::getContestId, contestId)
+                                .orderByAsc(
+                                        ContestProblem::getOrderNo, ContestProblem::getProblemId));
         if (relations.isEmpty()) {
             return List.of();
         }
         List<Long> problemIds = relations.stream().map(ContestProblem::getProblemId).toList();
-        Map<Long, Problem> problemMap = problemMapper
-                .selectBatchIds(problemIds)
-                .stream()
-                .collect(Collectors.toMap(Problem::getId, problem -> problem));
+        Map<Long, Problem> problemMap =
+                problemMapper.selectByIds(problemIds).stream()
+                        .collect(Collectors.toMap(Problem::getId, problem -> problem));
 
         Map<Long, ProblemStatement> statementMap = loadProblemStatements(problemIds);
         Map<Long, ProblemStatsView> statsMap = loadProblemStats(problemIds);
@@ -713,8 +772,11 @@ public class ContestPlanningService {
                             stats != null ? stats.getSolvedCount() : null,
                             stats != null ? stats.getAcceptanceRate() : null));
         }
-        views.sort(Comparator.comparing(ContestProblemView::orderNo, Comparator.nullsFirst(Integer::compareTo))
-                .thenComparing(ContestProblemView::problemId));
+        views.sort(
+                Comparator.comparing(
+                                ContestProblemView::orderNo,
+                                Comparator.nullsFirst(Integer::compareTo))
+                        .thenComparing(ContestProblemView::problemId));
         return views;
     }
 
@@ -722,39 +784,48 @@ public class ContestPlanningService {
         if (problemIds.isEmpty()) {
             return Map.of();
         }
-        List<ProblemStatement> statements = problemStatementMapper.selectList(
-                Wrappers.lambdaQuery(ProblemStatement.class)
-                        .in(ProblemStatement::getProblemId, problemIds)
-                        .eq(ProblemStatement::getLangCode, DEFAULT_STATEMENT_LANG));
+        List<ProblemStatement> statements =
+                problemStatementMapper.selectList(
+                        Wrappers.lambdaQuery(ProblemStatement.class)
+                                .in(ProblemStatement::getProblemId, problemIds)
+                                .eq(ProblemStatement::getLangCode, DEFAULT_STATEMENT_LANG));
         return statements.stream()
-                .collect(Collectors.toMap(ProblemStatement::getProblemId, statement -> statement,
-                        (left, right) -> left));
+                .collect(
+                        Collectors.toMap(
+                                ProblemStatement::getProblemId,
+                                statement -> statement,
+                                (left, right) -> left));
     }
 
     private Map<Long, ProblemStatsView> loadProblemStats(List<Long> problemIds) {
         if (problemIds.isEmpty()) {
             return Map.of();
         }
-        List<ProblemStatsView> stats = problemStatsViewMapper.selectList(
-                Wrappers.lambdaQuery(ProblemStatsView.class)
-                        .in(ProblemStatsView::getProblemId, problemIds));
+        List<ProblemStatsView> stats =
+                problemStatsViewMapper.selectList(
+                        Wrappers.lambdaQuery(ProblemStatsView.class)
+                                .in(ProblemStatsView::getProblemId, problemIds));
         return stats.stream()
-                .collect(Collectors.toMap(ProblemStatsView::getProblemId, view -> view, (left, right) -> left));
+                .collect(
+                        Collectors.toMap(
+                                ProblemStatsView::getProblemId,
+                                view -> view,
+                                (left, right) -> left));
     }
 
     private List<ContestParticipantView> loadContestParticipants(Long contestId) {
-        List<ContestParticipant> relations = contestParticipantMapper.selectList(
-                Wrappers.lambdaQuery(ContestParticipant.class)
-                        .eq(ContestParticipant::getContestId, contestId)
-                        .orderByAsc(ContestParticipant::getRegisteredAt));
+        List<ContestParticipant> relations =
+                contestParticipantMapper.selectList(
+                        Wrappers.lambdaQuery(ContestParticipant.class)
+                                .eq(ContestParticipant::getContestId, contestId)
+                                .orderByAsc(ContestParticipant::getRegisteredAt));
         if (relations.isEmpty()) {
             return List.of();
         }
         List<Long> userIds = relations.stream().map(ContestParticipant::getUserId).toList();
-        Map<Long, User> userMap = userMapper
-                .selectBatchIds(userIds)
-                .stream()
-                .collect(Collectors.toMap(User::getId, user -> user));
+        Map<Long, User> userMap =
+                userMapper.selectByIds(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, user -> user));
 
         List<ContestParticipantView> views = new ArrayList<>(relations.size());
         for (ContestParticipant relation : relations) {
@@ -798,35 +869,32 @@ public class ContestPlanningService {
     }
 
     private Map<Long, Integer> loadContestProblemCounts(List<Long> contestIds) {
-        if (contestIds.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        QueryWrapper<ContestProblem> query = Wrappers.query();
-        query.select("contest_id", "COUNT(1) AS cnt");
-        query.in("contest_id", contestIds);
-        query.groupBy("contest_id");
-        List<Map<String, Object>> rows = contestProblemMapper.selectMaps(query);
-        Map<Long, Integer> result = new LinkedHashMap<>();
-        for (Map<String, Object> row : rows) {
-            Long contestId = ((Number) row.get("contest_id")).longValue();
-            Integer count = ((Number) row.get("cnt")).intValue();
-            result.put(contestId, count);
-        }
-        return result;
+        return loadContestEntityCounts(
+                contestIds, contestProblemMapper, ContestProblem::getContestId);
     }
 
     private Map<Long, Integer> loadContestParticipantCounts(List<Long> contestIds) {
+        return loadContestEntityCounts(
+                contestIds, contestParticipantMapper, ContestParticipant::getContestId);
+    }
+
+    private <T> Map<Long, Integer> loadContestEntityCounts(
+            List<Long> contestIds,
+            com.baomidou.mybatisplus.core.mapper.BaseMapper<T> mapper,
+            java.util.function.Function<T, Long> contestIdExtractor) {
         if (contestIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        QueryWrapper<ContestParticipant> query = Wrappers.query();
-        query.select("contest_id", "COUNT(1) AS cnt");
-        query.in("contest_id", contestIds);
-        query.groupBy("contest_id");
-        List<Map<String, Object>> rows = contestParticipantMapper.selectMaps(query);
+        String tableName = mapper.getClass().getSimpleName().replace("Mapper", "").toLowerCase();
+        String contestIdColumn = "contest_id";
+        QueryWrapper<T> query = Wrappers.query();
+        query.select(contestIdColumn, "COUNT(1) AS cnt");
+        query.in(contestIdColumn, contestIds);
+        query.groupBy(contestIdColumn);
+        List<Map<String, Object>> rows = mapper.selectMaps(query);
         Map<Long, Integer> result = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
-            Long contestId = ((Number) row.get("contest_id")).longValue();
+            Long contestId = ((Number) row.get(contestIdColumn)).longValue();
             Integer count = ((Number) row.get("cnt")).intValue();
             result.put(contestId, count);
         }
@@ -864,13 +932,16 @@ public class ContestPlanningService {
     }
 
     private boolean hasDuplicate(List<Long> values) {
-        return values.size() != values.stream().collect(Collectors.toSet()).size();
+        return values.size() != new HashSet<>(values).size();
     }
 
-    private ContestRegistrationView toRegistrationView(ContestRegistration registration, Long contestId) {
+    private ContestRegistrationView toRegistrationView(
+            ContestRegistration registration, Long contestId) {
         User user = userMapper.selectById(registration.getUserId());
-        User reviewer = registration.getReviewedBy() == null ? null
-                : userMapper.selectById(registration.getReviewedBy());
+        User reviewer =
+                registration.getReviewedBy() == null
+                        ? null
+                        : userMapper.selectById(registration.getReviewedBy());
         return new ContestRegistrationView(
                 registration.getId(),
                 contestId,
@@ -887,10 +958,11 @@ public class ContestPlanningService {
     }
 
     private void ensureParticipantRecord(Long contestId, Long userId, LocalDateTime registeredAt) {
-        ContestParticipant existing = contestParticipantMapper.selectOne(
-                Wrappers.lambdaQuery(ContestParticipant.class)
-                        .eq(ContestParticipant::getContestId, contestId)
-                        .eq(ContestParticipant::getUserId, userId));
+        ContestParticipant existing =
+                contestParticipantMapper.selectOne(
+                        Wrappers.lambdaQuery(ContestParticipant.class)
+                                .eq(ContestParticipant::getContestId, contestId)
+                                .eq(ContestParticipant::getUserId, userId));
         if (existing != null) {
             return;
         }
@@ -905,34 +977,28 @@ public class ContestPlanningService {
         if (contest.getMaxParticipants() == null || additionalParticipants <= 0) {
             return;
         }
-        int currentCount = contestParticipantMapper.selectCount(
-                Wrappers.lambdaQuery(ContestParticipant.class)
-                        .eq(ContestParticipant::getContestId, contest.getId()))
-                .intValue();
+        int currentCount =
+                contestParticipantMapper
+                        .selectCount(
+                                Wrappers.lambdaQuery(ContestParticipant.class)
+                                        .eq(ContestParticipant::getContestId, contest.getId()))
+                        .intValue();
         if (currentCount + additionalParticipants > contest.getMaxParticipants()) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "参赛人数超过上限");
         }
     }
 
     private void upsertApprovedRegistration(
-            Long contestId,
-            Long userId,
-            Long operatorId,
-            ContestRegistration existing,
-            String fallbackNote,
-            boolean ensureParticipant) {
+            Long contestId, Long userId, Long operatorId, ContestRegistration existing) {
         LocalDateTime now = LocalDateTime.now();
         if (existing != null) {
             existing.setStatus(ContestRegistrationStatus.APPROVED.getCode());
             existing.setReviewedBy(operatorId);
             existing.setReviewedAt(now);
-            if (!StringUtils.hasText(existing.getNote()) && StringUtils.hasText(fallbackNote)) {
-                existing.setNote(fallbackNote);
+            if (!StringUtils.hasText(existing.getNote()) && StringUtils.hasText("后台加赛")) {
+                existing.setNote("后台加赛");
             }
             contestRegistrationMapper.updateById(existing);
-            if (ensureParticipant) {
-                ensureParticipantRecord(contestId, userId, now);
-            }
             return;
         }
         ContestRegistration registration = new ContestRegistration();
@@ -940,12 +1006,9 @@ public class ContestPlanningService {
         registration.setUserId(userId);
         registration.setStatus(ContestRegistrationStatus.APPROVED.getCode());
         registration.setSource(ContestRegistrationSource.ADMIN.getCode());
-        registration.setNote(fallbackNote);
+        registration.setNote("后台加赛");
         registration.setReviewedBy(operatorId);
         registration.setReviewedAt(now);
         contestRegistrationMapper.insert(registration);
-        if (ensureParticipant) {
-            ensureParticipantRecord(contestId, userId, now);
-        }
     }
 }

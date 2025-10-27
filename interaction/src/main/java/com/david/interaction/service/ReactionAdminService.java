@@ -11,10 +11,12 @@ import com.david.interaction.entity.Reaction;
 import com.david.interaction.entity.SensitiveWord;
 import com.david.interaction.mapper.ReactionMapper;
 import com.david.interaction.service.model.SensitiveWordAnalysisResult;
-import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
 
 @Service
 public class ReactionAdminService {
@@ -57,8 +59,7 @@ public class ReactionAdminService {
                 result.getRecords().stream()
                         .map(reaction -> toView(reaction, activeWords))
                         .toList();
-        return new PageResult<>(
-                items, result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Transactional

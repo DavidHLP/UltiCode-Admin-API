@@ -3,6 +3,7 @@ package com.david.admin.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.admin.dto.PageResult;
 import com.david.admin.dto.RoleDto;
@@ -12,10 +13,10 @@ import com.david.admin.dto.UserView;
 import com.david.admin.entity.Role;
 import com.david.admin.entity.User;
 import com.david.admin.entity.UserRole;
-import com.david.core.exception.BusinessException;
 import com.david.admin.mapper.RoleMapper;
 import com.david.admin.mapper.UserMapper;
 import com.david.admin.mapper.UserRoleMapper;
+import com.david.core.exception.BusinessException;
 import com.david.core.forward.ForwardedUser;
 import com.david.core.security.AuditAction;
 import com.david.core.security.SecurityAuditRecord;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -65,9 +67,10 @@ public class UserManagementService {
         LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class);
         if (keyword != null && !keyword.isBlank()) {
             query.and(
-                    wrapper -> wrapper.like(User::getUsername, keyword)
-                            .or()
-                            .like(User::getEmail, keyword));
+                    wrapper ->
+                            wrapper.like(User::getUsername, keyword)
+                                    .or()
+                                    .like(User::getEmail, keyword));
         }
         if (status != null) {
             query.eq(User::getStatus, status);
@@ -86,10 +89,12 @@ public class UserManagementService {
         if (records == null || records.isEmpty()) {
             return new PageResult<>(Collections.emptyList(), result.getTotal(), page, size);
         }
-        Map<Long, List<Role>> roles = loadRolesByUserIds(records.stream().map(User::getId).toList());
-        List<UserView> items = records.stream()
-                .map(user -> toUserView(user, roles.getOrDefault(user.getId(), List.of())))
-                .toList();
+        Map<Long, List<Role>> roles =
+                loadRolesByUserIds(records.stream().map(User::getId).toList());
+        List<UserView> items =
+                records.stream()
+                        .map(user -> toUserView(user, roles.getOrDefault(user.getId(), List.of())))
+                        .toList();
         return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
@@ -141,7 +146,8 @@ public class UserManagementService {
             ensureUniqueEmail(request.email(), userId);
         }
 
-        LambdaUpdateWrapper<User> update = Wrappers.lambdaUpdate(User.class).eq(User::getId, userId);
+        LambdaUpdateWrapper<User> update =
+                Wrappers.lambdaUpdate(User.class).eq(User::getId, userId);
 
         if (request.username() != null) {
             update.set(User::getUsername, request.username());
@@ -179,40 +185,40 @@ public class UserManagementService {
         return getUser(userId);
     }
 
-    private void ensureUniqueUsername(String username, Long excludeUserId) {
-        if (username == null || username.isBlank()) {
+    private void ensureUniqueField(
+            String value,
+            Long excludeUserId,
+            Function<User, Object> fieldGetter,
+            String errorMessage) {
+        if (value == null || value.isBlank()) {
             return;
         }
-        LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class).eq(User::getUsername, username);
+        LambdaQueryWrapper<User> query =
+                Wrappers.lambdaQuery(User.class).eq((SFunction<User, ?>) fieldGetter, value);
         if (excludeUserId != null) {
             query.ne(User::getId, excludeUserId);
         }
         Long count = userMapper.selectCount(query);
         if (count != null && count > 0) {
-            throw new BusinessException(HttpStatus.CONFLICT, "用户名已存在");
+            throw new BusinessException(HttpStatus.CONFLICT, errorMessage);
         }
     }
 
+    private void ensureUniqueUsername(String username, Long excludeUserId) {
+        ensureUniqueField(username, excludeUserId, User::getUsername, "用户名已存在");
+    }
+
     private void ensureUniqueEmail(String email, Long excludeUserId) {
-        if (email == null || email.isBlank()) {
-            return;
-        }
-        LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class).eq(User::getEmail, email);
-        if (excludeUserId != null) {
-            query.ne(User::getId, excludeUserId);
-        }
-        Long count = userMapper.selectCount(query);
-        if (count != null && count > 0) {
-            throw new BusinessException(HttpStatus.CONFLICT, "邮箱已存在");
-        }
+        ensureUniqueField(email, excludeUserId, User::getEmail, "邮箱已存在");
     }
 
     private Map<Long, List<Role>> loadRolesByUserIds(List<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<UserRole> relations = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRole.class).in(UserRole::getUserId, userIds));
+        List<UserRole> relations =
+                userRoleMapper.selectList(
+                        Wrappers.lambdaQuery(UserRole.class).in(UserRole::getUserId, userIds));
         if (relations == null || relations.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -221,9 +227,10 @@ public class UserManagementService {
             return Collections.emptyMap();
         }
         List<Role> roles = roleMapper.selectByIds(roleIds);
-        Map<Long, Role> roleMap = roles == null
-                ? Collections.emptyMap()
-                : roles.stream().collect(Collectors.toMap(Role::getId, role -> role));
+        Map<Long, Role> roleMap =
+                roles == null
+                        ? Collections.emptyMap()
+                        : roles.stream().collect(Collectors.toMap(Role::getId, role -> role));
 
         Map<Long, List<Role>> result = new HashMap<>();
         for (UserRole relation : relations) {
@@ -263,8 +270,9 @@ public class UserManagementService {
     }
 
     private List<Long> findUserIdsByRole(Long roleId) {
-        List<UserRole> relations = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
+        List<UserRole> relations =
+                userRoleMapper.selectList(
+                        Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
         if (relations == null || relations.isEmpty()) {
             return List.of();
         }
@@ -287,7 +295,8 @@ public class UserManagementService {
     }
 
     private UserView toUserView(User user, List<Role> roles) {
-        List<RoleDto> roleDtos = roles == null ? List.of() : roles.stream().map(this::toRoleDto).toList();
+        List<RoleDto> roleDtos =
+                roles == null ? List.of() : roles.stream().map(this::toRoleDto).toList();
         return new UserView(
                 user.getId(),
                 user.getUsername(),

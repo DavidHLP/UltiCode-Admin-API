@@ -106,23 +106,12 @@
 
         <dependency>
             <groupId>com.david</groupId>
-            <artifactId>http</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <artifactId>service-starter</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.david</groupId>
-            <artifactId>password</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.david</groupId>
-            <artifactId>security</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.david</groupId>
-            <artifactId>exception</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <artifactId>commons.core.email</artifactId>
         </dependency>
     </dependencies>
     <build>

@@ -66,8 +66,7 @@ public class BookmarkAdminService {
                 result.getRecords().stream()
                         .map(bookmark -> toView(bookmark, activeWords))
                         .toList();
-        return new PageResult<>(
-                items, result.getTotal(), result.getCurrent(), result.getSize());
+        return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     @Transactional
@@ -106,7 +105,10 @@ public class BookmarkAdminService {
         }
         try {
             return objectMapper.readValue(
-                    json, objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+                    json,
+                    objectMapper
+                            .getTypeFactory()
+                            .constructCollectionType(List.class, String.class));
         } catch (JsonProcessingException e) {
             log.warn("解析收藏标签失败: {}", json, e);
             return List.of();
@@ -119,7 +121,7 @@ public class BookmarkAdminService {
             builder.append(note.strip());
         }
         if (!CollectionUtils.isEmpty(tags)) {
-            if (builder.length() > 0) {
+            if (!builder.isEmpty()) {
                 builder.append(' ');
             }
             builder.append(String.join(" ", tags));

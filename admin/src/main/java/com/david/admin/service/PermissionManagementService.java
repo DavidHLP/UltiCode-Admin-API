@@ -7,16 +7,18 @@ import com.david.admin.dto.PermissionDto;
 import com.david.admin.dto.PermissionUpdateRequest;
 import com.david.admin.dto.PermissionView;
 import com.david.admin.entity.Permission;
-import com.david.core.exception.BusinessException;
 import com.david.admin.mapper.PermissionMapper;
+import com.david.core.exception.BusinessException;
 import com.david.core.forward.ForwardedUser;
 import com.david.core.security.AuditAction;
 import com.david.core.security.SecurityAuditRecord;
-import java.time.LocalDateTime;
-import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class PermissionManagementService {
@@ -30,36 +32,35 @@ public class PermissionManagementService {
         this.auditTrailService = auditTrailService;
     }
 
-    public List<PermissionDto> listPermissions(String keyword) {
-        LambdaQueryWrapper<Permission> query = Wrappers.lambdaQuery(Permission.class);
-        if (keyword != null && !keyword.isBlank()) {
-            String trimmed = keyword.trim();
-            query.and(wrapper -> wrapper.like(Permission::getCode, trimmed).or().like(Permission::getName, trimmed));
-        }
-        query.orderByAsc(Permission::getCode);
-        List<Permission> permissions = permissionMapper.selectList(query);
-        if (permissions == null || permissions.isEmpty()) {
-            return List.of();
-        }
-        return permissions.stream().map(this::toDto).toList();
+    public List<PermissionDto> listPermissionsDto(String keyword) {
+        return listPermissions(keyword).stream().map(this::toDto).toList();
     }
 
     public List<PermissionView> listPermissionViews(String keyword) {
+        return listPermissions(keyword).stream().map(this::toView).toList();
+    }
+
+    private List<Permission> listPermissions(String keyword) {
         LambdaQueryWrapper<Permission> query = Wrappers.lambdaQuery(Permission.class);
         if (keyword != null && !keyword.isBlank()) {
             String trimmed = keyword.trim();
-            query.and(wrapper -> wrapper.like(Permission::getCode, trimmed).or().like(Permission::getName, trimmed));
+            query.and(
+                    wrapper ->
+                            wrapper.like(Permission::getCode, trimmed)
+                                    .or()
+                                    .like(Permission::getName, trimmed));
         }
         query.orderByAsc(Permission::getCode);
         List<Permission> permissions = permissionMapper.selectList(query);
         if (permissions == null || permissions.isEmpty()) {
             return List.of();
         }
-        return permissions.stream().map(this::toView).toList();
+        return permissions;
     }
 
     @Transactional
-    public PermissionView createPermission(ForwardedUser principal, PermissionCreateRequest request) {
+    public PermissionView createPermission(
+            ForwardedUser principal, PermissionCreateRequest request) {
         String code = request.code().trim();
         String name = request.name().trim();
         ensureCodeUnique(code, null);
@@ -110,11 +111,15 @@ public class PermissionManagementService {
 
     private PermissionView toView(Permission permission) {
         return new PermissionView(
-                permission.getId(), permission.getCode(), permission.getName(), permission.getCreatedAt());
+                permission.getId(),
+                permission.getCode(),
+                permission.getName(),
+                permission.getCreatedAt());
     }
 
     private void ensureCodeUnique(String code, Long excludeId) {
-        LambdaQueryWrapper<Permission> query = Wrappers.lambdaQuery(Permission.class).eq(Permission::getCode, code);
+        LambdaQueryWrapper<Permission> query =
+                Wrappers.lambdaQuery(Permission.class).eq(Permission::getCode, code);
         if (excludeId != null) {
             query.ne(Permission::getId, excludeId);
         }

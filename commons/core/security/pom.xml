@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>security</artifactId>
+    <artifactId>commons.core.security</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -20,19 +20,16 @@
     <dependencies>
         <dependency>
             <groupId>com.david</groupId>
-            <artifactId>password</artifactId>
-            <version>${project.version}</version>
+            <artifactId>commons.core.password</artifactId>
         </dependency>
         <dependency>
             <groupId>com.david</groupId>
-            <artifactId>forward</artifactId>
-            <version>${project.version}</version>
+            <artifactId>commons.core.forward</artifactId>
         </dependency>
 
         <dependency>
             <groupId>com.david</groupId>
-            <artifactId>http</artifactId>
-            <version>${project.version}</version>
+            <artifactId>commons.core.http</artifactId>
         </dependency>
 
         <dependency>

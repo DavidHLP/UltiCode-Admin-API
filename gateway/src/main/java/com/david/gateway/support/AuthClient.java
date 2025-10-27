@@ -12,6 +12,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Mono;
 
+import java.util.Optional;
+
 @Slf4j
 @Component
 public class AuthClient {
@@ -25,6 +27,13 @@ public class AuthClient {
         this.webClient = builder.baseUrl("http://auth").build();
     }
 
+    /**
+     * 验证JWT令牌的有效性
+     *
+     * @param token 待验证的JWT令牌字符串
+     * @return 包含令牌信息的IntrospectResponse对象的Mono流
+     * @throws IllegalStateException 当令牌验证失败时抛出此异常
+     */
     public Mono<IntrospectResponse> introspect(String token) {
         log.info("开始验证令牌: {}", token);
         return webClient
@@ -47,7 +56,10 @@ public class AuthClient {
                                 return Mono.just(response.data());
                             }
                             ApiError error = response.error();
-                            String message = error != null ? error.message() : "令牌验证失败";
+                            String message =
+                                    Optional.ofNullable(error)
+                                            .map(ApiError::message)
+                                            .orElse("令牌验证失败");
                             log.warn("令牌验证失败: {}", message);
                             return Mono.error(new IllegalStateException(message));
                         });

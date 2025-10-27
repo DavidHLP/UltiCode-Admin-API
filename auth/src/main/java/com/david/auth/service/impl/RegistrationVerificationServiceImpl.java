@@ -1,26 +1,22 @@
 package com.david.auth.service.impl;
 
 import com.david.auth.config.AppProperties;
-import com.david.core.exception.BusinessException;
 import com.david.auth.service.RegistrationVerificationService;
-
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.time.Duration;
+import com.david.auth.support.EmailSupport;
+import com.david.core.exception.BusinessException;
 
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.security.SecureRandom;
+import java.time.Duration;
 
 @Slf4j
 @Service
@@ -31,21 +27,17 @@ public class RegistrationVerificationServiceImpl implements RegistrationVerifica
     private static final Duration RESEND_LOCK_TTL = Duration.ofSeconds(60);
 
     private final StringRedisTemplate redisTemplate;
-    private final JavaMailSender mailSender;
     private final AppProperties appProperties;
+    private final EmailSupport emailSupport;
     private final SecureRandom secureRandom = new SecureRandom();
-    private final String defaultFromAddress;
 
     public RegistrationVerificationServiceImpl(
-            StringRedisTemplate redisTemplate, JavaMailSender mailSender, AppProperties appProperties) {
+            StringRedisTemplate redisTemplate,
+            AppProperties appProperties,
+            EmailSupport emailSupport) {
         this.redisTemplate = redisTemplate;
-        this.mailSender = mailSender;
         this.appProperties = appProperties;
-        if (mailSender instanceof JavaMailSenderImpl senderImpl) {
-            this.defaultFromAddress = senderImpl.getUsername();
-        } else {
-            this.defaultFromAddress = null;
-        }
+        this.emailSupport = emailSupport;
     }
 
     @Override
@@ -55,8 +47,9 @@ public class RegistrationVerificationServiceImpl implements RegistrationVerifica
         }
 
         String lockKey = buildLockKey(email);
-        boolean acquiredLock = Boolean.TRUE
-                .equals(redisTemplate.opsForValue().setIfAbsent(lockKey, "1", RESEND_LOCK_TTL));
+        boolean acquiredLock =
+                Boolean.TRUE.equals(
+                        redisTemplate.opsForValue().setIfAbsent(lockKey, "1", RESEND_LOCK_TTL));
         if (!acquiredLock) {
             throw new BusinessException(
                     HttpStatus.TOO_MANY_REQUESTS, "Verification code requested too frequently");
@@ -67,10 +60,18 @@ public class RegistrationVerificationServiceImpl implements RegistrationVerifica
         String cacheKey = buildCacheKey(email);
 
         redisTemplate.opsForValue().set(cacheKey, code, ttl);
+
         try {
-            sendHtmlEmail(email, code, ttl);
+            long ttlMinutes = Math.max(1, ttl.toMinutes());
+            String template = appProperties.getMail().getVerificationTemplate();
+            String htmlContent = emailSupport.render(template, code, ttlMinutes);
+
+            emailSupport.sendHtml(
+                    email, appProperties.getMail().getVerificationSubject(), htmlContent);
             log.debug("Sent registration verification code to {}", email);
+
         } catch (MailException | MessagingException ex) {
+            // 发送失败：回滚缓存与限流锁
             redisTemplate.delete(cacheKey);
             redisTemplate.delete(lockKey);
             log.error("Failed to send verification email to {}", email, ex);
@@ -105,23 +106,5 @@ public class RegistrationVerificationServiceImpl implements RegistrationVerifica
     private String generateCode() {
         int value = secureRandom.nextInt(900_000) + 100_000;
         return Integer.toString(value);
-    }
-
-    private void sendHtmlEmail(String email, String code, Duration ttl)
-            throws MessagingException {
-        String template = appProperties.getMail().getVerificationTemplate();
-        long ttlMinutes = Math.max(1, ttl.toMinutes());
-        String htmlContent = String.format(template, code, ttlMinutes);
-
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
-                StandardCharsets.UTF_8.name());
-        if (StringUtils.hasText(defaultFromAddress)) {
-            helper.setFrom(defaultFromAddress);
-        }
-        helper.setTo(email);
-        helper.setSubject(appProperties.getMail().getVerificationSubject());
-        helper.setText(htmlContent, true);
-        mailSender.send(message);
     }
 }

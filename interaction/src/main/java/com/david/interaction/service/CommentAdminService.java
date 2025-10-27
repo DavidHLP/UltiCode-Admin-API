@@ -3,6 +3,7 @@ package com.david.interaction.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.core.exception.BusinessException;
 import com.david.core.forward.ForwardedUser;
 import com.david.interaction.dto.CommentDetailView;
 import com.david.interaction.dto.CommentQuery;
@@ -13,24 +14,26 @@ import com.david.interaction.dto.ModerationTaskSummaryView;
 import com.david.interaction.dto.PageResult;
 import com.david.interaction.entity.Comment;
 import com.david.interaction.entity.ModerationTask;
-import com.david.core.exception.BusinessException;
 import com.david.interaction.mapper.CommentMapper;
 import com.david.interaction.mapper.ReactionMapper;
 import com.david.interaction.mapper.result.ReactionAggregationRow;
 import com.david.interaction.service.model.SensitiveWordAnalysisResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -233,7 +236,6 @@ public class CommentAdminService {
         return switch (commentStatus) {
             case "approved" -> "approved";
             case "rejected", "hidden" -> "rejected";
-            case "pending" -> "pending";
             default -> "pending";
         };
     }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.core.exception.BusinessException;
 import com.david.judge.dto.JudgeJobDetailView;
 import com.david.judge.dto.JudgeJobQuery;
 import com.david.judge.dto.JudgeJobView;
@@ -27,7 +28,6 @@ import com.david.judge.entity.SubmissionTest;
 import com.david.judge.entity.Testcase;
 import com.david.judge.entity.TestcaseGroup;
 import com.david.judge.entity.User;
-import com.david.core.exception.BusinessException;
 import com.david.judge.mapper.FileRecordMapper;
 import com.david.judge.mapper.JudgeJobMapper;
 import com.david.judge.mapper.JudgeNodeMapper;
@@ -41,6 +41,14 @@ import com.david.judge.mapper.TestcaseMapper;
 import com.david.judge.mapper.UserMapper;
 import com.david.judge.mapper.model.SubmissionArtifactAggregate;
 import com.david.judge.mapper.model.SubmissionTestAggregate;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,11 +58,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -92,9 +95,10 @@ public class JudgeJobService {
             Long numeric = parseLong(trimmed);
             if (numeric != null) {
                 wrapper.and(
-                        w -> w.eq(JudgeJob::getId, numeric)
-                                .or()
-                                .eq(JudgeJob::getSubmissionId, numeric));
+                        w ->
+                                w.eq(JudgeJob::getId, numeric)
+                                        .or()
+                                        .eq(JudgeJob::getSubmissionId, numeric));
             } else {
                 keywordSubmissionIds = submissionMapper.searchSubmissionIdsByKeyword(trimmed, 500);
                 if (CollectionUtils.isEmpty(keywordSubmissionIds)) {
@@ -120,20 +124,21 @@ public class JudgeJobService {
             throw new BusinessException(HttpStatus.NOT_FOUND, "任务不存在");
         }
         List<JudgeJobView> jobs = hydrateJobs(List.of(job));
-        JudgeJobView jobView = jobs.isEmpty()
-                ? new JudgeJobView(
-                        job.getId(),
-                        job.getSubmissionId(),
-                        job.getStatus(),
-                        job.getPriority(),
-                        job.getCreatedAt(),
-                        job.getStartedAt(),
-                        job.getFinishedAt(),
-                        null,
-                        null,
-                        false,
-                        new TestSummary(0, 0, 0))
-                : jobs.get(0);
+        JudgeJobView jobView =
+                jobs.isEmpty()
+                        ? new JudgeJobView(
+                                job.getId(),
+                                job.getSubmissionId(),
+                                job.getStatus(),
+                                job.getPriority(),
+                                job.getCreatedAt(),
+                                job.getStartedAt(),
+                                job.getFinishedAt(),
+                                null,
+                                null,
+                                false,
+                                new TestSummary(0, 0, 0))
+                        : jobs.get(0);
         List<SubmissionTestView> tests = loadSubmissionTests(job.getSubmissionId());
         List<SubmissionArtifactView> artifacts = loadSubmissionArtifacts(job.getSubmissionId());
         return new JudgeJobDetailView(jobView, tests, artifacts);
@@ -147,12 +152,13 @@ public class JudgeJobService {
         if (!"failed".equals(job.getStatus()) && !"canceled".equals(job.getStatus())) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "仅失败或已取消的任务可重试");
         }
-        LambdaUpdateWrapper<JudgeJob> update = new LambdaUpdateWrapper<JudgeJob>()
-                .eq(JudgeJob::getId, jobId)
-                .set(JudgeJob::getStatus, "queued")
-                .set(JudgeJob::getNodeId, null)
-                .set(JudgeJob::getStartedAt, null)
-                .set(JudgeJob::getFinishedAt, null);
+        LambdaUpdateWrapper<JudgeJob> update =
+                new LambdaUpdateWrapper<JudgeJob>()
+                        .eq(JudgeJob::getId, jobId)
+                        .set(JudgeJob::getStatus, "queued")
+                        .set(JudgeJob::getNodeId, null)
+                        .set(JudgeJob::getStartedAt, null)
+                        .set(JudgeJob::getFinishedAt, null);
         int affected = judgeJobMapper.update(null, update);
         if (affected == 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "任务状态已变化，请刷新后重试");
@@ -163,56 +169,69 @@ public class JudgeJobService {
         if (jobs == null || jobs.isEmpty()) {
             return List.of();
         }
-        Set<Long> submissionIds = jobs.stream().map(JudgeJob::getSubmissionId).filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<Long, Submission> submissions = fetchAsMap(submissionMapper.selectBatchIds(submissionIds),
-                Submission::getId);
-        Map<Long, User> users = fetchAsMap(
-                userMapper.selectBatchIds(
-                        submissions.values().stream()
-                                .map(Submission::getUserId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet())),
-                User::getId);
-        Map<Long, Problem> problems = fetchAsMap(
-                problemMapper.selectBatchIds(
-                        submissions.values().stream()
-                                .map(Submission::getProblemId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet())),
-                Problem::getId);
-        Map<Integer, Language> languages = fetchAsMap(
-                languageMapper.selectBatchIds(
-                        submissions.values().stream()
-                                .map(Submission::getLanguageId)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet())),
-                Language::getId);
-        Map<Long, JudgeNode> nodes = fetchAsMap(
-                judgeNodeMapper.selectBatchIds(
-                        jobs.stream().map(JudgeJob::getNodeId).filter(Objects::nonNull).collect(Collectors.toSet())),
-                JudgeNode::getId);
+        Set<Long> submissionIds =
+                jobs.stream()
+                        .map(JudgeJob::getSubmissionId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+        Map<Long, Submission> submissions =
+                fetchAsMap(submissionMapper.selectByIds(submissionIds), Submission::getId);
+        Map<Long, User> users =
+                fetchAsMap(
+                        userMapper.selectByIds(
+                                submissions.values().stream()
+                                        .map(Submission::getUserId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        User::getId);
+        Map<Long, Problem> problems =
+                fetchAsMap(
+                        problemMapper.selectByIds(
+                                submissions.values().stream()
+                                        .map(Submission::getProblemId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        Problem::getId);
+        Map<Integer, Language> languages =
+                fetchAsMap(
+                        languageMapper.selectByIds(
+                                submissions.values().stream()
+                                        .map(Submission::getLanguageId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        Language::getId);
+        Map<Long, JudgeNode> nodes =
+                fetchAsMap(
+                        judgeNodeMapper.selectByIds(
+                                jobs.stream()
+                                        .map(JudgeJob::getNodeId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        JudgeNode::getId);
         Map<Long, TestSummary> testSummaries = buildTestSummaries(submissionIds);
         Map<Long, Boolean> artifactFlags = buildArtifactFlags(submissionIds);
 
         List<JudgeJobView> views = new ArrayList<>(jobs.size());
         for (JudgeJob job : jobs) {
             Submission submission = submissions.get(job.getSubmissionId());
-            SubmissionSummary submissionSummary = submission == null
-                    ? null
-                    : new SubmissionSummary(
-                            submission.getId(),
-                            submission.getVerdict(),
-                            submission.getScore(),
-                            submission.getTimeMs(),
-                            submission.getMemoryKb(),
-                            submission.getCodeBytes(),
-                            submission.getCreatedAt(),
-                            buildUserSummary(users.get(submission.getUserId())),
-                            buildProblemSummary(problems.get(submission.getProblemId())),
-                            buildLanguageSummary(languages.get(submission.getLanguageId())));
+            SubmissionSummary submissionSummary =
+                    submission == null
+                            ? null
+                            : new SubmissionSummary(
+                                    submission.getId(),
+                                    submission.getVerdict(),
+                                    submission.getScore(),
+                                    submission.getTimeMs(),
+                                    submission.getMemoryKb(),
+                                    submission.getCodeBytes(),
+                                    submission.getCreatedAt(),
+                                    buildUserSummary(users.get(submission.getUserId())),
+                                    buildProblemSummary(problems.get(submission.getProblemId())),
+                                    buildLanguageSummary(
+                                            languages.get(submission.getLanguageId())));
             NodeSummary nodeSummary = buildNodeSummary(nodes.get(job.getNodeId()));
-            TestSummary testSummary = testSummaries.getOrDefault(job.getSubmissionId(), new TestSummary(0, 0, 0));
+            TestSummary testSummary =
+                    testSummaries.getOrDefault(job.getSubmissionId(), new TestSummary(0, 0, 0));
             boolean hasArtifacts = artifactFlags.getOrDefault(job.getSubmissionId(), Boolean.FALSE);
             views.add(
                     new JudgeJobView(
@@ -235,7 +254,8 @@ public class JudgeJobService {
         if (CollectionUtils.isEmpty(submissionIds)) {
             return Map.of();
         }
-        List<SubmissionTestAggregate> aggregates = submissionTestMapper.aggregateTests(submissionIds);
+        List<SubmissionTestAggregate> aggregates =
+                submissionTestMapper.aggregateTests(submissionIds);
         Map<Long, TestSummary> result = new HashMap<>();
         for (SubmissionTestAggregate aggregate : aggregates) {
             int total = aggregate.total() == null ? 0 : aggregate.total();
@@ -250,10 +270,12 @@ public class JudgeJobService {
         if (CollectionUtils.isEmpty(submissionIds)) {
             return Map.of();
         }
-        List<SubmissionArtifactAggregate> aggregates = submissionArtifactMapper.aggregateArtifacts(submissionIds);
+        List<SubmissionArtifactAggregate> aggregates =
+                submissionArtifactMapper.aggregateArtifacts(submissionIds);
         Map<Long, Boolean> result = new HashMap<>();
         for (SubmissionArtifactAggregate aggregate : aggregates) {
-            result.put(aggregate.submissionId(), (aggregate.count() != null && aggregate.count() > 0));
+            result.put(
+                    aggregate.submissionId(), (aggregate.count() != null && aggregate.count() > 0));
         }
         return result;
     }
@@ -262,23 +284,30 @@ public class JudgeJobService {
         if (submissionId == null) {
             return List.of();
         }
-        List<SubmissionTest> tests = submissionTestMapper.selectList(
-                Wrappers.lambdaQuery(SubmissionTest.class)
-                        .eq(SubmissionTest::getSubmissionId, submissionId)
-                        .orderByAsc(SubmissionTest::getId));
+        List<SubmissionTest> tests =
+                submissionTestMapper.selectList(
+                        Wrappers.lambdaQuery(SubmissionTest.class)
+                                .eq(SubmissionTest::getSubmissionId, submissionId)
+                                .orderByAsc(SubmissionTest::getId));
         if (tests.isEmpty()) {
             return List.of();
         }
-        Map<Long, Testcase> testcases = fetchAsMap(
-                testcaseMapper.selectBatchIds(
-                        tests.stream().map(SubmissionTest::getTestcaseId).filter(Objects::nonNull)
-                                .collect(Collectors.toSet())),
-                Testcase::getId);
-        Map<Long, TestcaseGroup> groups = fetchAsMap(
-                testcaseGroupMapper.selectBatchIds(
-                        tests.stream().map(SubmissionTest::getGroupId).filter(Objects::nonNull)
-                                .collect(Collectors.toSet())),
-                TestcaseGroup::getId);
+        Map<Long, Testcase> testcases =
+                fetchAsMap(
+                        testcaseMapper.selectByIds(
+                                tests.stream()
+                                        .map(SubmissionTest::getTestcaseId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        Testcase::getId);
+        Map<Long, TestcaseGroup> groups =
+                fetchAsMap(
+                        testcaseGroupMapper.selectByIds(
+                                tests.stream()
+                                        .map(SubmissionTest::getGroupId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        TestcaseGroup::getId);
         return tests.stream()
                 .map(
                         test -> {
@@ -304,18 +333,22 @@ public class JudgeJobService {
         if (submissionId == null) {
             return List.of();
         }
-        List<SubmissionArtifact> artifacts = submissionArtifactMapper.selectList(
-                Wrappers.lambdaQuery(SubmissionArtifact.class)
-                        .eq(SubmissionArtifact::getSubmissionId, submissionId)
-                        .orderByAsc(SubmissionArtifact::getCreatedAt));
+        List<SubmissionArtifact> artifacts =
+                submissionArtifactMapper.selectList(
+                        Wrappers.lambdaQuery(SubmissionArtifact.class)
+                                .eq(SubmissionArtifact::getSubmissionId, submissionId)
+                                .orderByAsc(SubmissionArtifact::getCreatedAt));
         if (artifacts.isEmpty()) {
             return List.of();
         }
-        Map<Long, FileRecord> files = fetchAsMap(
-                fileRecordMapper.selectBatchIds(
-                        artifacts.stream().map(SubmissionArtifact::getFileId).filter(Objects::nonNull)
-                                .collect(Collectors.toSet())),
-                FileRecord::getId);
+        Map<Long, FileRecord> files =
+                fetchAsMap(
+                        fileRecordMapper.selectByIds(
+                                artifacts.stream()
+                                        .map(SubmissionArtifact::getFileId)
+                                        .filter(Objects::nonNull)
+                                        .collect(Collectors.toSet())),
+                        FileRecord::getId);
         return artifacts.stream()
                 .map(
                         artifact -> {

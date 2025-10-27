@@ -2,26 +2,22 @@ package com.david.auth.service.impl;
 
 import com.david.auth.config.AppProperties;
 import com.david.auth.entity.User;
-import com.david.core.exception.BusinessException;
 import com.david.auth.service.PasswordResetService;
-
-import java.nio.charset.StandardCharsets;
-import java.time.Duration;
-import java.util.UUID;
+import com.david.auth.support.EmailSupport;
+import com.david.core.exception.BusinessException;
 
 import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import java.time.Duration;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -31,20 +27,16 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private static final String USER_KEY_PATTERN = "auth:password-reset:user:%d";
 
     private final StringRedisTemplate redisTemplate;
-    private final JavaMailSender mailSender;
     private final AppProperties appProperties;
-    private final String defaultFromAddress;
+    private final EmailSupport emailSupport;
 
     public PasswordResetServiceImpl(
-            StringRedisTemplate redisTemplate, JavaMailSender mailSender, AppProperties appProperties) {
+            StringRedisTemplate redisTemplate,
+            AppProperties appProperties,
+            EmailSupport emailSupport) {
         this.redisTemplate = redisTemplate;
-        this.mailSender = mailSender;
         this.appProperties = appProperties;
-        if (mailSender instanceof JavaMailSenderImpl senderImpl) {
-            this.defaultFromAddress = senderImpl.getUsername();
-        } else {
-            this.defaultFromAddress = null;
-        }
+        this.emailSupport = emailSupport;
     }
 
     @Override
@@ -63,38 +55,33 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         Duration ttl = appProperties.getMail().getPasswordResetTokenTtl();
         String tokenKey = buildTokenKey(token);
 
+        // 关联 token <-> userId
         redisTemplate.opsForValue().set(tokenKey, user.getId().toString(), ttl);
         redisTemplate.opsForValue().set(userKey, token, ttl);
 
         try {
-            sendEmail(user.getEmail(), token, ttl);
+            // 准备邮件内容并发送
+            String urlTemplate = appProperties.getMail().getPasswordResetUrlTemplate();
+            String resetUrl = String.format(urlTemplate, token);
+            long ttlMinutes = Math.max(1, ttl.toMinutes());
+
+            String template = appProperties.getMail().getPasswordResetTemplate();
+            String htmlContent = emailSupport.render(template, resetUrl, ttlMinutes);
+
+            emailSupport.sendHtml(
+                    user.getEmail(),
+                    appProperties.getMail().getPasswordResetSubject(),
+                    htmlContent);
             log.debug("Sent password reset email to {}", user.getEmail());
+
         } catch (MailException | MessagingException ex) {
+            // 发送失败：回滚 redis
             redisTemplate.delete(tokenKey);
             redisTemplate.delete(userKey);
             log.error("Failed to send password reset email to {}", user.getEmail(), ex);
             throw new BusinessException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send password reset email");
         }
-    }
-
-    private void sendEmail(String email, String token, Duration ttl) throws MessagingException {
-        String urlTemplate = appProperties.getMail().getPasswordResetUrlTemplate();
-        String resetUrl = String.format(urlTemplate, token);
-        long ttlMinutes = Math.max(1, ttl.toMinutes());
-        String template = appProperties.getMail().getPasswordResetTemplate();
-        String htmlContent = String.format(template, resetUrl, ttlMinutes);
-
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
-                StandardCharsets.UTF_8.name());
-        if (StringUtils.hasText(defaultFromAddress)) {
-            helper.setFrom(defaultFromAddress);
-        }
-        helper.setTo(email);
-        helper.setSubject(appProperties.getMail().getPasswordResetSubject());
-        helper.setText(htmlContent, true);
-        mailSender.send(message);
     }
 
     private String buildTokenKey(String token) {

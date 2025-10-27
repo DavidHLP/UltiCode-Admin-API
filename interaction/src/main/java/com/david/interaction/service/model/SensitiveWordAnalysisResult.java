@@ -18,4 +18,3 @@ public record SensitiveWordAnalysisResult(
         return new SensitiveWordAnalysisResult(false, false, false, "low", Collections.emptyList());
     }
 }
-

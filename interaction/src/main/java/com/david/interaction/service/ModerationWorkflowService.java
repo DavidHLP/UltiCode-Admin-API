@@ -40,11 +40,7 @@ public class ModerationWorkflowService {
 
     @Transactional
     public ModerationTask ensurePendingTaskForComment(
-            Long commentId,
-            String riskLevel,
-            String source,
-            String notes,
-            List<String> hits) {
+            Long commentId, String riskLevel, String source, String notes, List<String> hits) {
         ModerationTask existing = findLatestTaskByCommentId(commentId);
         if (existing != null
                 && ("pending".equals(existing.getStatus())
@@ -91,9 +87,12 @@ public class ModerationWorkflowService {
         Map<String, Object> metadata = new HashMap<>();
         if (StringUtils.hasText(existingMetadata)) {
             try {
-                metadata = objectMapper.readValue(
-                        existingMetadata,
-                        objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
+                metadata =
+                        objectMapper.readValue(
+                                existingMetadata,
+                                objectMapper
+                                        .getTypeFactory()
+                                        .constructMapType(Map.class, String.class, Object.class));
             } catch (JsonProcessingException e) {
                 log.warn("解析审核任务原始metadata失败: {}", existingMetadata, e);
             }
@@ -122,11 +121,12 @@ public class ModerationWorkflowService {
     }
 
     public ModerationTask findLatestTaskByCommentId(Long commentId) {
-        LambdaQueryWrapper<ModerationTask> wrapper = Wrappers.lambdaQuery(ModerationTask.class)
-                .eq(ModerationTask::getEntityType, "comment")
-                .eq(ModerationTask::getEntityId, commentId)
-                .orderByDesc(ModerationTask::getCreatedAt)
-                .last("LIMIT 1");
+        LambdaQueryWrapper<ModerationTask> wrapper =
+                Wrappers.lambdaQuery(ModerationTask.class)
+                        .eq(ModerationTask::getEntityType, "comment")
+                        .eq(ModerationTask::getEntityId, commentId)
+                        .orderByDesc(ModerationTask::getCreatedAt)
+                        .last("LIMIT 1");
         return moderationTaskMapper.selectOne(wrapper);
     }
 
@@ -134,11 +134,12 @@ public class ModerationWorkflowService {
         if (CollectionUtils.isEmpty(commentIds)) {
             return Collections.emptyMap();
         }
-        List<ModerationTask> tasks = moderationTaskMapper.selectList(
-                Wrappers.lambdaQuery(ModerationTask.class)
-                        .eq(ModerationTask::getEntityType, "comment")
-                        .in(ModerationTask::getEntityId, commentIds)
-                        .orderByDesc(ModerationTask::getCreatedAt));
+        List<ModerationTask> tasks =
+                moderationTaskMapper.selectList(
+                        Wrappers.lambdaQuery(ModerationTask.class)
+                                .eq(ModerationTask::getEntityType, "comment")
+                                .in(ModerationTask::getEntityId, commentIds)
+                                .orderByDesc(ModerationTask::getCreatedAt));
         Map<Long, ModerationTask> result = new HashMap<>();
         for (ModerationTask task : tasks) {
             result.putIfAbsent(task.getEntityId(), task);
@@ -163,7 +164,11 @@ public class ModerationWorkflowService {
 
     @Transactional
     public void logAction(
-            Long taskId, String action, Long operatorId, String remarks, Map<String, Object> context) {
+            Long taskId,
+            String action,
+            Long operatorId,
+            String remarks,
+            Map<String, Object> context) {
         ModerationAction record = new ModerationAction();
         record.setTaskId(taskId);
         record.setAction(action);
@@ -209,7 +214,10 @@ public class ModerationWorkflowService {
         }
         try {
             return objectMapper.readValue(
-                    json, objectMapper.getTypeFactory().constructMapType(Map.class, String.class, Object.class));
+                    json,
+                    objectMapper
+                            .getTypeFactory()
+                            .constructMapType(Map.class, String.class, Object.class));
         } catch (JsonProcessingException e) {
             log.warn("解析审核上下文失败: {}", json, e);
             return Collections.emptyMap();

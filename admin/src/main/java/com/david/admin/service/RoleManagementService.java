@@ -272,7 +272,7 @@ public class RoleManagementService {
         if (permissionIds == null || permissionIds.isEmpty()) {
             return;
         }
-        List<Permission> permissions = permissionMapper.selectBatchIds(permissionIds);
+        List<Permission> permissions = permissionMapper.selectByIds(permissionIds);
         if (permissions == null || permissions.size() != permissionIds.size()) {
             throw new BusinessException(HttpStatus.BAD_REQUEST, "存在无效的权限ID");
         }
@@ -297,7 +297,7 @@ public class RoleManagementService {
         if (permissionIds.isEmpty()) {
             return Map.of();
         }
-        List<Permission> permissions = permissionMapper.selectBatchIds(permissionIds);
+        List<Permission> permissions = permissionMapper.selectByIds(permissionIds);
         Map<Long, Permission> permissionMap = permissions == null
                 ? Map.of()
                 : permissions.stream()

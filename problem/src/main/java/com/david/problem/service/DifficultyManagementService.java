@@ -1,26 +1,27 @@
 package com.david.problem.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import static com.david.problem.service.support.CrudSupport.*;
+
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.core.exception.BusinessException;
 import com.david.problem.dto.DifficultyCreateRequest;
 import com.david.problem.dto.DifficultyUpdateRequest;
 import com.david.problem.dto.DifficultyView;
 import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Difficulty;
 import com.david.problem.entity.Problem;
-import com.david.core.exception.BusinessException;
 import com.david.problem.mapper.DifficultyMapper;
 import com.david.problem.mapper.ProblemMapper;
+
 import jakarta.annotation.Nullable;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.Objects;
 
 @Service
 public class DifficultyManagementService {
@@ -36,34 +37,25 @@ public class DifficultyManagementService {
 
     public PageResult<DifficultyView> listDifficulties(
             int page, int size, @Nullable String keyword) {
-        LambdaQueryWrapper<Difficulty> query = Wrappers.lambdaQuery(Difficulty.class);
+        var query = Wrappers.<Difficulty>lambdaQuery();
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             Integer idFilter = tryParseInteger(trimmed);
             query.and(
-                    wrapper -> {
-                        wrapper.like(Difficulty::getCode, trimmed);
+                    w -> {
+                        w.like(Difficulty::getCode, trimmed);
                         if (idFilter != null) {
-                            wrapper.or().eq(Difficulty::getId, idFilter);
+                            w.or().eq(Difficulty::getId, idFilter);
                         }
                     });
         }
         query.orderByAsc(Difficulty::getSortKey).orderByAsc(Difficulty::getId);
-        Page<Difficulty> pager = new Page<>(page, size);
-        Page<Difficulty> result = difficultyMapper.selectPage(pager, query);
-        List<Difficulty> difficulties = result.getRecords();
-        List<DifficultyView> items = difficulties == null || difficulties.isEmpty()
-                ? List.of()
-                : difficulties.stream().map(this::toView).toList();
-        return new PageResult<>(
-                items, result.getTotal(), result.getCurrent(), result.getSize());
+
+        return selectPageAndMap(difficultyMapper, new Page<>(page, size), query, this::toView);
     }
 
     public DifficultyView getDifficulty(Integer difficultyId) {
-        Difficulty difficulty = difficultyMapper.selectById(difficultyId);
-        if (difficulty == null) {
-            throw new BusinessException(HttpStatus.NOT_FOUND, "难度不存在");
-        }
+        Difficulty difficulty = requireFound(difficultyMapper.selectById(difficultyId), "难度不存在");
         return toView(difficulty);
     }
 
@@ -72,8 +64,9 @@ public class DifficultyManagementService {
         if (difficultyMapper.selectById(request.id()) != null) {
             throw new BusinessException(HttpStatus.CONFLICT, "难度ID已存在");
         }
-        String code = normalizeCode(request.code());
-        ensureCodeUnique(code, null);
+        String code = normalizeRequiredLower(request.code(), "难度编码");
+        ensureUnique(
+                difficultyMapper, Difficulty::getCode, code, Difficulty::getId, null, "难度编码已存在");
 
         Difficulty difficulty = new Difficulty();
         difficulty.setId(request.id());
@@ -85,81 +78,54 @@ public class DifficultyManagementService {
 
     @Transactional
     public DifficultyView updateDifficulty(Integer difficultyId, DifficultyUpdateRequest request) {
-        Difficulty existing = difficultyMapper.selectById(difficultyId);
-        if (existing == null) {
-            throw new BusinessException(HttpStatus.NOT_FOUND, "难度不存在");
-        }
+        Difficulty existing = requireFound(difficultyMapper.selectById(difficultyId), "难度不存在");
         boolean changed = false;
 
         if (request.code() != null) {
-            String code = normalizeCode(request.code());
+            String code = normalizeRequiredLower(request.code(), "难度编码");
             if (!Objects.equals(code, existing.getCode())) {
-                ensureCodeUnique(code, difficultyId);
+                ensureUnique(
+                        difficultyMapper,
+                        Difficulty::getCode,
+                        code,
+                        Difficulty::getId,
+                        difficultyId,
+                        "难度编码已存在");
                 existing.setCode(code);
                 changed = true;
             }
         }
-        if (request.sortKey() != null && !Objects.equals(request.sortKey(), existing.getSortKey())) {
-            existing.setSortKey(request.sortKey());
-            changed = true;
+        if (request.sortKey() != null) {
+            changed |= setIfChanged(request.sortKey(), existing.getSortKey(), existing::setSortKey);
         }
+
         if (!changed) {
             return toView(existing);
         }
-        LambdaUpdateWrapper<Difficulty> update = Wrappers.lambdaUpdate(Difficulty.class).eq(Difficulty::getId,
-                difficultyId);
-        update.set(Difficulty::getCode, existing.getCode());
-        update.set(Difficulty::getSortKey, existing.getSortKey());
-        difficultyMapper.update(null, update);
+
+        updateById(
+                difficultyMapper,
+                Difficulty::getId,
+                difficultyId,
+                uw -> {
+                    uw.set(Difficulty::getCode, existing.getCode());
+                    uw.set(Difficulty::getSortKey, existing.getSortKey());
+                });
         return getDifficulty(difficultyId);
     }
 
     @Transactional
     public void deleteDifficulty(Integer difficultyId) {
-        Difficulty existing = difficultyMapper.selectById(difficultyId);
-        if (existing == null) {
-            throw new BusinessException(HttpStatus.NOT_FOUND, "难度不存在");
-        }
-        Long count = problemMapper.selectCount(
-                Wrappers.lambdaQuery(Problem.class)
-                        .eq(Problem::getDifficultyId, difficultyId));
-        if (count != null && count > 0) {
-            throw new BusinessException(HttpStatus.CONFLICT, "仍有题目关联该难度，无法删除");
-        }
-        difficultyMapper.deleteById(difficultyId);
-    }
-
-    private void ensureCodeUnique(String code, @Nullable Integer excludeDifficultyId) {
-        LambdaQueryWrapper<Difficulty> query = Wrappers.lambdaQuery(Difficulty.class).eq(Difficulty::getCode, code);
-        if (excludeDifficultyId != null) {
-            query.ne(Difficulty::getId, excludeDifficultyId);
-        }
-        Long count = difficultyMapper.selectCount(query);
-        if (count != null && count > 0) {
-            throw new BusinessException(HttpStatus.CONFLICT, "难度编码已存在");
-        }
-    }
-
-    private String normalizeCode(String code) {
-        if (code == null) {
-            return null;
-        }
-        String trimmed = code.trim();
-        if (trimmed.isEmpty()) {
-            throw new BusinessException(HttpStatus.BAD_REQUEST, "难度编码不能为空");
-        }
-        return trimmed.toLowerCase(Locale.ROOT);
-    }
-
-    private Integer tryParseInteger(String value) {
-        try {
-            return Integer.valueOf(value);
-        } catch (NumberFormatException ex) {
-            return null;
-        }
+        Difficulty existing = requireFound(difficultyMapper.selectById(difficultyId), "难度不存在");
+        Long count =
+                problemMapper.selectCount(
+                        Wrappers.<Problem>lambdaQuery().eq(Problem::getDifficultyId, difficultyId));
+        assertNoRelations(count, "仍有题目关联该难度，无法删除");
+        difficultyMapper.deleteById(existing.getId());
     }
 
     private DifficultyView toView(Difficulty difficulty) {
-        return new DifficultyView(difficulty.getId(), difficulty.getCode(), difficulty.getSortKey());
+        return new DifficultyView(
+                difficulty.getId(), difficulty.getCode(), difficulty.getSortKey());
     }
 }

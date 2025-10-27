@@ -11,6 +11,13 @@ import com.david.judge.mapper.model.NodeFinishedAggregate;
 import com.david.judge.mapper.model.NodeStatusAggregate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -20,11 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -56,7 +58,10 @@ public class JudgeNodeService {
 
     private Map<Long, NodeMetrics> buildMetrics(List<JudgeNode> nodes) {
         Set<Long> nodeIds =
-                nodes.stream().map(JudgeNode::getId).filter(Objects::nonNull).collect(Collectors.toSet());
+                nodes.stream()
+                        .map(JudgeNode::getId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
         if (nodeIds.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -64,7 +69,8 @@ public class JudgeNodeService {
         LocalDateTime threshold = LocalDateTime.now(clock).minusHours(1);
         List<NodeStatusAggregate> statusAggregates = judgeJobMapper.aggregateByNodeIds(nodeIds);
         for (NodeStatusAggregate aggregate : statusAggregates) {
-            NodeMetricsBuilder builder = buffers.computeIfAbsent(aggregate.nodeId(), id -> new NodeMetricsBuilder());
+            NodeMetricsBuilder builder =
+                    buffers.computeIfAbsent(aggregate.nodeId(), id -> new NodeMetricsBuilder());
             switch (aggregate.status()) {
                 case "queued" -> builder.queued += safeCount(aggregate.count());
                 case "running" -> builder.running += safeCount(aggregate.count());
@@ -77,7 +83,8 @@ public class JudgeNodeService {
         List<NodeFinishedAggregate> finishedAggregates =
                 judgeJobMapper.aggregateRecentFinished(nodeIds, threshold);
         for (NodeFinishedAggregate aggregate : finishedAggregates) {
-            NodeMetricsBuilder builder = buffers.computeIfAbsent(aggregate.nodeId(), id -> new NodeMetricsBuilder());
+            NodeMetricsBuilder builder =
+                    buffers.computeIfAbsent(aggregate.nodeId(), id -> new NodeMetricsBuilder());
             builder.finishedLastHour += safeCount(aggregate.count());
         }
         Map<Long, NodeMetrics> metrics = new HashMap<>();
@@ -86,7 +93,10 @@ public class JudgeNodeService {
             metrics.put(
                     nodeId,
                     new NodeMetrics(
-                            builder.queued, builder.running, builder.failed, builder.finishedLastHour));
+                            builder.queued,
+                            builder.running,
+                            builder.failed,
+                            builder.finishedLastHour));
         }
         return metrics;
     }
@@ -97,8 +107,7 @@ public class JudgeNodeService {
 
     private JudgeNodeView toView(JudgeNode node, NodeMetrics metrics) {
         Map<String, Object> runtime = parseRuntimeInfo(node.getRuntimeInfo());
-        NodeMetrics resolved =
-                metrics == null ? new NodeMetrics(0, 0, 0, 0) : metrics;
+        NodeMetrics resolved = metrics == null ? new NodeMetrics(0, 0, 0, 0) : metrics;
         return new JudgeNodeView(
                 node.getId(),
                 node.getName(),
@@ -114,7 +123,8 @@ public class JudgeNodeService {
             return Map.of();
         }
         try {
-            return objectMapper.readValue(payload, Map.class);
+            return objectMapper.readValue(
+                    payload, objectMapper.getTypeFactory().constructType(Map.class));
         } catch (JsonProcessingException ex) {
             log.warn("解析 runtime_info 失败: {}", payload, ex);
             return Map.of("raw", payload);

@@ -9,6 +9,7 @@ spring:
           auth: true
           starttls:
             enable: true
+          timeout: 5000
 
 app:
   mail:

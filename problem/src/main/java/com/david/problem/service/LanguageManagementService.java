@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.core.exception.BusinessException;
 import com.david.problem.dto.LanguageCreateRequest;
 import com.david.problem.dto.LanguageUpdateRequest;
 import com.david.problem.dto.LanguageView;
@@ -11,18 +12,20 @@ import com.david.problem.dto.PageResult;
 import com.david.problem.entity.Language;
 import com.david.problem.entity.ProblemLanguageConfig;
 import com.david.problem.entity.ProblemStatement;
-import com.david.core.exception.BusinessException;
 import com.david.problem.mapper.LanguageMapper;
 import com.david.problem.mapper.ProblemLanguageConfigMapper;
 import com.david.problem.mapper.ProblemStatementMapper;
+
 import jakarta.annotation.Nullable;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 
 @Service
 public class LanguageManagementService {
@@ -46,22 +49,23 @@ public class LanguageManagementService {
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             query.and(
-                    wrapper -> wrapper.like(Language::getCode, trimmed)
-                            .or()
-                            .like(Language::getDisplayName, trimmed));
+                    wrapper ->
+                            wrapper.like(Language::getCode, trimmed)
+                                    .or()
+                                    .like(Language::getDisplayName, trimmed));
         }
         if (isActive != null) {
-            query.eq(Language::getIsActive, Boolean.TRUE.equals(isActive) ? 1 : 0);
+            query.eq(Language::getIsActive, isActive ? 1 : 0);
         }
         query.orderByAsc(Language::getDisplayName);
         Page<Language> pager = new Page<>(page, size);
         Page<Language> result = languageMapper.selectPage(pager, query);
         List<Language> languages = result.getRecords();
-        List<LanguageView> items = languages == null || languages.isEmpty()
-                ? List.of()
-                : languages.stream().map(this::toView).toList();
-        return new PageResult<>(
-                items, result.getTotal(), result.getCurrent(), result.getSize());
+        List<LanguageView> items =
+                languages == null || languages.isEmpty()
+                        ? List.of()
+                        : languages.stream().map(this::toView).toList();
+        return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     public LanguageView getLanguage(Integer languageId) {
@@ -120,7 +124,7 @@ public class LanguageManagementService {
             }
         }
         if (request.isActive() != null) {
-            int active = Boolean.TRUE.equals(request.isActive()) ? 1 : 0;
+            int active = request.isActive() ? 1 : 0;
             if (!Objects.equals(active, existing.getIsActive())) {
                 existing.setIsActive(active);
                 changed = true;
@@ -139,24 +143,26 @@ public class LanguageManagementService {
         if (existing == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "编程语言不存在");
         }
-        Long configCount = problemLanguageConfigMapper.selectCount(
-                Wrappers.lambdaQuery(ProblemLanguageConfig.class)
-                        .eq(ProblemLanguageConfig::getLanguageId, languageId));
+        Long configCount =
+                problemLanguageConfigMapper.selectCount(
+                        Wrappers.lambdaQuery(ProblemLanguageConfig.class)
+                                .eq(ProblemLanguageConfig::getLanguageId, languageId));
         if (configCount != null && configCount > 0) {
             throw new BusinessException(HttpStatus.CONFLICT, "仍有题目使用该语言配置，无法删除");
         }
-        Long statementCount = problemStatementMapper.selectCount(
-                Wrappers.lambdaQuery(ProblemStatement.class)
-                        .eq(ProblemStatement::getLangCode, existing.getCode()));
+        Long statementCount =
+                problemStatementMapper.selectCount(
+                        Wrappers.lambdaQuery(ProblemStatement.class)
+                                .eq(ProblemStatement::getLangCode, existing.getCode()));
         if (statementCount != null && statementCount > 0) {
-            throw new BusinessException(
-                    HttpStatus.CONFLICT, "仍有题面使用该语言代码，无法删除");
+            throw new BusinessException(HttpStatus.CONFLICT, "仍有题面使用该语言代码，无法删除");
         }
         languageMapper.deleteById(languageId);
     }
 
     private void ensureCodeUnique(String code, @Nullable Integer excludeLanguageId) {
-        LambdaQueryWrapper<Language> query = Wrappers.lambdaQuery(Language.class).eq(Language::getCode, code);
+        LambdaQueryWrapper<Language> query =
+                Wrappers.lambdaQuery(Language.class).eq(Language::getCode, code);
         if (excludeLanguageId != null) {
             query.ne(Language::getId, excludeLanguageId);
         }
@@ -170,8 +176,9 @@ public class LanguageManagementService {
         if (Objects.equals(from, to)) {
             return;
         }
-        LambdaUpdateWrapper<ProblemStatement> update = Wrappers.lambdaUpdate(ProblemStatement.class)
-                .eq(ProblemStatement::getLangCode, from);
+        LambdaUpdateWrapper<ProblemStatement> update =
+                Wrappers.lambdaUpdate(ProblemStatement.class)
+                        .eq(ProblemStatement::getLangCode, from);
         update.set(ProblemStatement::getLangCode, to);
         problemStatementMapper.update(null, update);
     }

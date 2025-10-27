@@ -74,7 +74,7 @@ public class RoleAdminController {
     public ApiResponse<List<PermissionDto>> listRolePermissions(
             @RequestParam(required = false) String keyword) {
         log.info("查询角色可用权限列表，关键词: {}", keyword);
-        List<PermissionDto> permissions = permissionManagementService.listPermissions(keyword);
+        List<PermissionDto> permissions = permissionManagementService.listPermissionsDto(keyword);
         log.info("查询权限列表成功，共返回 {} 条记录", permissions.size());
         return ApiResponse.success(permissions);
     }

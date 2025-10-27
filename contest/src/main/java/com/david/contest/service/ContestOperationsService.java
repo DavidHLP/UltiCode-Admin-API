@@ -17,12 +17,21 @@ import com.david.contest.entity.ContestProblem;
 import com.david.contest.entity.Submission;
 import com.david.contest.entity.UserProblemBestView;
 import com.david.contest.enums.ContestKind;
-import com.david.core.exception.BusinessException;
 import com.david.contest.mapper.ContestMapper;
 import com.david.contest.mapper.ContestProblemMapper;
 import com.david.contest.mapper.SubmissionMapper;
 import com.david.contest.mapper.UserMapper;
 import com.david.contest.mapper.UserProblemBestViewMapper;
+import com.david.core.exception.BusinessException;
+
+import lombok.Getter;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,10 +43,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 @Service
 @Transactional(readOnly = true)
@@ -67,20 +72,28 @@ public class ContestOperationsService {
         this.contestPlanningService = contestPlanningService;
     }
 
+    private static String key(Long userId, Long problemId) {
+        return userId + ":" + problemId;
+    }
+
     public ContestScoreboardView generateScoreboard(Long contestId) {
         Contest contest = contestMapper.selectById(contestId);
         if (contest == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "比赛不存在");
         }
         LocalDateTime generatedAt = LocalDateTime.now();
-        int penaltyPerWrong = contest.getPenaltyPerWrong() != null && contest.getPenaltyPerWrong() > 0
-                ? contest.getPenaltyPerWrong()
-                : 20;
-        int freezeMinutes = contest.getScoreboardFreezeMinutes() != null && contest.getScoreboardFreezeMinutes() > 0
-                ? contest.getScoreboardFreezeMinutes()
-                : 0;
-        boolean freezeHideScore = contest.getHideScoreDuringFreeze() != null
-                && contest.getHideScoreDuringFreeze() == 1;
+        int penaltyPerWrong =
+                contest.getPenaltyPerWrong() != null && contest.getPenaltyPerWrong() > 0
+                        ? contest.getPenaltyPerWrong()
+                        : 20;
+        int freezeMinutes =
+                contest.getScoreboardFreezeMinutes() != null
+                                && contest.getScoreboardFreezeMinutes() > 0
+                        ? contest.getScoreboardFreezeMinutes()
+                        : 0;
+        boolean freezeHideScore =
+                contest.getHideScoreDuringFreeze() != null
+                        && contest.getHideScoreDuringFreeze() == 1;
         LocalDateTime freezeStartTime = null;
         boolean freezeWindowActive = false;
         if (freezeMinutes > 0 && contest.getEndTime() != null) {
@@ -99,7 +112,8 @@ public class ContestOperationsService {
         int pendingSubmissionTotal = 0;
 
         Map<Long, ProblemContext> problemContexts = buildProblemContexts(problemViews);
-        Map<Long, ParticipantContext> participantContexts = buildParticipantContexts(participantViews);
+        Map<Long, ParticipantContext> participantContexts =
+                buildParticipantContexts(participantViews);
 
         List<Long> participantIds = participantContexts.keySet().stream().toList();
         if (participantIds.isEmpty() || problemContexts.isEmpty()) {
@@ -117,19 +131,22 @@ public class ContestOperationsService {
                     List.of());
         }
 
-        Map<Long, Set<Long>> participantProblemIndex = participantContexts.values().stream()
-                .collect(
-                        Collectors.toMap(
-                                ParticipantContext::userId,
-                                ctx -> new LinkedHashSet<>(problemContexts.keySet())));
+        Map<Long, Set<Long>> participantProblemIndex =
+                participantContexts.values().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        ParticipantContext::userId,
+                                        ctx -> new LinkedHashSet<>(problemContexts.keySet())));
 
-        List<Submission> submissions = submissionMapper.selectList(
-                Wrappers.lambdaQuery(Submission.class)
-                        .eq(Submission::getContestId, contestId)
-                        .in(Submission::getUserId, participantIds)
-                        .orderByAsc(Submission::getCreatedAt, Submission::getId));
+        List<Submission> submissions =
+                submissionMapper.selectList(
+                        Wrappers.lambdaQuery(Submission.class)
+                                .eq(Submission::getContestId, contestId)
+                                .in(Submission::getUserId, participantIds)
+                                .orderByAsc(Submission::getCreatedAt, Submission::getId));
 
-        Map<String, Integer> globalBestScoreMap = loadGlobalBestScoreMap(participantIds, problemContexts.keySet());
+        Map<String, Integer> globalBestScoreMap =
+                loadGlobalBestScoreMap(participantIds, problemContexts.keySet());
 
         ScoreboardStrategy strategy = resolveStrategy(contest.getKind());
         for (Submission submission : submissions) {
@@ -141,8 +158,10 @@ public class ContestOperationsService {
             if (problem == null) {
                 continue;
             }
-            ParticipantProblemState state = participant.problemStates.computeIfAbsent(
-                    submission.getProblemId(), id -> new ParticipantProblemState(problem.alias()));
+            ParticipantProblemState state =
+                    participant.problemStates.computeIfAbsent(
+                            submission.getProblemId(),
+                            id -> new ParticipantProblemState(problem.alias()));
             LocalDateTime submissionTime = submission.getCreatedAt();
             if (submissionTime != null
                     && (participant.lastSubmissionAt == null
@@ -150,10 +169,11 @@ public class ContestOperationsService {
                 participant.lastSubmissionAt = submissionTime;
             }
 
-            boolean isPending = freezeWindowActive
-                    && freezeStartTime != null
-                    && submissionTime != null
-                    && submissionTime.isAfter(freezeStartTime);
+            boolean isPending =
+                    freezeWindowActive
+                            && freezeStartTime != null
+                            && submissionTime != null
+                            && submissionTime.isAfter(freezeStartTime);
             if (isPending) {
                 state.pendingAttempts += 1;
                 state.pendingLastVerdict = submission.getVerdict();
@@ -186,14 +206,15 @@ public class ContestOperationsService {
             }
         }
 
-        List<ContestScoreboardParticipantView> participants = buildParticipantScoreboardViews(
-                contest,
-                problemContexts,
-                participantContexts,
-                participantProblemIndex,
-                strategy,
-                globalBestScoreMap,
-                penaltyPerWrong);
+        List<ContestScoreboardParticipantView> participants =
+                buildParticipantScoreboardViews(
+                        contest,
+                        problemContexts,
+                        participantContexts,
+                        participantProblemIndex,
+                        strategy,
+                        globalBestScoreMap,
+                        penaltyPerWrong);
 
         return new ContestScoreboardView(
                 contestId,
@@ -210,12 +231,7 @@ public class ContestOperationsService {
     }
 
     public PageResult<ContestSubmissionView> listSubmissions(
-            Long contestId,
-            int page,
-            int size,
-            String verdict,
-            Long userId,
-            Long problemId) {
+            Long contestId, int page, int size, String verdict, Long userId, Long problemId) {
         Contest contest = contestMapper.selectById(contestId);
         if (contest == null) {
             throw new BusinessException(HttpStatus.NOT_FOUND, "比赛不存在");
@@ -232,47 +248,53 @@ public class ContestOperationsService {
         if (verdict != null && !verdict.isBlank()) {
             query.eq(Submission::getVerdict, verdict.trim().toUpperCase(Locale.ROOT));
         }
-        query.orderByDesc(Submission::getCreatedAt)
-                .orderByDesc(Submission::getId);
+        query.orderByDesc(Submission::getCreatedAt).orderByDesc(Submission::getId);
 
         Page<Submission> result = submissionMapper.selectPage(pager, query);
         if (CollectionUtils.isEmpty(result.getRecords())) {
-            return new PageResult<>(List.of(), result.getTotal(), result.getCurrent(), result.getSize());
+            return new PageResult<>(
+                    List.of(), result.getTotal(), result.getCurrent(), result.getSize());
         }
-        Map<Long, String> userNameMap = userMapper
-                .selectBatchIds(
-                        result.getRecords().stream()
-                                .map(Submission::getUserId)
-                                .collect(Collectors.toSet()))
-                .stream()
-                .collect(Collectors.toMap(
-                        com.david.contest.entity.User::getId,
-                        com.david.contest.entity.User::getUsername));
+        Map<Long, String> userNameMap =
+                userMapper
+                        .selectByIds(
+                                result.getRecords().stream()
+                                        .map(Submission::getUserId)
+                                        .collect(Collectors.toSet()))
+                        .stream()
+                        .collect(
+                                Collectors.toMap(
+                                        com.david.contest.entity.User::getId,
+                                        com.david.contest.entity.User::getUsername));
 
-        Map<Long, ContestProblem> problemMap = contestProblemMapper
-                .selectList(
-                        Wrappers.lambdaQuery(ContestProblem.class)
-                                .eq(ContestProblem::getContestId, contestId))
-                .stream()
-                .collect(Collectors.toMap(ContestProblem::getProblemId, problem -> problem));
+        Map<Long, ContestProblem> problemMap =
+                contestProblemMapper
+                        .selectList(
+                                Wrappers.lambdaQuery(ContestProblem.class)
+                                        .eq(ContestProblem::getContestId, contestId))
+                        .stream()
+                        .collect(
+                                Collectors.toMap(ContestProblem::getProblemId, problem -> problem));
 
-        List<ContestSubmissionView> views = result.getRecords().stream()
-                .map(
-                        submission -> {
-                            ContestProblem relation = problemMap.get(submission.getProblemId());
-                            return new ContestSubmissionView(
-                                    submission.getId(),
-                                    submission.getUserId(),
-                                    userNameMap.get(submission.getUserId()),
-                                    submission.getProblemId(),
-                                    relation != null ? relation.getAlias() : null,
-                                    submission.getVerdict(),
-                                    submission.getScore(),
-                                    submission.getTimeMs(),
-                                    submission.getMemoryKb(),
-                                    submission.getCreatedAt());
-                        })
-                .toList();
+        List<ContestSubmissionView> views =
+                result.getRecords().stream()
+                        .map(
+                                submission -> {
+                                    ContestProblem relation =
+                                            problemMap.get(submission.getProblemId());
+                                    return new ContestSubmissionView(
+                                            submission.getId(),
+                                            submission.getUserId(),
+                                            userNameMap.get(submission.getUserId()),
+                                            submission.getProblemId(),
+                                            relation != null ? relation.getAlias() : null,
+                                            submission.getVerdict(),
+                                            submission.getScore(),
+                                            submission.getTimeMs(),
+                                            submission.getMemoryKb(),
+                                            submission.getCreatedAt());
+                                })
+                        .toList();
         return new PageResult<>(views, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
@@ -281,10 +303,11 @@ public class ContestOperationsService {
         if (participantIds.isEmpty() || problemIds.isEmpty()) {
             return Map.of();
         }
-        List<UserProblemBestView> bestList = userProblemBestViewMapper.selectList(
-                Wrappers.lambdaQuery(UserProblemBestView.class)
-                        .in(UserProblemBestView::getUserId, participantIds)
-                        .in(UserProblemBestView::getProblemId, problemIds));
+        List<UserProblemBestView> bestList =
+                userProblemBestViewMapper.selectList(
+                        Wrappers.lambdaQuery(UserProblemBestView.class)
+                                .in(UserProblemBestView::getUserId, participantIds)
+                                .in(UserProblemBestView::getProblemId, problemIds));
         Map<String, Integer> map = new LinkedHashMap<>();
         for (UserProblemBestView view : bestList) {
             String key = key(view.getUserId(), view.getProblemId());
@@ -312,53 +335,61 @@ public class ContestOperationsService {
                         problemId,
                         id -> new ParticipantProblemState(problemContexts.get(id).alias()));
             }
-            computeParticipantScore(contest, participant, problemContexts, strategy, penaltyPerWrong);
+            computeParticipantScore(
+                    contest, participant, problemContexts, strategy, penaltyPerWrong);
         }
 
-        List<ParticipantContext> sortedParticipants = participantContexts.values().stream()
-                .sorted(strategy.participantComparator())
-                .toList();
+        List<ParticipantContext> sortedParticipants =
+                participantContexts.values().stream()
+                        .sorted(strategy.participantComparator())
+                        .toList();
 
         List<ContestScoreboardParticipantView> result = new ArrayList<>(sortedParticipants.size());
         ParticipantContext previous = null;
         int displayRank = 0;
         for (int index = 0; index < sortedParticipants.size(); index++) {
             ParticipantContext current = sortedParticipants.get(index);
-            if (strategy.equalsParticipants(previous, current)) {
-                // same rank as previous
-            } else {
+            if (!strategy.equalsParticipants(previous, current)) {
                 displayRank = index + 1;
             }
             previous = current;
 
-            List<ContestScoreboardRecordView> recordViews = problemContexts.values().stream()
-                    .sorted(Comparator.comparing(ProblemContext::orderNo, Comparator.nullsFirst(Integer::compareTo)))
-                    .map(
-                            ctx -> {
-                                ParticipantProblemState state = current.problemStates.getOrDefault(
-                                        ctx.problemId(),
-                                        new ParticipantProblemState(ctx.alias()));
-                                Integer globalBest = globalBestScoreMap.getOrDefault(
-                                        key(current.userId(), ctx.problemId()), null);
-                                Integer contestPoints = ctx.points() != null ? ctx.points() : null;
-                                Integer bestScore = state.bestScore;
-                                return new ContestScoreboardRecordView(
-                                        ctx.problemId(),
-                                        ctx.alias(),
-                                        state.totalAttempts,
-                                        state.wrongAttemptsBeforeAc,
-                                        bestScore,
-                                        contestPoints,
-                                        state.lastVerdict,
-                                        state.firstAcceptedAt,
-                                        state.lastSubmissionAt,
-                                        globalBest,
-                                        state.pendingAttempts,
-                                        state.pendingBestScore,
-                                        state.pendingLastVerdict,
-                                        state.pendingLastSubmissionAt);
-                            })
-                    .toList();
+            List<ContestScoreboardRecordView> recordViews =
+                    problemContexts.values().stream()
+                            .sorted(
+                                    Comparator.comparing(
+                                            ProblemContext::orderNo,
+                                            Comparator.nullsFirst(Integer::compareTo)))
+                            .map(
+                                    ctx -> {
+                                        ParticipantProblemState state =
+                                                current.problemStates.getOrDefault(
+                                                        ctx.problemId(),
+                                                        new ParticipantProblemState(ctx.alias()));
+                                        Integer globalBest =
+                                                globalBestScoreMap.getOrDefault(
+                                                        key(current.userId(), ctx.problemId()),
+                                                        null);
+                                        Integer contestPoints =
+                                                ctx.points() != null ? ctx.points() : null;
+                                        Integer bestScore = state.bestScore;
+                                        return new ContestScoreboardRecordView(
+                                                ctx.problemId(),
+                                                ctx.alias(),
+                                                state.totalAttempts,
+                                                state.wrongAttemptsBeforeAc,
+                                                bestScore,
+                                                contestPoints,
+                                                state.lastVerdict,
+                                                state.firstAcceptedAt,
+                                                state.lastSubmissionAt,
+                                                globalBest,
+                                                state.pendingAttempts,
+                                                state.pendingBestScore,
+                                                state.pendingLastVerdict,
+                                                state.pendingLastSubmissionAt);
+                                    })
+                            .toList();
 
             result.add(
                     new ContestScoreboardParticipantView(
@@ -380,18 +411,21 @@ public class ContestOperationsService {
     private List<ContestScoreboardProblemView> buildScoreboardProblemViews(
             Map<Long, ProblemContext> problemContexts) {
         return problemContexts.values().stream()
-                .sorted(Comparator.comparing(ProblemContext::orderNo, Comparator.nullsFirst(Integer::compareTo)))
+                .sorted(
+                        Comparator.comparing(
+                                ProblemContext::orderNo, Comparator.nullsFirst(Integer::compareTo)))
                 .map(
-                        ctx -> new ContestScoreboardProblemView(
-                                ctx.problemId(),
-                                ctx.alias(),
-                                ctx.title(),
-                                ctx.orderNo(),
-                                ctx.points(),
-                                ctx.submissionCount(),
-                                ctx.solvedCount(),
-                                ctx.acceptanceRate(),
-                                ctx.lastSubmissionAt()))
+                        ctx ->
+                                new ContestScoreboardProblemView(
+                                        ctx.problemId(),
+                                        ctx.alias(),
+                                        ctx.title(),
+                                        ctx.orderNo(),
+                                        ctx.points(),
+                                        ctx.submissionCount(),
+                                        ctx.solvedCount(),
+                                        ctx.acceptanceRate(),
+                                        ctx.lastSubmissionAt()))
                 .toList();
     }
 
@@ -416,7 +450,8 @@ public class ContestOperationsService {
         long penalty = 0;
         LocalDateTime lastAccepted = null;
         LocalDateTime lastSubmission = null;
-        for (Map.Entry<Long, ParticipantProblemState> entry : participant.problemStates.entrySet()) {
+        for (Map.Entry<Long, ParticipantProblemState> entry :
+                participant.problemStates.entrySet()) {
             ParticipantProblemState state = entry.getValue();
             if (state.lastSubmissionAt != null
                     && (lastSubmission == null || state.lastSubmissionAt.isAfter(lastSubmission))) {
@@ -429,9 +464,11 @@ public class ContestOperationsService {
             if (lastAccepted == null || state.firstAcceptedAt.isAfter(lastAccepted)) {
                 lastAccepted = state.firstAcceptedAt;
             }
-            long minutes = contest.getStartTime() == null
-                    ? 0
-                    : Duration.between(contest.getStartTime(), state.firstAcceptedAt).toMinutes();
+            long minutes =
+                    contest.getStartTime() == null
+                            ? 0
+                            : Duration.between(contest.getStartTime(), state.firstAcceptedAt)
+                                    .toMinutes();
             penalty += minutes + (long) state.wrongAttemptsBeforeAc * Math.max(penaltyPerWrong, 0);
         }
         participant.solvedCount = solved;
@@ -450,7 +487,8 @@ public class ContestOperationsService {
         int totalScore = 0;
         int solved = 0;
         LocalDateTime lastSubmission = null;
-        for (Map.Entry<Long, ParticipantProblemState> entry : participant.problemStates.entrySet()) {
+        for (Map.Entry<Long, ParticipantProblemState> entry :
+                participant.problemStates.entrySet()) {
             ProblemContext problem = problemContexts.get(entry.getKey());
             ParticipantProblemState state = entry.getValue();
             if (state.bestScore != null) {
@@ -484,8 +522,7 @@ public class ContestOperationsService {
         }
         return switch (contestKind) {
             case ICPC, CF, ACM -> ScoreboardStrategy.ICPC;
-            case OI, IOI -> ScoreboardStrategy.OI;
-            case CUSTOM -> ScoreboardStrategy.OI;
+            case OI, IOI, CUSTOM -> ScoreboardStrategy.OI;
         };
     }
 
@@ -523,64 +560,42 @@ public class ContestOperationsService {
         return result;
     }
 
-    private static String key(Long userId, Long problemId) {
-        return userId + ":" + problemId;
-    }
-
     private enum ScoreboardStrategy {
         ICPC,
         OI;
 
         public Comparator<ParticipantContext> participantComparator() {
             return switch (this) {
-                case ICPC -> Comparator.<ParticipantContext>comparingInt(ctx -> -ctx.solvedCount)
-                        .thenComparingLong(ctx -> ctx.penalty)
-                        .thenComparing(
-                                ctx -> ctx.lastAcceptedAt,
-                                (left, right) -> {
-                                    if (left == null && right == null) {
-                                        return 0;
-                                    }
-                                    if (left == null) {
-                                        return 1;
-                                    }
-                                    if (right == null) {
-                                        return -1;
-                                    }
-                                    return left.compareTo(right);
-                                })
-                        .thenComparing(
-                                ctx -> ctx.lastSubmissionAt,
-                                (left, right) -> {
-                                    if (left == null && right == null) {
-                                        return 0;
-                                    }
-                                    if (left == null) {
-                                        return 1;
-                                    }
-                                    if (right == null) {
-                                        return -1;
-                                    }
-                                    return left.compareTo(right);
-                                })
-                        .thenComparing(ParticipantContext::username, Comparator.nullsLast(String::compareToIgnoreCase));
-                case OI -> Comparator.<ParticipantContext>comparingInt(ctx -> -ctx.totalScore)
-                        .thenComparingInt(ctx -> -ctx.solvedCount)
-                        .thenComparing(
-                                ctx -> ctx.lastSubmissionAt,
-                                (left, right) -> {
-                                    if (left == null && right == null) {
-                                        return 0;
-                                    }
-                                    if (left == null) {
-                                        return 1;
-                                    }
-                                    if (right == null) {
-                                        return -1;
-                                    }
-                                    return left.compareTo(right);
-                                })
-                        .thenComparing(ParticipantContext::username, Comparator.nullsLast(String::compareToIgnoreCase));
+                case ICPC ->
+                        Comparator.<ParticipantContext>comparingInt(ctx -> -ctx.solvedCount)
+                                .thenComparingLong(ctx -> ctx.penalty)
+                                .thenComparing(ctx -> ctx.lastAcceptedAt, nullableComparator())
+                                .thenComparing(ctx -> ctx.lastSubmissionAt, nullableComparator())
+                                .thenComparing(
+                                        ParticipantContext::username,
+                                        Comparator.nullsLast(String::compareToIgnoreCase));
+                case OI ->
+                        Comparator.<ParticipantContext>comparingInt(ctx -> -ctx.totalScore)
+                                .thenComparingInt(ctx -> -ctx.solvedCount)
+                                .thenComparing(ctx -> ctx.lastSubmissionAt, nullableComparator())
+                                .thenComparing(
+                                        ParticipantContext::username,
+                                        Comparator.nullsLast(String::compareToIgnoreCase));
+            };
+        }
+
+        private Comparator<LocalDateTime> nullableComparator() {
+            return (left, right) -> {
+                if (left == null && right == null) {
+                    return 0;
+                }
+                if (left == null) {
+                    return 1;
+                }
+                if (right == null) {
+                    return -1;
+                }
+                return left.compareTo(right);
             };
         }
 
@@ -589,88 +604,30 @@ public class ContestOperationsService {
                 return false;
             }
             return switch (this) {
-                case ICPC -> left.solvedCount == right.solvedCount
-                        && left.penalty == right.penalty;
-                case OI -> left.totalScore == right.totalScore
-                        && left.solvedCount == right.solvedCount;
+                case ICPC -> left.solvedCount == right.solvedCount && left.penalty == right.penalty;
+                case OI ->
+                        left.totalScore == right.totalScore
+                                && left.solvedCount == right.solvedCount;
             };
         }
     }
 
-    private static final class ProblemContext {
-        private final Long problemId;
-        private final String alias;
-        private final String title;
-        private final Integer orderNo;
-        private final Integer points;
-        private final Integer submissionCount;
-        private final Integer solvedCount;
-        private final LocalDateTime lastSubmissionAt;
-        private final java.math.BigDecimal acceptanceRate;
-
-        private ProblemContext(
-                Long problemId,
-                String alias,
-                String title,
-                Integer orderNo,
-                Integer points,
-                Integer submissionCount,
-                Integer solvedCount,
-                LocalDateTime lastSubmissionAt,
-                java.math.BigDecimal acceptanceRate) {
-            this.problemId = problemId;
-            this.alias = alias;
-            this.title = title;
-            this.orderNo = orderNo;
-            this.points = points;
-            this.submissionCount = submissionCount;
-            this.solvedCount = solvedCount;
-            this.lastSubmissionAt = lastSubmissionAt;
-            this.acceptanceRate = acceptanceRate;
-        }
-
-        public Long problemId() {
-            return problemId;
-        }
-
-        public String alias() {
-            return alias;
-        }
-
-        public String title() {
-            return title;
-        }
-
-        public Integer orderNo() {
-            return orderNo;
-        }
-
-        public Integer points() {
-            return points;
-        }
-
-        public Integer submissionCount() {
-            return submissionCount;
-        }
-
-        public Integer solvedCount() {
-            return solvedCount;
-        }
-
-        public LocalDateTime lastSubmissionAt() {
-            return lastSubmissionAt;
-        }
-
-        public java.math.BigDecimal acceptanceRate() {
-            return acceptanceRate;
-        }
-    }
+    private record ProblemContext(
+            Long problemId,
+            String alias,
+            String title,
+            Integer orderNo,
+            Integer points,
+            Integer submissionCount,
+            Integer solvedCount,
+            LocalDateTime lastSubmissionAt,
+            BigDecimal acceptanceRate) {}
 
     private static final class ParticipantContext {
         private final Long userId;
         private final String username;
         private final String displayName;
-        private final LocalDateTime registeredAt;
+        @Getter private final LocalDateTime registeredAt;
         private final Map<Long, ParticipantProblemState> problemStates = new LinkedHashMap<>();
         private int solvedCount;
         private int totalScore;
@@ -679,7 +636,8 @@ public class ContestOperationsService {
         private LocalDateTime lastSubmissionAt;
         private int pendingSubmissionCount;
 
-        private ParticipantContext(Long userId, String username, String displayName, LocalDateTime registeredAt) {
+        private ParticipantContext(
+                Long userId, String username, String displayName, LocalDateTime registeredAt) {
             this.userId = userId;
             this.username = username;
             this.displayName = displayName;
@@ -700,7 +658,7 @@ public class ContestOperationsService {
     }
 
     private static final class ParticipantProblemState {
-        private final String alias;
+        @Getter private final String alias;
         private int totalAttempts;
         private int wrongAttemptsBeforeAc;
         private Integer bestScore;
