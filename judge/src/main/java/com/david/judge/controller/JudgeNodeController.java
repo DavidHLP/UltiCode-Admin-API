@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('platform_admin')")
-@RequestMapping("/api/judge/nodes")
+@RequestMapping("/api/admin/judge/nodes")
 public class JudgeNodeController {
 
     private final JudgeNodeService judgeNodeService;

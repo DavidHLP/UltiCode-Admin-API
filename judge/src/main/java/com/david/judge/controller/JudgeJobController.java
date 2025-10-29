@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('platform_admin')")
-@RequestMapping("/api/judge/jobs")
+@RequestMapping("/api/admin/judge/jobs")
 public class JudgeJobController {
 
     private final JudgeJobService judgeJobService;
@@ -41,8 +41,7 @@ public class JudgeJobController {
             @RequestParam(defaultValue = "false") boolean onlyUnassigned,
             @RequestParam(required = false) Long submissionId,
             @RequestParam(required = false) String keyword) {
-        JudgeJobQuery query =
-                new JudgeJobQuery(page, size, status, nodeId, onlyUnassigned, submissionId, keyword);
+        JudgeJobQuery query = new JudgeJobQuery(page, size, status, nodeId, onlyUnassigned, submissionId, keyword);
         PageResult<JudgeJobView> result = judgeJobService.pageJobs(query);
         return ApiResponse.success(result);
     }

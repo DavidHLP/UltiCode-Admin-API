@@ -46,7 +46,7 @@ spring:
         - id: judge-id
           uri: lb://judge
           predicates:
-            - Path=/api/judge/**
+            - Path=/api/admin/judge/**
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
