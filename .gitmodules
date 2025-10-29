@@ -1,9 +1,0 @@
-[submodule "gateway"]
-	path = gateway
-	url = git@github.com:DavidHLP/UltiCode-Gateway.git
-[submodule "auth"]
-	path = auth
-	url = git@github.com:DavidHLP/UltiCode-Auth.git
-[submodule "commons"]
-	path = commons
-	url = git@github.com:DavidHLP/UltiCode-Commons.git
