@@ -9,7 +9,7 @@
         <relativePath/>
     </parent>
     <groupId>com.david</groupId>
-    <artifactId>SpringOJ</artifactId>
+    <artifactId>UltiCode</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>SpringOJ</name>
