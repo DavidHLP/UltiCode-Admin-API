@@ -9,10 +9,10 @@
         <relativePath/>
     </parent>
     <groupId>com.david</groupId>
-    <artifactId>UltiCode-Admin</artifactId>
+    <artifactId>UltiCode</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>UltiCode-Admin</name>
+    <name>UltiCode</name>
     <description>UltiCode</description>
     <modules>
         <module>commons</module>
