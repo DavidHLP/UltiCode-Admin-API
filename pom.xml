@@ -217,7 +217,7 @@
             <dependency>
                 <groupId>com.david</groupId>
                 <artifactId>commons.core.specifications</artifactId>
-                <version>0.0.1-SNAPSHOT</version>
+                <version>${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
