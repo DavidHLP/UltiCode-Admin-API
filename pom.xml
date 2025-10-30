@@ -12,7 +12,7 @@
     <artifactId>UltiCode</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>UltiCode</name>
+    <name>UltiCode-Admin</name>
     <description>UltiCode</description>
     <modules>
         <module>commons</module>
