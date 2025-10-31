@@ -21,7 +21,7 @@
         <module>admin</module>
         <module>problem</module>
         <module>interaction</module>
-        <module>contest</module>
+        <module>admin-contest</module>
         <module>judge</module>
     </modules>
 
