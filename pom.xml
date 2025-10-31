@@ -19,10 +19,10 @@
         <module>gateway</module>
         <module>auth</module>
         <module>admin</module>
-        <module>problem</module>
-        <module>interaction</module>
+        <module>admin-problem</module>
+        <module>admin-interaction</module>
         <module>admin-contest</module>
-        <module>judge</module>
+        <module>admin-judge</module>
     </modules>
 
     <properties>
