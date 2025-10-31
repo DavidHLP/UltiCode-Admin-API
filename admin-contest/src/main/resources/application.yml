@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: contests
+    name: admin-contests
   cloud:
     nacos:
       discovery:
