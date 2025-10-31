@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: judge
+    name: admin-judge
   cloud:
     nacos:
       discovery:

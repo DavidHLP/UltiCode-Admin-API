@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: problem
+    name: admin-problem
   cloud:
     nacos:
       discovery:
