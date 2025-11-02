@@ -23,6 +23,7 @@
         <module>admin-interaction</module>
         <module>admin-contest</module>
         <module>admin-judge</module>
+        <module>admin-dashboard</module>
     </modules>
 
     <properties>
