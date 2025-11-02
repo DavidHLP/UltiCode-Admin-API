@@ -178,9 +178,9 @@ public class DashboardService {
                 FROM submissions s
                 JOIN problems p ON p.id = s.problem_id
                 LEFT JOIN problem_statements ps_zh
-                          ON ps_zh.problem_id = p.id AND ps_zh.locale = 'zh-CN'
+                          ON ps_zh.problem_id = p.id AND ps_zh.lang_code = 'zh-CN'
                 LEFT JOIN problem_statements ps_en
-                          ON ps_en.problem_id = p.id AND ps_en.locale = 'en'
+                          ON ps_en.problem_id = p.id AND ps_en.lang_code = 'en'
                 LEFT JOIN difficulties d ON d.id = p.difficulty_id
                 JOIN languages l ON l.id = s.language_id
                 JOIN users u ON u.id = s.user_id
@@ -214,9 +214,9 @@ public class DashboardService {
                 FROM problems p
                 LEFT JOIN vw_problem_stats vps ON vps.problem_id = p.id
                 LEFT JOIN problem_statements ps_zh
-                          ON ps_zh.problem_id = p.id AND ps_zh.locale = 'zh-CN'
+                          ON ps_zh.problem_id = p.id AND ps_zh.lang_code = 'zh-CN'
                 LEFT JOIN problem_statements ps_en
-                          ON ps_en.problem_id = p.id AND ps_en.locale = 'en'
+                          ON ps_en.problem_id = p.id AND ps_en.lang_code = 'en'
                 LEFT JOIN difficulties d ON d.id = p.difficulty_id
                 WHERE p.is_public = 1
                 ORDER BY COALESCE(vps.submission_count, 0) DESC, p.id ASC
@@ -336,9 +336,9 @@ public class DashboardService {
                 JOIN users u ON u.id = s.user_id
                 JOIN problems p ON p.id = s.problem_id
                 LEFT JOIN problem_statements ps_zh
-                          ON ps_zh.problem_id = p.id AND ps_zh.locale = 'zh-CN'
+                          ON ps_zh.problem_id = p.id AND ps_zh.lang_code = 'zh-CN'
                 LEFT JOIN problem_statements ps_en
-                          ON ps_en.problem_id = p.id AND ps_en.locale = 'en'
+                          ON ps_en.problem_id = p.id AND ps_en.lang_code = 'en'
                 ORDER BY s.created_at DESC
                 LIMIT :limit
                 """;
@@ -371,9 +371,9 @@ public class DashboardService {
                 JOIN users u ON u.id = c.user_id
                 LEFT JOIN problems p ON c.entity_type = 'problem' AND c.entity_id = p.id
                 LEFT JOIN problem_statements ps_zh
-                          ON ps_zh.problem_id = p.id AND ps_zh.locale = 'zh-CN'
+                          ON ps_zh.problem_id = p.id AND ps_zh.lang_code = 'zh-CN'
                 LEFT JOIN problem_statements ps_en
-                          ON ps_en.problem_id = p.id AND ps_en.locale = 'en'
+                          ON ps_en.problem_id = p.id AND ps_en.lang_code = 'en'
                 ORDER BY c.created_at DESC
                 LIMIT :limit
                 """;
