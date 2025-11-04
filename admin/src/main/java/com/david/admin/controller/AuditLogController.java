@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -28,8 +31,36 @@ public class AuditLogController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(200) int size,
             @RequestParam(required = false) String action,
-            @RequestParam(required = false) String keyword) {
-        PageResult<AuditLogView> result = auditLogQueryService.pageAuditLogs(page, size, action, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long actorId,
+            @RequestParam(required = false) String actorUsername,
+            @RequestParam(required = false) String objectType,
+            @RequestParam(required = false) String objectId,
+            @RequestParam(required = false) String createdAtStart,
+            @RequestParam(required = false) String createdAtEnd) {
+        PageResult<AuditLogView> result =
+                auditLogQueryService.pageAuditLogs(
+                        page,
+                        size,
+                        action,
+                        keyword,
+                        actorId,
+                        actorUsername,
+                        objectType,
+                        objectId,
+                        parseDate(createdAtStart),
+                        parseDate(createdAtEnd));
         return ApiResponse.success(result);
+    }
+
+    private LocalDate parseDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value.trim());
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("日期格式不正确: " + value, ex);
+        }
     }
 }

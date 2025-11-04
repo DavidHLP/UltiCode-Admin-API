@@ -1,12 +1,13 @@
 package com.david.admin.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.david.admin.dto.AuditLogView;
 import com.david.admin.dto.PageResult;
 import com.david.admin.entity.SecurityAuditLog;
 import com.david.admin.mapper.SecurityAuditLogMapper;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,16 @@ public class AuditLogQueryService {
     }
 
     public PageResult<AuditLogView> pageAuditLogs(
-            int page, int size, String action, String keyword) {
+            int page,
+            int size,
+            String action,
+            String keyword,
+            Long actorId,
+            String actorUsername,
+            String objectType,
+            String objectId,
+            LocalDate createdAtStart,
+            LocalDate createdAtEnd) {
         Page<SecurityAuditLog> pager = new Page<>(page, size);
         LambdaQueryWrapper<SecurityAuditLog> query = Wrappers.lambdaQuery(SecurityAuditLog.class);
         if (action != null && !action.isBlank()) {
@@ -34,7 +44,27 @@ public class AuditLogQueryService {
                                     .or()
                                     .like(SecurityAuditLog::getDescription, trimmed)
                                     .or()
-                                    .like(SecurityAuditLog::getActorUsername, trimmed));
+                                    .like(SecurityAuditLog::getActorUsername, trimmed)
+                                    .or()
+                                    .like(SecurityAuditLog::getDescription, trimmed));
+        }
+        if (actorId != null) {
+            query.eq(SecurityAuditLog::getActorId, actorId);
+        }
+        if (actorUsername != null && !actorUsername.isBlank()) {
+            query.like(SecurityAuditLog::getActorUsername, actorUsername.trim());
+        }
+        if (objectType != null && !objectType.isBlank()) {
+            query.like(SecurityAuditLog::getObjectType, objectType.trim());
+        }
+        if (objectId != null && !objectId.isBlank()) {
+            query.like(SecurityAuditLog::getObjectId, objectId.trim());
+        }
+        if (createdAtStart != null) {
+            query.ge(SecurityAuditLog::getCreatedAt, createdAtStart.atStartOfDay());
+        }
+        if (createdAtEnd != null) {
+            query.lt(SecurityAuditLog::getCreatedAt, createdAtEnd.plusDays(1).atStartOfDay());
         }
         query.orderByDesc(SecurityAuditLog::getCreatedAt);
         Page<SecurityAuditLog> result = securityAuditLogMapper.selectPage(pager, query);
