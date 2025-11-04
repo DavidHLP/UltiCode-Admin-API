@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,22 +62,44 @@ public class UserManagementService {
     }
 
     public PageResult<UserView> listUsers(
-            int page, int size, String keyword, Integer status, Long roleId) {
+            int page,
+            int size,
+            String keyword,
+            String username,
+            String email,
+            Integer status,
+            Collection<Long> roleIds) {
         Page<User> pager = new Page<>(page, size);
 
         LambdaQueryWrapper<User> query = Wrappers.lambdaQuery(User.class);
         if (keyword != null && !keyword.isBlank()) {
-            query.and(
-                    wrapper ->
-                            wrapper.like(User::getUsername, keyword)
-                                    .or()
-                                    .like(User::getEmail, keyword));
+            String normalizedKeyword = keyword.trim();
+            if (!normalizedKeyword.isEmpty()) {
+                query.and(
+                        wrapper ->
+                                wrapper.like(User::getUsername, normalizedKeyword)
+                                        .or()
+                                        .like(User::getEmail, normalizedKeyword));
+            }
+        }
+        if (username != null && !username.isBlank()) {
+            String normalizedUsername = username.trim();
+            if (!normalizedUsername.isEmpty()) {
+                query.like(User::getUsername, normalizedUsername);
+            }
+        }
+        if (email != null && !email.isBlank()) {
+            String normalizedEmail = email.trim();
+            if (!normalizedEmail.isEmpty()) {
+                query.like(User::getEmail, normalizedEmail);
+            }
         }
         if (status != null) {
             query.eq(User::getStatus, status);
         }
-        if (roleId != null) {
-            List<Long> userIdsByRole = findUserIdsByRole(roleId);
+        List<Long> normalizedRoleIds = normalizeRoleIds(roleIds);
+        if (!normalizedRoleIds.isEmpty()) {
+            List<Long> userIdsByRole = findUserIdsByRoles(normalizedRoleIds);
             if (userIdsByRole.isEmpty()) {
                 return new PageResult<>(List.of(), 0, page, size);
             }
@@ -123,9 +146,9 @@ public class UserManagementService {
         user.setUpdatedAt(LocalDateTime.now());
 
         userMapper.insert(user);
-        List<Long> roleIds = normalizeRoleIds(request.roleIds());
-        if (!roleIds.isEmpty()) {
-            replaceUserRoles(user.getId(), roleIds);
+        List<Long> roleIdsToAssign = normalizeRoleIds(request.roleIds());
+        if (!roleIdsToAssign.isEmpty()) {
+            replaceUserRoles(user.getId(), roleIdsToAssign);
         }
         recordUserAudit(principal, user.getId(), "创建用户");
         return getUser(user.getId());
@@ -173,8 +196,8 @@ public class UserManagementService {
 
         boolean rolesAdjusted = false;
         if (request.roleIds() != null) {
-            List<Long> roleIds = normalizeRoleIds(request.roleIds());
-            replaceUserRoles(userId, roleIds);
+            List<Long> roleIdsToAssign = normalizeRoleIds(request.roleIds());
+            replaceUserRoles(userId, roleIdsToAssign);
             rolesAdjusted = true;
         }
 
@@ -184,7 +207,6 @@ public class UserManagementService {
         }
         return getUser(userId);
     }
-
     private void ensureUniqueField(
             String value,
             Long excludeUserId,
@@ -262,17 +284,20 @@ public class UserManagementService {
         }
     }
 
-    private List<Long> normalizeRoleIds(List<Long> roleIds) {
+    private List<Long> normalizeRoleIds(Collection<Long> roleIds) {
         if (roleIds == null) {
             return List.of();
         }
         return roleIds.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
     }
 
-    private List<Long> findUserIdsByRole(Long roleId) {
+    private List<Long> findUserIdsByRoles(List<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return List.of();
+        }
         List<UserRole> relations =
                 userRoleMapper.selectList(
-                        Wrappers.lambdaQuery(UserRole.class).eq(UserRole::getRoleId, roleId));
+                        Wrappers.lambdaQuery(UserRole.class).in(UserRole::getRoleId, roleIds));
         if (relations == null || relations.isEmpty()) {
             return List.of();
         }

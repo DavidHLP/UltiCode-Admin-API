@@ -31,6 +31,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 
 @Slf4j
 @RestController
@@ -56,17 +60,30 @@ public class UserAdminController {
                     @Max(value = 100, message = "分页大小不能超过100")
                     int size,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String email,
             @RequestParam(required = false) Integer status,
+            @RequestParam(name = "roleIds", required = false) List<Long> roleIds,
             @RequestParam(required = false) Long roleId) {
+        Set<Long> roleFilters = new LinkedHashSet<>();
+        if (roleIds != null) {
+            roleFilters.addAll(roleIds);
+        }
+        if (roleId != null) {
+            roleFilters.add(roleId);
+        }
         log.info(
-                "查询用户列表，页码: {}, 大小: {}, 关键词: {}, 状态: {}, 角色ID: {}",
+                "查询用户列表，页码: {}, 大小: {}, 关键词: {}, 用户名: {}, 邮箱: {}, 状态: {}, 角色ID集合: {}",
                 page,
                 size,
                 keyword,
+                username,
+                email,
                 status,
-                roleId);
+                roleFilters.isEmpty() ? null : roleFilters);
         PageResult<UserView> result =
-                userManagementService.listUsers(page, size, keyword, status, roleId);
+                userManagementService.listUsers(
+                        page, size, keyword, username, email, status, roleFilters);
         log.info("查询用户列表成功，共返回 {} 条记录", result.total());
         return ApiResponse.success(result);
     }
