@@ -45,9 +45,18 @@ public class TagAdminController {
                     @Min(value = 1, message = "分页大小不能小于1")
                     @Max(value = 100, message = "分页大小不能超过100")
                     int size,
-            @RequestParam(required = false) String keyword) {
-        log.info("查询标签列表，页码: {}, 大小: {}, 关键字: {}", page, size, keyword);
-        PageResult<TagView> tags = tagManagementService.listTags(page, size, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String slug,
+            @RequestParam(required = false) String name) {
+        log.info(
+                "查询标签列表，页码: {}, 大小: {}, 关键字: {}, 别名: {}, 名称: {}",
+                page,
+                size,
+                keyword,
+                slug,
+                name);
+        PageResult<TagView> tags =
+                tagManagementService.listTags(page, size, keyword, slug, name);
         return ApiResponse.success(tags);
     }
 

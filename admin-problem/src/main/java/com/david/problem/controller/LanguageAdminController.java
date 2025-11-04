@@ -46,17 +46,22 @@ public class LanguageAdminController {
                     @Max(value = 100, message = "分页大小不能超过100")
                     int size,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String displayName,
             @RequestParam(required = false) Boolean isActive) {
         log.info(
-                "查询语言列表，页码: {}, 大小: {}, 关键字: {}, 是否启用: {}",
+                "查询语言列表，页码: {}, 大小: {}, 关键字: {}, 编码: {}, 名称: {}, 是否启用: {}",
                 page,
                 size,
                 keyword,
+                code,
+                displayName,
                 isActive);
         PageResult<LanguageView> languages =
-                languageManagementService.listLanguages(page, size, keyword, isActive);
+                languageManagementService.listLanguages(
+                        page, size, keyword, code, displayName, isActive);
         return ApiResponse.success(languages);
-}
+    }
 
     @GetMapping("/{languageId}")
     public ApiResponse<LanguageView> getLanguage(@PathVariable Integer languageId) {

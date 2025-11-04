@@ -36,8 +36,22 @@ public class DifficultyManagementService {
     }
 
     public PageResult<DifficultyView> listDifficulties(
-            int page, int size, @Nullable String keyword) {
+            int page,
+            int size,
+            @Nullable String keyword,
+            @Nullable Integer difficultyId,
+            @Nullable String code,
+            @Nullable Integer sortKey) {
         var query = Wrappers.<Difficulty>lambdaQuery();
+        if (difficultyId != null) {
+            query.eq(Difficulty::getId, difficultyId);
+        }
+        if (StringUtils.hasText(code)) {
+            query.like(Difficulty::getCode, code.trim());
+        }
+        if (sortKey != null) {
+            query.eq(Difficulty::getSortKey, sortKey);
+        }
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             Integer idFilter = tryParseInteger(trimmed);

@@ -33,8 +33,15 @@ public class TagManagementService {
         this.problemTagMapper = problemTagMapper;
     }
 
-    public PageResult<TagView> listTags(int page, int size, @Nullable String keyword) {
+    public PageResult<TagView> listTags(
+            int page, int size, @Nullable String keyword, @Nullable String slug, @Nullable String name) {
         var query = Wrappers.<Tag>lambdaQuery();
+        if (StringUtils.hasText(slug)) {
+            query.like(Tag::getSlug, slug.trim());
+        }
+        if (StringUtils.hasText(name)) {
+            query.like(Tag::getName, name.trim());
+        }
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             query.and(w -> w.like(Tag::getSlug, trimmed).or().like(Tag::getName, trimmed));

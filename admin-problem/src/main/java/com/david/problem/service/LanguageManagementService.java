@@ -44,8 +44,19 @@ public class LanguageManagementService {
     }
 
     public PageResult<LanguageView> listLanguages(
-            int page, int size, @Nullable String keyword, @Nullable Boolean isActive) {
+            int page,
+            int size,
+            @Nullable String keyword,
+            @Nullable String code,
+            @Nullable String displayName,
+            @Nullable Boolean isActive) {
         LambdaQueryWrapper<Language> query = Wrappers.lambdaQuery(Language.class);
+        if (StringUtils.hasText(code)) {
+            query.like(Language::getCode, code.trim());
+        }
+        if (StringUtils.hasText(displayName)) {
+            query.like(Language::getDisplayName, displayName.trim());
+        }
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             query.and(

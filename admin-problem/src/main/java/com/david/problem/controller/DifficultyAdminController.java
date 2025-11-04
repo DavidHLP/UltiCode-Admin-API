@@ -45,10 +45,21 @@ public class DifficultyAdminController {
                     @Min(value = 1, message = "分页大小不能小于1")
                     @Max(value = 100, message = "分页大小不能超过100")
                     int size,
-            @RequestParam(required = false) String keyword) {
-        log.info("查询难度列表，页码: {}, 大小: {}, 关键字: {}", page, size, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(name = "difficultyId", required = false) Integer difficultyId,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) Integer sortKey) {
+        log.info(
+                "查询难度列表，页码: {}, 大小: {}, 关键字: {}, 难度ID: {}, 编码: {}, 排序键: {}",
+                page,
+                size,
+                keyword,
+                difficultyId,
+                code,
+                sortKey);
         PageResult<DifficultyView> difficulties =
-                difficultyManagementService.listDifficulties(page, size, keyword);
+                difficultyManagementService.listDifficulties(
+                        page, size, keyword, difficultyId, code, sortKey);
         return ApiResponse.success(difficulties);
     }
 

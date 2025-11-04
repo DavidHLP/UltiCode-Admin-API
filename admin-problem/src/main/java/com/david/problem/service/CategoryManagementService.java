@@ -32,8 +32,15 @@ public class CategoryManagementService {
         this.problemMapper = problemMapper;
     }
 
-    public PageResult<CategoryView> listCategories(int page, int size, @Nullable String keyword) {
+    public PageResult<CategoryView> listCategories(
+            int page, int size, @Nullable String keyword, @Nullable String code, @Nullable String name) {
         var query = Wrappers.<Category>lambdaQuery();
+        if (StringUtils.hasText(code)) {
+            query.like(Category::getCode, code.trim());
+        }
+        if (StringUtils.hasText(name)) {
+            query.like(Category::getName, name.trim());
+        }
         if (StringUtils.hasText(keyword)) {
             String trimmed = keyword.trim();
             query.and(

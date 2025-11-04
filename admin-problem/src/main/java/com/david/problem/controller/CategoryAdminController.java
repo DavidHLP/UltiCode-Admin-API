@@ -45,10 +45,18 @@ public class CategoryAdminController {
                     @Min(value = 1, message = "分页大小不能小于1")
                     @Max(value = 100, message = "分页大小不能超过100")
                     int size,
-            @RequestParam(required = false) String keyword) {
-        log.info("查询分类列表，页码: {}, 大小: {}, 关键字: {}", page, size, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name) {
+        log.info(
+                "查询分类列表，页码: {}, 大小: {}, 关键字: {}, 编码: {}, 名称: {}",
+                page,
+                size,
+                keyword,
+                code,
+                name);
         PageResult<CategoryView> categories =
-                categoryManagementService.listCategories(page, size, keyword);
+                categoryManagementService.listCategories(page, size, keyword, code, name);
         return ApiResponse.success(categories);
     }
 
