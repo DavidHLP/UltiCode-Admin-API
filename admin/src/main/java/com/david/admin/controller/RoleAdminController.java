@@ -1,5 +1,6 @@
 package com.david.admin.controller;
 
+import com.david.admin.dto.PageResult;
 import com.david.admin.dto.PermissionDto;
 import com.david.admin.dto.RoleCreateRequest;
 import com.david.admin.dto.RoleDto;
@@ -13,6 +14,8 @@ import com.david.core.forward.ForwardedUser;
 import com.david.core.http.ApiResponse;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +34,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -54,11 +59,38 @@ public class RoleAdminController {
     }
 
     @GetMapping
-    public ApiResponse<List<RoleView>> listRoles(
-            @RequestParam(required = false) String keyword) {
-        log.info("查询角色列表，关键词: {}", keyword);
-        List<RoleView> roles = roleManagementService.listRoles(keyword);
-        log.info("查询角色列表成功，共返回 {} 条记录", roles.size());
+    public ApiResponse<PageResult<RoleView>> listRoles(
+            @RequestParam(defaultValue = "1") @Min(value = 1, message = "页码不能小于1") int page,
+            @RequestParam(defaultValue = "10")
+                    @Min(value = 1, message = "分页大小不能小于1")
+                    @Max(value = 100, message = "分页大小不能超过100")
+                    int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String remark,
+            @RequestParam(name = "permissionIds", required = false) List<Long> permissionIds,
+            @RequestParam(required = false) Long permissionId) {
+        Set<Long> permissionFilter = new LinkedHashSet<>();
+        if (permissionIds != null) {
+            permissionFilter.addAll(permissionIds);
+        }
+        if (permissionId != null) {
+            permissionFilter.add(permissionId);
+        }
+        log.info(
+                "查询角色列表，页码: {}, 大小: {}, 关键词: {}, 编码: {}, 名称: {}, 备注: {}, 权限集合: {}",
+                page,
+                size,
+                keyword,
+                code,
+                name,
+                remark,
+                permissionFilter.isEmpty() ? null : permissionFilter);
+        PageResult<RoleView> roles =
+                roleManagementService.listRoles(
+                        page, size, keyword, code, name, remark, permissionFilter);
+        log.info("查询角色列表成功，共返回 {} 条记录", roles.total());
         return ApiResponse.success(roles);
     }
 

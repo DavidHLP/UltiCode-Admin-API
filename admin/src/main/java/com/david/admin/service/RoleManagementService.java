@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.david.admin.dto.PermissionDto;
+import com.david.admin.dto.PageResult;
 import com.david.admin.dto.RoleCreateRequest;
 import com.david.admin.dto.RoleDto;
 import com.david.admin.dto.RoleUpdateRequest;
@@ -21,8 +22,12 @@ import com.david.core.forward.ForwardedUser;
 import com.david.core.security.AuditAction;
 import com.david.core.security.SecurityAuditRecord;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -59,24 +64,69 @@ public class RoleManagementService {
         this.permissionChangeNotifier = permissionChangeNotifier;
     }
 
-    public List<RoleView> listRoles(String keyword) {
+    public PageResult<RoleView> listRoles(
+            int page,
+            int size,
+            String keyword,
+            String code,
+            String name,
+            String remark,
+            Collection<Long> permissionIds) {
+        Page<Role> pager = new Page<>(page, size);
+
         LambdaQueryWrapper<Role> query = Wrappers.lambdaQuery(Role.class);
         if (keyword != null && !keyword.isBlank()) {
             String trimmed = keyword.trim();
-            query.and(
-                    wrapper -> wrapper.like(Role::getCode, trimmed)
-                            .or()
-                            .like(Role::getName, trimmed));
+            if (!trimmed.isEmpty()) {
+                query.and(
+                        wrapper ->
+                                wrapper.like(Role::getCode, trimmed)
+                                        .or()
+                                        .like(Role::getName, trimmed)
+                                        .or()
+                                        .like(Role::getRemark, trimmed));
+            }
+        }
+        if (code != null && !code.isBlank()) {
+            String trimmed = code.trim();
+            if (!trimmed.isEmpty()) {
+                query.like(Role::getCode, trimmed);
+            }
+        }
+        if (name != null && !name.isBlank()) {
+            String trimmed = name.trim();
+            if (!trimmed.isEmpty()) {
+                query.like(Role::getName, trimmed);
+            }
+        }
+        if (remark != null && !remark.isBlank()) {
+            String trimmed = remark.trim();
+            if (!trimmed.isEmpty()) {
+                query.like(Role::getRemark, trimmed);
+            }
+        }
+        List<Long> normalizedPermissionIds = normalizePermissionIds(permissionIds);
+        if (!normalizedPermissionIds.isEmpty()) {
+            List<Long> roleIds = findRoleIdsByPermissions(normalizedPermissionIds);
+            if (roleIds.isEmpty()) {
+                return new PageResult<>(List.of(), 0, page, size);
+            }
+            query.in(Role::getId, roleIds);
         }
         query.orderByDesc(Role::getCreatedAt);
-        List<Role> roles = roleMapper.selectList(query);
+
+        Page<Role> result = roleMapper.selectPage(pager, query);
+        List<Role> roles = result.getRecords();
         if (roles == null || roles.isEmpty()) {
-            return List.of();
+            return new PageResult<>(Collections.emptyList(), result.getTotal(), result.getCurrent(), result.getSize());
         }
-        Map<Long, List<Permission>> permissionsMap = loadPermissionsByRoleIds(roles.stream().map(Role::getId).toList());
-        return roles.stream()
-                .map(role -> toRoleView(role, permissionsMap.getOrDefault(role.getId(), List.of())))
-                .toList();
+        Map<Long, List<Permission>> permissionsMap =
+                loadPermissionsByRoleIds(roles.stream().map(Role::getId).toList());
+        List<RoleView> items =
+                roles.stream()
+                        .map(role -> toRoleView(role, permissionsMap.getOrDefault(role.getId(), List.of())))
+                        .toList();
+        return new PageResult<>(items, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     public List<RoleDto> listRoleOptions() {
@@ -259,11 +309,24 @@ public class RoleManagementService {
         return new RoleDto(role.getId(), role.getCode(), role.getName());
     }
 
-    private List<Long> normalizePermissionIds(List<Long> permissionIds) {
+    private List<Long> normalizePermissionIds(Collection<Long> permissionIds) {
         if (permissionIds == null) {
             return List.of();
         }
         return permissionIds.stream().filter(Objects::nonNull).distinct().toList();
+    }
+
+    private List<Long> findRoleIdsByPermissions(List<Long> permissionIds) {
+        if (permissionIds == null || permissionIds.isEmpty()) {
+            return List.of();
+        }
+        List<RolePermission> relations =
+                rolePermissionMapper.selectList(
+                        Wrappers.lambdaQuery(RolePermission.class).in(RolePermission::getPermissionId, permissionIds));
+        if (relations == null || relations.isEmpty()) {
+            return List.of();
+        }
+        return relations.stream().map(RolePermission::getRoleId).distinct().toList();
     }
 
     private void replaceRolePermissions(Long roleId, List<Long> permissionIds) {

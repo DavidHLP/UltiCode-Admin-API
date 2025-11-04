@@ -2,6 +2,8 @@ package com.david.admin.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.david.admin.dto.PageResult;
 import com.david.admin.dto.PermissionCreateRequest;
 import com.david.admin.dto.PermissionDto;
 import com.david.admin.dto.PermissionUpdateRequest;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,8 +39,54 @@ public class PermissionManagementService {
         return listPermissions(keyword).stream().map(this::toDto).toList();
     }
 
-    public List<PermissionView> listPermissionViews(String keyword) {
-        return listPermissions(keyword).stream().map(this::toView).toList();
+    public PageResult<PermissionView> listPermissionViews(
+            int page,
+            int size,
+            String keyword,
+            String code,
+            String name,
+            LocalDate createdAtStart,
+            LocalDate createdAtEnd) {
+        Page<Permission> pager = new Page<>(page, size);
+        LambdaQueryWrapper<Permission> query = Wrappers.lambdaQuery(Permission.class);
+
+        if (keyword != null && !keyword.isBlank()) {
+            String trimmed = keyword.trim();
+            if (!trimmed.isEmpty()) {
+                query.and(
+                        wrapper ->
+                                wrapper.like(Permission::getCode, trimmed)
+                                        .or()
+                                        .like(Permission::getName, trimmed));
+            }
+        }
+        if (code != null && !code.isBlank()) {
+            String trimmed = code.trim();
+            if (!trimmed.isEmpty()) {
+                query.like(Permission::getCode, trimmed);
+            }
+        }
+        if (name != null && !name.isBlank()) {
+            String trimmed = name.trim();
+            if (!trimmed.isEmpty()) {
+                query.like(Permission::getName, trimmed);
+            }
+        }
+        if (createdAtStart != null) {
+            query.ge(Permission::getCreatedAt, createdAtStart.atStartOfDay());
+        }
+        if (createdAtEnd != null) {
+            query.lt(Permission::getCreatedAt, createdAtEnd.plusDays(1).atStartOfDay());
+        }
+        query.orderByDesc(Permission::getCreatedAt);
+
+        Page<Permission> result = permissionMapper.selectPage(pager, query);
+        List<Permission> records = result.getRecords();
+        List<PermissionView> views =
+                (records == null || records.isEmpty())
+                        ? List.of()
+                        : records.stream().map(this::toView).toList();
+        return new PageResult<>(views, result.getTotal(), result.getCurrent(), result.getSize());
     }
 
     private List<Permission> listPermissions(String keyword) {
