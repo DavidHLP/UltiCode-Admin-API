@@ -7,5 +7,5 @@ public record BookmarkQuery(
         String entityType,
         Long entityId,
         String visibility,
-        String source) {}
-
+        String source,
+        String keyword) {}

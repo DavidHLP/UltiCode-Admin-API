@@ -49,9 +49,11 @@ public class ModerationAdminController {
             @RequestParam(required = false) String entityType,
             @RequestParam(required = false) Long reviewerId,
             @RequestParam(required = false) String riskLevel,
-            @RequestParam(required = false) String source) {
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String keyword) {
         ModerationTaskQuery query =
-                new ModerationTaskQuery(page, size, status, entityType, reviewerId, riskLevel, source);
+                new ModerationTaskQuery(
+                        page, size, status, entityType, reviewerId, riskLevel, source, keyword);
         log.info("查询审核任务: {}", query);
         PageResult<ModerationTaskSummaryView> result =
                 moderationAdminService.listTasks(query);
@@ -104,4 +106,3 @@ public class ModerationAdminController {
         return ApiResponse.success(detail);
     }
 }
-

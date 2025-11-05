@@ -7,5 +7,5 @@ public record ModerationTaskQuery(
         String entityType,
         Long reviewerId,
         String riskLevel,
-        String source) {}
-
+        String source,
+        String keyword) {}

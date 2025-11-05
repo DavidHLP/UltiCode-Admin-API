@@ -51,6 +51,18 @@ public class ReactionAdminService {
         if (StringUtils.hasText(query.source())) {
             wrapper.eq(Reaction::getSource, query.source().trim());
         }
+        if (StringUtils.hasText(query.keyword())) {
+            String keyword = query.keyword().trim();
+            wrapper.and(
+                    w ->
+                            w.like(Reaction::getEntityType, keyword)
+                                    .or()
+                                    .like(Reaction::getKind, keyword)
+                                    .or()
+                                    .like(Reaction::getSource, keyword)
+                                    .or()
+                                    .like(Reaction::getMetadata, keyword));
+        }
         wrapper.orderByDesc(Reaction::getCreatedAt);
 
         Page<Reaction> result = reactionMapper.selectPage(pager, wrapper);

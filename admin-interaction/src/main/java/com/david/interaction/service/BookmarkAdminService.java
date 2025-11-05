@@ -61,6 +61,18 @@ public class BookmarkAdminService {
         if (StringUtils.hasText(query.source())) {
             wrapper.eq(Bookmark::getSource, query.source().trim());
         }
+        if (StringUtils.hasText(query.keyword())) {
+            String keyword = query.keyword().trim();
+            wrapper.and(
+                    w ->
+                            w.like(Bookmark::getNote, keyword)
+                                    .or()
+                                    .like(Bookmark::getSource, keyword)
+                                    .or()
+                                    .like(Bookmark::getEntityType, keyword)
+                                    .or()
+                                    .like(Bookmark::getTags, keyword));
+        }
         wrapper.orderByDesc(Bookmark::getCreatedAt);
 
         Page<Bookmark> result = bookmarkMapper.selectPage(pager, wrapper);

@@ -7,5 +7,5 @@ public record ReactionQuery(
         String entityType,
         Long entityId,
         String kind,
-        String source) {}
-
+        String source,
+        String keyword) {}

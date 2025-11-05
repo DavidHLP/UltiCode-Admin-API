@@ -44,8 +44,10 @@ public class ReactionAdminController {
             @RequestParam(required = false) String entityType,
             @RequestParam(required = false) Long entityId,
             @RequestParam(required = false) String kind,
-            @RequestParam(required = false) String source) {
-        ReactionQuery query = new ReactionQuery(page, size, userId, entityType, entityId, kind, source);
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String keyword) {
+        ReactionQuery query =
+                new ReactionQuery(page, size, userId, entityType, entityId, kind, source, keyword);
         log.info("查询反馈列表: {}", query);
         PageResult<ReactionView> result = reactionAdminService.listReactions(query);
         return ApiResponse.success(result);

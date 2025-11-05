@@ -68,6 +68,16 @@ public class ModerationAdminService {
         if (StringUtils.hasText(query.source())) {
             wrapper.eq(ModerationTask::getSource, query.source().trim());
         }
+        if (StringUtils.hasText(query.keyword())) {
+            String keyword = query.keyword().trim();
+            wrapper.and(
+                    w ->
+                            w.like(ModerationTask::getNotes, keyword)
+                                    .or()
+                                    .like(ModerationTask::getRiskLevel, keyword)
+                                    .or()
+                                    .like(ModerationTask::getSource, keyword));
+        }
         wrapper.orderByDesc(ModerationTask::getCreatedAt);
 
         Page<ModerationTask> result = moderationTaskMapper.selectPage(pager, wrapper);

@@ -44,9 +44,11 @@ public class BookmarkAdminController {
             @RequestParam(required = false) String entityType,
             @RequestParam(required = false) Long entityId,
             @RequestParam(required = false) String visibility,
-            @RequestParam(required = false) String source) {
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String keyword) {
         BookmarkQuery query =
-                new BookmarkQuery(page, size, userId, entityType, entityId, visibility, source);
+                new BookmarkQuery(
+                        page, size, userId, entityType, entityId, visibility, source, keyword);
         log.info("查询收藏列表: {}", query);
         PageResult<BookmarkView> result = bookmarkAdminService.listBookmarks(query);
         return ApiResponse.success(result);
@@ -63,4 +65,3 @@ public class BookmarkAdminController {
         return ApiResponse.success(null);
     }
 }
-
